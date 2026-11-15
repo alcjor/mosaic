@@ -1,0 +1,32 @@
+[
+ {
+  "name": "00-chains",
+  "text": "chains:\n  C:\n    start: A\n    start: B\n",
+  "line": 4
+ },
+ {
+  "name": "01-chains",
+  "text": "chains:\n  C:\n    start: A\n    pin: A:x\n    pin: A:y\n",
+  "line": 5
+ },
+ {
+  "name": "02-chains",
+  "text": "chains:\n  C:\n    start: A\n    steps: []\n    steps: [e out]\n",
+  "line": 5
+ },
+ {
+  "name": "03-chains",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        link: f in\n",
+  "line": 6
+ },
+ {
+  "name": "04-chains",
+  "text": "chains:\n  C:\n    start: A\n  D:\n    start: A\nchains:\n  E:\n    start: A\n",
+  "line": 6
+ },
+ {
+  "name": "05-chains_C_start_A_C_start_B",
+  "text": "chains: {C: {start: A}, C: {start: B}}\n",
+  "line": 1
+ }
+]

@@ -1,0 +1,67 @@
+[
+ {
+  "name": "00-colour",
+  "settings": "colour: red\n",
+  "named": "colour"
+ },
+ {
+  "name": "01-props",
+  "settings": "props: family\n",
+  "named": "props"
+ },
+ {
+  "name": "02-props",
+  "settings": "props: [1]\n",
+  "named": "props"
+ },
+ {
+  "name": "03-key",
+  "settings": "key: 5\n",
+  "named": "key"
+ },
+ {
+  "name": "04-type",
+  "settings": "type: [Row]\n",
+  "named": "type"
+ },
+ {
+  "name": "05-guess",
+  "settings": "convert: {born: {kind: guess}}\nprops: [born]\n",
+  "named": "guess"
+ },
+ {
+  "name": "06-formats",
+  "settings": "convert: {born: {kind: date}}\nprops: [born]\n",
+  "named": "formats"
+ },
+ {
+  "name": "07-base",
+  "settings": "convert: {born: {kind: integer, base: 8}}\nprops: [born]\n",
+  "named": "base"
+ },
+ {
+  "name": "08-mapping",
+  "settings": "- type\n",
+  "named": "mapping"
+ },
+ {
+  "name": "09-type",
+  "settings": "type: A\ntype: B\n",
+  "named": "type"
+ },
+ {
+  "name": "10-edge",
+  "settings": "links: {born: {type: Year}}\n",
+  "named": "edge"
+ },
+ {
+  "name": "11-direction",
+  "settings": "links: {born: {type: Year, edge: in_year, direction: sideways}}\n",
+  "named": "direction"
+ },
+ {
+  "name": "12-Row",
+  "settings": "links: {born: {type: Row, edge: in_year}}\n",
+  "named": "Row"
+ }
+]

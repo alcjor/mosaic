@@ -5,6 +5,7 @@ implements all of them. Each rule is also shown to catch a broken variant.
 """
 
 import copy
+import json
 from pathlib import Path
 from typing import Any
 
@@ -72,19 +73,12 @@ def test_example_proposals_refer_to_declared_types_and_edges() -> None:
 
 
 @pytest.mark.parametrize(
-    ("change", "problem"),
-    [
-        ({"node": "Statue:T-1889"}, "no declared type"),
-        ({"from": "Sculpture:T-1889"}, "ends do not match"),
-        ({"type": "feeds"}, "is not declared"),
-        ({"to": "T-1889"}, "no declared type"),
-        (
-            {"node": "Sculpture:T-1889", "same_as": ["T1889", "Section:GUIDE-1"]},
-            "is not a Sculpture",
-        ),
-    ],
+    "case",
+    json.loads((Path(__file__).parent / "cases" / "broken_proposals.json").read_text("utf-8")),
+    ids=lambda c: c["name"],
 )
-def test_broken_proposals_are_caught(change: dict[str, Any], problem: str) -> None:
+def test_broken_proposals_are_caught(case: dict[str, Any]) -> None:
+    change, problem = case["change"], case["problem"]
     proposals = copy.deepcopy(_load("proposals.yaml"))
     kind = "identity" if "node" in change else "edge"
     target = next(p for p in proposals["proposals"] if p["kind"] == kind)

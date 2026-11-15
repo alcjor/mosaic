@@ -1,0 +1,176 @@
+[
+ {
+  "name": "00-chains.C.start",
+  "text": "chains:\n  C:\n    start: [A]\n",
+  "line": 3,
+  "setting": "chains.C.start"
+ },
+ {
+  "name": "01-chains.C.start",
+  "text": "chains:\n  C:\n    start: true\n",
+  "line": 3,
+  "setting": "chains.C.start"
+ },
+ {
+  "name": "02-chains.C.start",
+  "text": "chains:\n  C:\n    start: ~\n",
+  "line": 3,
+  "setting": "chains.C.start"
+ },
+ {
+  "name": "03-chains.C.start",
+  "text": "chains:\n  C:\n    start:\n",
+  "line": 3,
+  "setting": "chains.C.start"
+ },
+ {
+  "name": "04-chains.C.start",
+  "text": "chains:\n  C:\n    start: {a: b}\n",
+  "line": 3,
+  "setting": "chains.C.start"
+ },
+ {
+  "name": "05-chains.C.pin",
+  "text": "chains:\n  C:\n    start: A\n    pin:\n",
+  "line": 4,
+  "setting": "chains.C.pin"
+ },
+ {
+  "name": "06-chains.C.pin",
+  "text": "chains:\n  C:\n    start: A\n    pin: ~\n",
+  "line": 4,
+  "setting": "chains.C.pin"
+ },
+ {
+  "name": "07-chains.C.pin",
+  "text": "chains:\n  C:\n    start: A\n    pin: [A:x]\n",
+  "line": 4,
+  "setting": "chains.C.pin"
+ },
+ {
+  "name": "08-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n",
+  "line": 4,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "09-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps: ~\n",
+  "line": 4,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "10-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps: {link: e out}\n",
+  "line": 4,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "11-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      -\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "12-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - ~\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "13-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - [e, out]\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "14-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - {}\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "15-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - e in out\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "16-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - E IN\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "17-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - ' e out'\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "18-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - 'e out '\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "19-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - \"e\\tout\"\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "20-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - \"e out\\n\"\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "21-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - out out out\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "22-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - ''\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "23-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: e both\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "24-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: ~\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "25-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: [e out]\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "26-chains.C.steps.pin",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin:\n",
+  "line": 6,
+  "setting": "chains.C.steps.pin"
+ },
+ {
+  "name": "27-chains.C.steps.pin",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin: ''\n",
+  "line": 6,
+  "setting": "chains.C.steps.pin"
+ },
+ {
+  "name": "28-chains.C.steps.pin",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin: [x]\n",
+  "line": 6,
+  "setting": "chains.C.steps.pin"
+ }
+]

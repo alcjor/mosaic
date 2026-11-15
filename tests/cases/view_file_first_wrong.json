@@ -1,0 +1,38 @@
+[
+ {
+  "name": "00-search",
+  "text": "search: fuzzy\ncolour: red\n",
+  "line": 1,
+  "setting": "search"
+ },
+ {
+  "name": "01-colour",
+  "text": "colour: red\nsearch: fuzzy\n",
+  "line": 1,
+  "setting": "colour"
+ },
+ {
+  "name": "02-types.A.label",
+  "text": "types:\n  A: {label: 3}\ntheme: sepia\n",
+  "line": 2,
+  "setting": "types.A.label"
+ },
+ {
+  "name": "03-theme",
+  "text": "theme: sepia\ntypes:\n  A: {label: 3}\n",
+  "line": 1,
+  "setting": "theme"
+ },
+ {
+  "name": "04-types.A.colour",
+  "text": "types:\n  A:\n    colour: x\n    label: 3\n",
+  "line": 3,
+  "setting": "types.A.colour"
+ },
+ {
+  "name": "05-types.A.label",
+  "text": "types:\n  A:\n    label: 3\n    colour: x\n",
+  "line": 3,
+  "setting": "types.A.label"
+ }
+]

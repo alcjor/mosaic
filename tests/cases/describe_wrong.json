@@ -1,0 +1,68 @@
+[
+ {
+  "name": "00-types.A.describe",
+  "text": "types:\n  A:\n    describe: 3\n",
+  "line": 3,
+  "setting": "types.A.describe"
+ },
+ {
+  "name": "01-types.A.describe",
+  "text": "types:\n  A:\n    describe: ''\n",
+  "line": 3,
+  "setting": "types.A.describe"
+ },
+ {
+  "name": "02-types.A.describe",
+  "text": "types:\n  A:\n    describe: [x]\n",
+  "line": 3,
+  "setting": "types.A.describe"
+ },
+ {
+  "name": "03-edges",
+  "text": "edges: [e]\n",
+  "line": 1,
+  "setting": "edges"
+ },
+ {
+  "name": "04-edges",
+  "text": "edges: x\n",
+  "line": 1,
+  "setting": "edges"
+ },
+ {
+  "name": "05-edges.e",
+  "text": "edges:\n  e: yes\n",
+  "line": 2,
+  "setting": "edges.e"
+ },
+ {
+  "name": "06-edges.e",
+  "text": "edges:\n  e:\n",
+  "line": 2,
+  "setting": "edges.e"
+ },
+ {
+  "name": "07-edges.e.label",
+  "text": "edges:\n  e:\n    label: E\n",
+  "line": 3,
+  "setting": "edges.e.label"
+ },
+ {
+  "name": "08-edges.e.describe",
+  "text": "edges:\n  e:\n    describe: 1\n",
+  "line": 3,
+  "setting": "edges.e.describe"
+ },
+ {
+  "name": "09-edges.e.describe",
+  "text": "edges:\n  e:\n    describe: ''\n",
+  "line": 3,
+  "setting": "edges.e.describe"
+ },
+ {
+  "name": "10-edges",
+  "text": "edges:\n  \"\": {}\n",
+  "line": 2,
+  "setting": "edges"
+ }
+]

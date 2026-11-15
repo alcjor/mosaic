@@ -1,0 +1,56 @@
+[
+ {
+  "name": "00-tables.Reader",
+  "settings": "tables:\n  Writer: {}\n  Reader: {}\n",
+  "line": 3,
+  "named": "tables.Reader"
+ },
+ {
+  "name": "01-tables.Writer.label",
+  "settings": "tables:\n  Writer:\n    label: Title\n",
+  "line": 3,
+  "named": "tables.Writer.label"
+ },
+ {
+  "name": "02-tables.Writer.summary",
+  "settings": "tables:\n  Writer:\n    summary: Note\n",
+  "line": 3,
+  "named": "tables.Writer.summary"
+ },
+ {
+  "name": "03-tables.Writer.props",
+  "settings": "tables:\n  Writer:\n    props:\n      - Name\n      - Died\n",
+  "line": 5,
+  "named": "tables.Writer.props"
+ },
+ {
+  "name": "04-tables.Volume.foreign_keys.Author",
+  "settings": "tables:\n  Writer: {}\n  Volume:\n    foreign_keys:\n      Author: written_by\n",
+  "line": 5,
+  "named": "tables.Volume.foreign_keys.Author"
+ },
+ {
+  "name": "05-tables.Volume.foreign_keys.Shelf",
+  "settings": "tables:\n  Writer: {}\n  Volume:\n    foreign_keys:\n      Shelf: kept_on\n",
+  "line": 5,
+  "named": "tables.Volume.foreign_keys.Shelf"
+ },
+ {
+  "name": "06-foreign_keys.WriterId",
+  "settings": "tables:\n  Volume:\n    foreign_keys:\n      WriterId: by\n",
+  "line": 4,
+  "named": "foreign_keys.WriterId"
+ },
+ {
+  "name": "07-tables.Writer.colour",
+  "settings": "tables:\n  Writer:\n    colour: red\n",
+  "line": 3,
+  "named": "tables.Writer.colour"
+ },
+ {
+  "name": "08-tables.Writer.type",
+  "settings": "tables:\n  Writer:\n    type: writer\n",
+  "line": 3,
+  "named": "tables.Writer.type"
+ }
+]

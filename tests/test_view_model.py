@@ -28,6 +28,7 @@ from mosaic_build import view
 from mosaic_build.cli import main
 from mosaic_build.mosaic.vectors import MODEL, Model, PinnedFile
 
+from tests.case_files import cases
 from tests.conftest import REPO
 from tests.test_view import get, mosaic_url, snapshot
 
@@ -339,27 +340,7 @@ def test_a_file_the_reading_rules_accept_opens_with_a_model_of_another_vector_mo
 # --- what the server hands out (section 10: nothing beyond the pinned files) ------------------
 
 
-@pytest.mark.parametrize(
-    "tail",
-    [
-        "README.md",
-        "onnx",
-        "onnx/",
-        "tokenizer.json/",
-        "tokenizer.json/extra",
-        "onnx/../README.md",
-        "%2e%2e/README.md",
-        "..%2fREADME.md",
-        "onnx/..%2fREADME.md",
-        "%2e%2e%2f%2e%2e%2fmodel%2fREADME.md",
-        "..\\README.md",
-        "onnx\\..\\README.md",
-        "tokenizer.json%00.md",
-        "TOKENIZER.JSON",
-        "onnx/MODEL_QUANTIZED.ONNX",
-        "tokenizer.json.bak",
-    ],
-)
+@pytest.mark.parametrize("tail", cases("model_address_tails", "tail"))
 def test_nothing_but_the_pinned_files_is_served_under_the_model_address(
     tail: str, model: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

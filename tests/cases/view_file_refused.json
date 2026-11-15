@@ -1,0 +1,38 @@
+[
+ {
+  "name": "00-search_fuzzy",
+  "text": "search: fuzzy\n"
+ },
+ {
+  "name": "01-types_A",
+  "text": "types: [A]\n"
+ },
+ {
+  "name": "02-types",
+  "text": "types:\n  A: {colour: red}\n"
+ },
+ {
+  "name": "03-export_types_A",
+  "text": "export: {types: A}\n"
+ },
+ {
+  "name": "04-types",
+  "text": "types:\n  A: {columns: [x, x]}\n"
+ },
+ {
+  "name": "05-theme_Dark",
+  "text": "theme: Dark\n"
+ },
+ {
+  "name": "06-extra_1",
+  "text": "extra: 1\n"
+ },
+ {
+  "name": "07-types",
+  "text": "types:\n  A: {names: {x: 1}}\n"
+ },
+ {
+  "name": "08-types",
+  "text": "types:\n  '': {}\n"
+ }
+]

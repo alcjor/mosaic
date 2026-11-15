@@ -1,0 +1,158 @@
+[
+ {
+  "name": "00-cards.A.show",
+  "text": "cards:\n  A:\n    show: [true]\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "01-cards.A.show",
+  "text": "cards:\n  A:\n    show: [null]\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "02-cards.A.show",
+  "text": "cards:\n  A:\n    show: [~]\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "03-cards.A.show",
+  "text": "cards:\n  A:\n    show: [1.5]\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "04-cards.A.show",
+  "text": "cards:\n  A:\n    show: [[x]]\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "05-cards.A.show",
+  "text": "cards:\n  A:\n    show: [{x: y}]\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "06-cards.A.links",
+  "text": "cards:\n  A:\n    links: [false]\n",
+  "line": 3,
+  "setting": "cards.A.links"
+ },
+ {
+  "name": "07-cards.A.counts",
+  "text": "cards:\n  A:\n    counts: [null]\n",
+  "line": 3,
+  "setting": "cards.A.counts"
+ },
+ {
+  "name": "08-cards.A.show",
+  "text": "cards:\n  A:\n    show:\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "09-cards.A.links",
+  "text": "cards:\n  A:\n    links:\n",
+  "line": 3,
+  "setting": "cards.A.links"
+ },
+ {
+  "name": "10-cards.A.counts",
+  "text": "cards:\n  A:\n    counts:\n",
+  "line": 3,
+  "setting": "cards.A.counts"
+ },
+ {
+  "name": "11-cards.A.show",
+  "text": "cards:\n  A:\n    show: {x: y}\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "12-cards.A.show",
+  "text": "cards:\n  A:\n    show: 3\n",
+  "line": 3,
+  "setting": "cards.A.show"
+ },
+ {
+  "name": "13-cards.A",
+  "text": "cards:\n  A: []\n",
+  "line": 2,
+  "setting": "cards.A"
+ },
+ {
+  "name": "14-cards.A",
+  "text": "cards:\n  A: ''\n",
+  "line": 2,
+  "setting": "cards.A"
+ },
+ {
+  "name": "15-cards.A",
+  "text": "cards:\n  A: 0\n",
+  "line": 2,
+  "setting": "cards.A"
+ },
+ {
+  "name": "16-cards.A",
+  "text": "cards:\n  A: [show]\n",
+  "line": 2,
+  "setting": "cards.A"
+ },
+ {
+  "name": "17-cards",
+  "text": "cards: ''\n",
+  "line": 1,
+  "setting": "cards"
+ },
+ {
+  "name": "18-cards",
+  "text": "cards: 3\n",
+  "line": 1,
+  "setting": "cards"
+ },
+ {
+  "name": "19-cards",
+  "text": "cards: ~\n",
+  "line": 1,
+  "setting": "cards"
+ },
+ {
+  "name": "20-cards",
+  "text": "cards:\n",
+  "line": 1,
+  "setting": "cards"
+ },
+ {
+  "name": "21-cards.A.Show",
+  "text": "cards:\n  A: {show: [x], Show: [y]}\n",
+  "line": 2,
+  "setting": "cards.A.Show"
+ },
+ {
+  "name": "22-cards.A.SHOW",
+  "text": "cards:\n  A: {SHOW: [x]}\n",
+  "line": 2,
+  "setting": "cards.A.SHOW"
+ },
+ {
+  "name": "23-cards.A.link",
+  "text": "cards:\n  A: {link: [x]}\n",
+  "line": 2,
+  "setting": "cards.A.link"
+ },
+ {
+  "name": "24-cards.A.count",
+  "text": "cards:\n  A: {count: [x]}\n",
+  "line": 2,
+  "setting": "cards.A.count"
+ },
+ {
+  "name": "25-card",
+  "text": "card:\n  A: {}\n",
+  "line": 1,
+  "setting": "card"
+ }
+]

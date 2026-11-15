@@ -3,6 +3,7 @@
 Spec 0.1, sections 3.1 to 3.10; Part 2, Physical model ("Constraints carry invariants").
 """
 
+import json
 import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
@@ -102,48 +103,14 @@ def test_valid_tessera_rows_insert(db: sqlite3.Connection) -> None:
 
 
 @pytest.mark.parametrize(
-    "sql",
-    [
-        # second header row
-        "INSERT INTO header (one, format_version, kind, producer, knowledge_hash) "
-        "VALUES (2, '0.1', 'tessera', 'x/1', '" + H + "')",
-        # inferred without confidence
-        "INSERT INTO evidence (nid, sid, locator, method, producer) "
-        "VALUES (1, 1, 'r=1', 'inferred', 'x')",
-        # extracted with confidence
-        "INSERT INTO evidence (nid, sid, locator, method, producer, confidence) "
-        "VALUES (1, 1, 'r=1', 'extracted', 'x', 0.9)",
-        # confidence above 1
-        "INSERT INTO evidence (nid, sid, locator, method, producer, confidence) "
-        "VALUES (1, 1, 'r=1', 'inferred', 'x', 1.5)",
-        # two subjects
-        "INSERT INTO evidence (nid, eid, sid, locator, method, producer) "
-        "VALUES (1, 1, 1, 'r=1', 'extracted', 'x')",
-        # edge to a missing node
-        "INSERT INTO edge (type, src, dst) VALUES ('next', 1, 99)",
-        # undeclared node type
-        "INSERT INTO node VALUES (9, 'Thing:9', 'Thing', '9', NULL, NULL, NULL)",
-        # bad node type name
-        "INSERT INTO type (name, kind) VALUES ('row', 'node')",
-        # bad edge type name
-        "INSERT INTO type (name, kind, from_type, to_type) VALUES ('Next', 'edge', 'Row', 'Row')",
-        # props not an object
-        "INSERT INTO node VALUES (9, 'Row:9', 'Row', '9', NULL, NULL, '[1]')",
-        # duplicate (type, key)
-        "INSERT INTO node VALUES (9, 'Row:x', 'Row', '1', NULL, NULL, NULL)",
-        # short vector
-        "INSERT INTO vector VALUES (1, X'00')",
-        # bad hash
-        "INSERT INTO source VALUES (2, 's2', 'file', NULL, 'ABC', NULL)",
-        # bad external system name
-        "INSERT INTO external_ref (nid, system, kind, locator, sid) "
-        "VALUES (1, 'Hist', 'timeseries', '{}', 1)",
-    ],
+    "case",
+    json.loads((Path(__file__).parent / "cases" / "constraint_rejects.json").read_text("utf-8")),
+    ids=lambda c: c["name"],
 )
-def test_constraints_reject(db: sqlite3.Connection, sql: str) -> None:
+def test_constraints_reject(db: sqlite3.Connection, case: dict[str, str]) -> None:
     _tessera(db)
     with pytest.raises(sqlite3.IntegrityError):
-        db.execute(sql)
+        db.execute(case["sql"])
 
 
 def test_header_profile_rules(db: sqlite3.Connection) -> None:

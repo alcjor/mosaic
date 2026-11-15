@@ -1,0 +1,50 @@
+[
+  {
+    "name": "INSERT INTO link_count VALUES (2, 'in_gr",
+    "statements": [
+      "INSERT INTO link_count VALUES (2, 'in_group', 'out', 1)"
+    ]
+  },
+  {
+    "name": "INSERT INTO link_count VALUES (1, 'in_gr",
+    "statements": [
+      "INSERT INTO link_count VALUES (1, 'in_group', 'in', 1)"
+    ]
+  },
+  {
+    "name": "INSERT INTO search (rowid, label, aliase",
+    "statements": [
+      "INSERT INTO search (rowid, label, aliases, summary, snippets) VALUES (1, 'G one', '', '', '')"
+    ]
+  },
+  {
+    "name": "UPDATE header SET producer = 'other/9'",
+    "statements": [
+      "UPDATE header SET producer = 'other/9'"
+    ]
+  },
+  {
+    "name": "UPDATE header SET settings = '{\"text\":\"f",
+    "statements": [
+      "UPDATE header SET settings = '{\"text\":\"full\"}'"
+    ]
+  },
+  {
+    "name": "UPDATE header SET knowledge_hash = 'aaaa",
+    "statements": [
+      "UPDATE header SET knowledge_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'"
+    ]
+  },
+  {
+    "name": "UPDATE source SET path = 'moved/a.csv'",
+    "statements": [
+      "UPDATE source SET path = 'moved/a.csv'"
+    ]
+  },
+  {
+    "name": "INSERT INTO vector VALUES (1, zeroblob(4",
+    "statements": [
+      "INSERT INTO vector VALUES (1, zeroblob(48))"
+    ]
+  }
+]

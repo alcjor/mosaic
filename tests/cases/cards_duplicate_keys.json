@@ -1,0 +1,22 @@
+[
+ {
+  "name": "00-cards",
+  "text": "cards:\n  A: {}\n  A: {}\n",
+  "line": 3
+ },
+ {
+  "name": "01-cards",
+  "text": "cards:\n  A:\n    show: [x]\n    show: [y]\n",
+  "line": 4
+ },
+ {
+  "name": "02-cards",
+  "text": "cards:\n  A: {}\ncards:\n  B: {}\n",
+  "line": 3
+ },
+ {
+  "name": "03-cards",
+  "text": "cards:\n  A:\n    links: [x]\n    counts: [y]\n    links: [z]\n",
+  "line": 5
+ }
+]

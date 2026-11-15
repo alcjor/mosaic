@@ -1,0 +1,32 @@
+[
+ {
+  "name": "00-types",
+  "text": "types:\n  A:\n    label: x\n    label: y\n",
+  "line": 4
+ },
+ {
+  "name": "01-types",
+  "text": "types:\n  A: {}\n  A: {}\n",
+  "line": 3
+ },
+ {
+  "name": "02-types",
+  "text": "types:\n  A:\n    names:\n      x: X\n      x: Y\n",
+  "line": 5
+ },
+ {
+  "name": "03-export",
+  "text": "export:\n  types: [A]\n  types: [B]\n",
+  "line": 3
+ },
+ {
+  "name": "04-export",
+  "text": "export: {}\nexport: {}\n",
+  "line": 2
+ },
+ {
+  "name": "05-types",
+  "text": "types: {}\ntypes: {}\n",
+  "line": 2
+ }
+]

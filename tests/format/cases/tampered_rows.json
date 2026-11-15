@@ -1,0 +1,30 @@
+[
+  {
+    "name": "node-label",
+    "statement": "UPDATE node SET label = 'changed' WHERE nid = 1"
+  },
+  {
+    "name": "edge-props",
+    "statement": "UPDATE edge SET props = '{\"w\":1}' WHERE eid = 1"
+  },
+  {
+    "name": "alias-removed",
+    "statement": "DELETE FROM alias WHERE text = 'same'"
+  },
+  {
+    "name": "evidence-locator",
+    "statement": "UPDATE evidence SET locator = 'row=999' WHERE evid = 1"
+  },
+  {
+    "name": "snippet-text",
+    "statement": "UPDATE snippet SET text = 'other' WHERE evid = 1"
+  },
+  {
+    "name": "source-hash",
+    "statement": "UPDATE source SET hash = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' WHERE sid = 1"
+  },
+  {
+    "name": "header-kind-hash",
+    "statement": "UPDATE header SET knowledge_hash = 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'"
+  }
+]

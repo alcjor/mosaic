@@ -1,0 +1,58 @@
+[
+  {
+    "name": "second header row",
+    "sql": "INSERT INTO header (one, format_version, kind, producer, knowledge_hash) VALUES (2, '0.1', 'tessera', 'x/1', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')"
+  },
+  {
+    "name": "inferred without confidence",
+    "sql": "INSERT INTO evidence (nid, sid, locator, method, producer) VALUES (1, 1, 'r=1', 'inferred', 'x')"
+  },
+  {
+    "name": "extracted with confidence",
+    "sql": "INSERT INTO evidence (nid, sid, locator, method, producer, confidence) VALUES (1, 1, 'r=1', 'extracted', 'x', 0.9)"
+  },
+  {
+    "name": "confidence above 1",
+    "sql": "INSERT INTO evidence (nid, sid, locator, method, producer, confidence) VALUES (1, 1, 'r=1', 'inferred', 'x', 1.5)"
+  },
+  {
+    "name": "two subjects",
+    "sql": "INSERT INTO evidence (nid, eid, sid, locator, method, producer) VALUES (1, 1, 1, 'r=1', 'extracted', 'x')"
+  },
+  {
+    "name": "edge to a missing node",
+    "sql": "INSERT INTO edge (type, src, dst) VALUES ('next', 1, 99)"
+  },
+  {
+    "name": "undeclared node type",
+    "sql": "INSERT INTO node VALUES (9, 'Thing:9', 'Thing', '9', NULL, NULL, NULL)"
+  },
+  {
+    "name": "bad node type name",
+    "sql": "INSERT INTO type (name, kind) VALUES ('row', 'node')"
+  },
+  {
+    "name": "bad edge type name",
+    "sql": "INSERT INTO type (name, kind, from_type, to_type) VALUES ('Next', 'edge', 'Row', 'Row')"
+  },
+  {
+    "name": "props not an object",
+    "sql": "INSERT INTO node VALUES (9, 'Row:9', 'Row', '9', NULL, NULL, '[1]')"
+  },
+  {
+    "name": "duplicate type and key",
+    "sql": "INSERT INTO node VALUES (9, 'Row:x', 'Row', '1', NULL, NULL, NULL)"
+  },
+  {
+    "name": "short vector",
+    "sql": "INSERT INTO vector VALUES (1, X'00')"
+  },
+  {
+    "name": "bad hash",
+    "sql": "INSERT INTO source VALUES (2, 's2', 'file', NULL, 'ABC', NULL)"
+  },
+  {
+    "name": "bad external system name",
+    "sql": "INSERT INTO external_ref (nid, system, kind, locator, sid) VALUES (1, 'Hist', 'timeseries', '{}', 1)"
+  }
+]

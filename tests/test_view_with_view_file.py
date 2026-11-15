@@ -26,6 +26,7 @@ import pytest
 from mosaic_build import view, view_file
 from mosaic_build.cli import main
 
+from tests.case_files import cases
 from tests.conftest import REPO
 
 MOSAIC = REPO / "conformance" / "reading" / "mosaic.mosaic"
@@ -217,14 +218,7 @@ def refused(
 
 
 @pytest.mark.parametrize(
-    ("text", "line", "setting"),
-    [
-        ("search: fuzzy\n", 1, "search"),
-        ("# c\n\n\ntheme: sepia\n", 4, "theme"),
-        ("types:\n  A:\n    colour: red\n", 3, "colour"),
-        ("colour: red\n", 1, "colour"),
-        ("types:\n  A: {}\n  A: {}\n", 3, "A"),
-    ],
+    ("text", "line", "setting"), cases("view_wrong_files", "text", "line", "setting")
 )
 def test_wrong_view_file_names_file_line_and_setting(
     text: str,

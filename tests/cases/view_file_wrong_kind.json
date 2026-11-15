@@ -1,0 +1,112 @@
+[
+ {
+  "name": "00-types.A.names",
+  "text": "types:\n  A:\n    names: {'': X}\n",
+  "setting": "types.A.names"
+ },
+ {
+  "name": "01-types.A.names.x",
+  "text": "types:\n  A:\n    names: {x: ''}\n",
+  "setting": "types.A.names.x"
+ },
+ {
+  "name": "02-types.A.columns",
+  "text": "types:\n  A:\n    columns: ['']\n",
+  "setting": "types.A.columns"
+ },
+ {
+  "name": "03-types.A.page",
+  "text": "types:\n  A:\n    page: [x, '']\n",
+  "setting": "types.A.page"
+ },
+ {
+  "name": "04-export.types",
+  "text": "export:\n  types: ['']\n",
+  "setting": "export.types"
+ },
+ {
+  "name": "05-types.A.label",
+  "text": "types:\n  A:\n    label: null\n",
+  "setting": "types.A.label"
+ },
+ {
+  "name": "06-types.A.columns",
+  "text": "types:\n  A:\n    columns: [null]\n",
+  "setting": "types.A.columns"
+ },
+ {
+  "name": "07-types.A.columns",
+  "text": "types:\n  A:\n    columns: [[x]]\n",
+  "setting": "types.A.columns"
+ },
+ {
+  "name": "08-types.A.names.x",
+  "text": "types:\n  A:\n    names: {x: [Y]}\n",
+  "setting": "types.A.names.x"
+ },
+ {
+  "name": "09-types.A.label",
+  "text": "types:\n  A:\n    label: 1.5\n",
+  "setting": "types.A.label"
+ },
+ {
+  "name": "10-types.A.label",
+  "text": "types:\n  A:\n    label: true\n",
+  "setting": "types.A.label"
+ },
+ {
+  "name": "11-export.types",
+  "text": "export:\n  types: [3]\n",
+  "setting": "export.types"
+ },
+ {
+  "name": "12-export.types",
+  "text": "export:\n  types: {A: 1}\n",
+  "setting": "export.types"
+ },
+ {
+  "name": "13-types.A",
+  "text": "types:\n  A: [label]\n",
+  "setting": "types.A"
+ },
+ {
+  "name": "14-types.A",
+  "text": "types:\n  A: Ay\n",
+  "setting": "types.A"
+ },
+ {
+  "name": "15-types",
+  "text": "types: A\n",
+  "setting": "types"
+ },
+ {
+  "name": "16-types",
+  "text": "types: 3\n",
+  "setting": "types"
+ },
+ {
+  "name": "17-search",
+  "text": "search: 3\n",
+  "setting": "search"
+ },
+ {
+  "name": "18-search",
+  "text": "search: {a: b}\n",
+  "setting": "search"
+ },
+ {
+  "name": "19-theme",
+  "text": "theme: [dark]\n",
+  "setting": "theme"
+ },
+ {
+  "name": "20-export",
+  "text": "export: 3\n",
+  "setting": "export"
+ },
+ {
+  "name": "21-export",
+  "text": "export: text\n",
+  "setting": "export"
+ }
+]

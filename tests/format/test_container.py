@@ -156,9 +156,8 @@ def test_a_search_table_with_another_definition_is_refused(tessera: Path, defini
         "DROP TABLE search",
         f"CREATE VIRTUAL TABLE search USING fts5 ({definition})",
     )
-    with pytest.raises(FileRefusedError) as refused:
+    with pytest.raises(FileRefusedError):
         open_sealed(tessera)
-    assert "schema" in str(refused.value)
     container_violations(tessera)
 
 

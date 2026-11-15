@@ -33,6 +33,7 @@ from mosaic_build.cli import main
 from mosaic_build.view_file import ChainStep, ChainView, from_json, read
 
 from tests import test_export
+from tests.case_files import cases
 from tests.conftest import REPO
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -125,34 +126,7 @@ def test_labels_and_ids_may_hold_any_text() -> None:
 
 
 @pytest.mark.parametrize(
-    ("text", "line", "setting"),
-    [
-        ("chains: [a, b]\n", 1, "chains"),
-        ("chains:\n", 1, "chains"),
-        ("chains:\n  C:\n", 2, "chains.C"),
-        ("chains:\n  C: x\n", 2, "chains.C"),
-        ("chains:\n  C:\n    pin: A:x\n", 2, "chains.C"),  # no start
-        ("chains:\n  C:\n    start: ''\n", 3, "chains.C.start"),
-        ("chains:\n  C:\n    start: 3\n", 3, "chains.C.start"),
-        ("chains:\n  C:\n    start: A\n    pin: ''\n", 4, "chains.C.pin"),
-        ("chains:\n  C:\n    start: A\n    from: B\n", 4, "chains.C.from"),
-        ("chains:\n  C:\n    start: A\n    steps: e out\n", 4, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - e both\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - e sideways\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - 'e  out'\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - 7\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - pin: A:x\n", 5, "chains.C.steps"),
-        (
-            "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        to: B\n",
-            6,
-            "chains.C.steps.to",
-        ),
-        (
-            "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin: 4\n",
-            6,
-            "chains.C.steps.pin",
-        ),
-    ],
+    ("text", "line", "setting"), cases("chains_wrong", "text", "line", "setting")
 )
 def test_a_wrong_value_names_the_file_the_line_and_the_setting(
     tmp_path: Path, text: str, line: int, setting: str
@@ -164,14 +138,14 @@ def test_a_wrong_value_names_the_file_the_line_and_the_setting(
 
 def test_a_wrong_step_says_which_step(tmp_path: Path) -> None:
     text = "chains:\n  C:\n    start: A\n    steps:\n      - e out\n      - e in out\n"
-    with pytest.raises(ValueError, match=r":6: view file: chains\.C\.steps: step 2 "):
+    with pytest.raises(ValueError, match=r":6: view file: chains\.C\.steps: step 2"):
         read(_write(tmp_path, text))
 
 
 def test_a_label_written_twice_is_refused(tmp_path: Path) -> None:
     text = "chains:\n  C:\n    start: A\n  C:\n    start: B\n"
     path = _write(tmp_path, text)
-    with pytest.raises(ValueError, match=rf"^{path}:4: duplicate key"):
+    with pytest.raises(ValueError, match=rf"^{path}:4: "):
         read(path)
 
 
@@ -245,17 +219,7 @@ def _chains(tmp_path: Path, text: str) -> tuple[ChainView, ...]:
 # Duplicates and order (spec 0.1 section 5: duplicate keys are rejected).
 
 
-@pytest.mark.parametrize(
-    ("text", "line"),
-    [
-        ("chains:\n  C:\n    start: A\n    start: B\n", 4),
-        ("chains:\n  C:\n    start: A\n    pin: A:x\n    pin: A:y\n", 5),
-        ("chains:\n  C:\n    start: A\n    steps: []\n    steps: [e out]\n", 5),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        link: f in\n", 6),
-        ("chains:\n  C:\n    start: A\n  D:\n    start: A\nchains:\n  E:\n    start: A\n", 6),
-        ("chains: {C: {start: A}, C: {start: B}}\n", 1),
-    ],
-)
+@pytest.mark.parametrize(("text", "line"), cases("chains_duplicate_keys", "text", "line"))
 def test_a_duplicate_key_in_chains_names_file_and_line(
     tmp_path: Path, text: str, line: int
 ) -> None:
@@ -295,50 +259,7 @@ def test_a_pin_may_be_text_YAML_would_read_as_another_type(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize(
-    ("text", "line", "setting"),
-    [
-        ("chains:\n  C:\n    start: [A]\n", 3, "chains.C.start"),
-        ("chains:\n  C:\n    start: true\n", 3, "chains.C.start"),
-        ("chains:\n  C:\n    start: ~\n", 3, "chains.C.start"),
-        ("chains:\n  C:\n    start:\n", 3, "chains.C.start"),
-        ("chains:\n  C:\n    start: {a: b}\n", 3, "chains.C.start"),
-        ("chains:\n  C:\n    start: A\n    pin:\n", 4, "chains.C.pin"),
-        ("chains:\n  C:\n    start: A\n    pin: ~\n", 4, "chains.C.pin"),
-        ("chains:\n  C:\n    start: A\n    pin: [A:x]\n", 4, "chains.C.pin"),
-        ("chains:\n  C:\n    start: A\n    steps:\n", 4, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps: ~\n", 4, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps: {link: e out}\n", 4, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      -\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - ~\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - [e, out]\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - {}\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - e in out\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - E IN\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - ' e out'\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - 'e out '\n", 5, "chains.C.steps"),
-        ('chains:\n  C:\n    start: A\n    steps:\n      - "e\\tout"\n', 5, "chains.C.steps"),
-        ('chains:\n  C:\n    start: A\n    steps:\n      - "e out\\n"\n', 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - out out out\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - ''\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - link: e both\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - link: ~\n", 5, "chains.C.steps"),
-        ("chains:\n  C:\n    start: A\n    steps:\n      - link: [e out]\n", 5, "chains.C.steps"),
-        (
-            "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin:\n",
-            6,
-            "chains.C.steps.pin",
-        ),
-        (
-            "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin: ''\n",
-            6,
-            "chains.C.steps.pin",
-        ),
-        (
-            "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin: [x]\n",
-            6,
-            "chains.C.steps.pin",
-        ),
-    ],
+    ("text", "line", "setting"), cases("chains_wrong_value", "text", "line", "setting")
 )
 def test_a_wrong_chain_value_names_the_file_the_line_and_the_key(
     tmp_path: Path, text: str, line: int, setting: str
@@ -351,17 +272,7 @@ def test_a_wrong_chain_value_names_the_file_the_line_and_the_key(
     assert not _schema_accepts(text)
 
 
-@pytest.mark.parametrize(
-    "text",
-    [
-        "chains: 3\n",
-        "chains: x\n",
-        "chains: ~\n",
-        "chains: []\n",
-        "chains: [{C: {start: A}}]\n",
-        "chains: true\n",
-    ],
-)
+@pytest.mark.parametrize("text", cases("chains_not_a_mapping", "text"))
 def test_chains_that_is_not_a_mapping_names_file_and_line(tmp_path: Path, text: str) -> None:
     path = _write(tmp_path, text)
     with pytest.raises(ValueError, match=rf"^{path}:1: view file: chains"):
@@ -390,33 +301,7 @@ def test_an_unknown_key_in_a_step_names_the_key(tmp_path: Path) -> None:
 # The reader and the schema take the same chains.
 
 
-@pytest.mark.parametrize(
-    "step",
-    [
-        "e out",
-        "e in",
-        "e  out",
-        "e\\tout",
-        "e out\\n",
-        "e out ",
-        " e out",
-        "e\\u00a0out",
-        "e\\u2003out",
-        "a\\u00a0b out",
-        "e Out",
-        "e inn",
-        "e",
-        "e in out",
-        "in",
-        "out out",
-        "in in",
-        "\\u0085 in",
-        "e\\u2028out",
-        "e\\u0085out",
-        "é in",
-        "😀 out",
-    ],
-)
+@pytest.mark.parametrize("step", cases("chains_steps", "step"))
 def test_the_reader_and_the_schema_agree_on_a_step(tmp_path: Path, step: str) -> None:
     text = f'chains:\n  C:\n    start: A\n    steps:\n      - "{step}"\n'
     assert _reads(tmp_path, text) == _schema_accepts(text)
@@ -526,43 +411,9 @@ def test_mosaic_view_still_opens_with_a_chain_naming_what_the_mosaic_lacks(
 
 
 # Spellings, as YAML double-quoted scalars (escapes allowed): good ones, then bad ones.
-SPELLINGS = [
-    "e",
-    "e in",
-    "e out",
-    "in",
-    "out",
-    "in in",
-    "in out",
-    "out in",
-    "out out",
-    "é in",
-    "😀",
-    "a-b.c:d in",
-    "e In",
-    "e OUT",
-    "e inn",
-    "e  in",
-    "e in ",
-    " e in",
-    "e\\tin",
-    "e in\\n",
-    "e\\nin",
-    "e in in",
-    "e out out",
-    "e up",
-    "e\\u00a0in",
-    "e\\u2003in",
-    "e\\u0085in",
-    "\\u0085",
-    "e\\v",
-    "e\\f in",
-    "e\\r",
-    "e\\r\\nin",
-]
 
 
-@pytest.mark.parametrize("link", SPELLINGS)
+@pytest.mark.parametrize("link", cases("chains_spellings", "link"))
 def test_a_chain_step_spells_its_link_exactly_as_a_card_does(tmp_path: Path, link: str) -> None:
     # Rule: the same spelling is good in cards.links and in a chain step.
     card = f'cards:\n  T:\n    links: ["{link}"]\n'

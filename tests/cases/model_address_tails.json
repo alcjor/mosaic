@@ -1,0 +1,66 @@
+[
+ {
+  "name": "00-README.md",
+  "tail": "README.md"
+ },
+ {
+  "name": "01-onnx",
+  "tail": "onnx"
+ },
+ {
+  "name": "02-onnx",
+  "tail": "onnx/"
+ },
+ {
+  "name": "03-tokenizer.json",
+  "tail": "tokenizer.json/"
+ },
+ {
+  "name": "04-tokenizer.json_extra",
+  "tail": "tokenizer.json/extra"
+ },
+ {
+  "name": "05-onnx_.._README.md",
+  "tail": "onnx/../README.md"
+ },
+ {
+  "name": "06-2e_2e_README.md",
+  "tail": "%2e%2e/README.md"
+ },
+ {
+  "name": "07-.._2fREADME.md",
+  "tail": "..%2fREADME.md"
+ },
+ {
+  "name": "08-onnx_.._2fREADME.md",
+  "tail": "onnx/..%2fREADME.md"
+ },
+ {
+  "name": "09-2e_2e_2f_2e_2e_2fmodel_2fRE",
+  "tail": "%2e%2e%2f%2e%2e%2fmodel%2fREADME.md"
+ },
+ {
+  "name": "10-.._README.md",
+  "tail": "..\\README.md"
+ },
+ {
+  "name": "11-onnx_.._README.md",
+  "tail": "onnx\\..\\README.md"
+ },
+ {
+  "name": "12-tokenizer.json_00.md",
+  "tail": "tokenizer.json%00.md"
+ },
+ {
+  "name": "13-TOKENIZER.JSON",
+  "tail": "TOKENIZER.JSON"
+ },
+ {
+  "name": "14-onnx_MODEL_QUANTIZED.ONNX",
+  "tail": "onnx/MODEL_QUANTIZED.ONNX"
+ },
+ {
+  "name": "15-tokenizer.json.bak",
+  "tail": "tokenizer.json.bak"
+ }
+]

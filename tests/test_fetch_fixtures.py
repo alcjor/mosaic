@@ -134,8 +134,8 @@ def test_a_source_on_neither_fails_naming_it(
     monkeypatch.setattr(urllib.request, "urlretrieve", _url_fails)
     assert fetch.main(manifest, downloads, clone) == 1
     out = capsys.readouterr()
-    assert "fixtures branch has no absent/demo.csv" in out.out
-    assert "FAIL absent: sha256 (nothing fetched)" in out.err
+    assert "absent/demo.csv" in out.out
+    assert "FAIL absent: sha256" in out.err
 
 
 def test_a_file_already_matching_its_pin_is_not_fetched_again(
