@@ -34,4 +34,5 @@ step "pytest (not slow)" uv run --locked pytest -q -m "not slow" -n auto
 step "js lint" bun run lint
 step "js typecheck" bun run typecheck
 step "js tests" bun run test
+step "viewer browser tests" bash -c "bun run build && bun run --cwd viewer test:browser"
 echo "gate passed"

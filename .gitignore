@@ -37,3 +37,6 @@ build-report.json
 .idea/
 .vscode/
 .import_linter_cache/
+
+# Screenshots saved by the viewer browser tests (CI uploads them)
+viewer/screenshots/

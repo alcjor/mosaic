@@ -10,6 +10,7 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "bun --bun vitest run --passWithNoTests",
     "build": "bun --bun vite build",
+    "test:browser": "bun --bun vitest run --config vitest.browser.config.ts",
     "lint": "stylelint \"src/**/*.{css,svelte}\""
   },
   "dependencies": {
