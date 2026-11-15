@@ -1,0 +1,55 @@
+[
+ {
+  "name": "quotes",
+  "text": "It's \"quoted\" and 'single', with a back\\slash."
+ },
+ {
+  "name": "astral",
+  "text": "Data 😀 𐍈 end"
+ },
+ {
+  "name": "combining",
+  "text": "Café and café"
+ },
+ {
+  "name": "crlf",
+  "text": "line one\r\nline two\rline three\n"
+ },
+ {
+  "name": "surrounding space",
+  "text": "  leading and trailing  "
+ },
+ {
+  "name": "tab",
+  "text": "a\tb"
+ },
+ {
+  "name": "trailing newline",
+  "text": "one line\n"
+ },
+ {
+  "name": "json-looking",
+  "text": "{\"a\": [1, 2]}"
+ },
+ {
+  "name": "yaml-looking",
+  "text": "- a: b # not a comment"
+ },
+ {
+  "name": "single char",
+  "text": "x"
+ },
+ {
+  "name": "whitespace only",
+  "text": " "
+ },
+ {
+  "name": "escaped nul text",
+  "text": "\\u0000"
+ },
+ {
+  "name": "long",
+  "text": "MIT License. ",
+  "repeat": 10000
+ }
+]

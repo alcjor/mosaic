@@ -7,6 +7,7 @@ settings the builder refuses is an error naming the file, the line and the setti
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from mosaic_build.tessera.convert import Boolean, Date, Integer, Number, Quantity
@@ -86,42 +87,17 @@ def test_the_tables_keep_the_order_of_the_file(tmp_path: Path) -> None:
     assert list(settings.tables) == ["B", "A", "C"]
 
 
-@pytest.mark.parametrize(
-    ("text", "line", "named"),
-    [
-        ("colour: red\n", 1, "colour"),
-        ("- tables\n", None, "mapping"),
-        ("tables: [Writer]\n", 1, "tables"),
-        ("tables: {}\n", 1, "tables"),
-        ("tables:\n  Writer: null\n", 2, "tables.Writer"),
-        ("tables:\n  Writer:\n    colour: red\n", 3, "tables.Writer.colour"),
-        ("tables:\n  Writer:\n    type: [W]\n", 3, "tables.Writer.type"),
-        ("tables:\n  Writer:\n    type: writer\n", 3, "tables.Writer.type"),
-        ("tables:\n  Writer:\n    label: 5\n", 3, "tables.Writer.label"),
-        ("tables:\n  Writer:\n    summary: [Note]\n", 3, "tables.Writer.summary"),
-        ("tables:\n  Writer:\n    props: Name\n", 3, "tables.Writer.props"),
-        ("tables:\n  Writer:\n    props:\n      - Name\n      - Name\n", 5, "Name"),
-        ("tables:\n  Writer:\n    props: [Born]\n    convert: {Born: {kind: guess}}\n", 4, "guess"),
-        ("tables:\n  Writer:\n    convert: {Born: {kind: integer}}\n", 3, "Born"),
-        ("tables:\n  Writer:\n    foreign_keys: [WriterId]\n", 3, "tables.Writer.foreign_keys"),
-        (
-            "tables:\n  Volume:\n    foreign_keys:\n      WriterId: WrittenBy\n",
-            4,
-            "tables.Volume.foreign_keys.WriterId",
-        ),
-        (
-            "tables:\n  Volume:\n    foreign_keys:\n      WriterId: by\n      ShelfCode: by\n",
-            5,
-            "tables.Volume.foreign_keys.ShelfCode",
-        ),
-        ("tables:\n  A: {type: T}\n  B: {type: T}\n", 3, "tables.B"),
-        ("tables:\n  Writer: {}\n  Writer: {}\n", 3, "Writer"),
-    ],
+CASES = json.loads(
+    (Path(__file__).parent / "cases" / "sqlite_wrong_settings.json").read_text("utf-8")
 )
+
+
+@pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])
 def test_a_wrong_setting_names_the_file_the_line_and_the_setting(
-    tmp_path: Path, text: str, line: int | None, named: str
+    tmp_path: Path, case: dict[str, Any]
 ) -> None:
-    path = _file(tmp_path, text)
+    line, named = case["line"], case["named"]
+    path = _file(tmp_path, case["text"])
     with pytest.raises(ValueError) as error:
         read(path)
     message = str(error.value)

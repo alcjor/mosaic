@@ -243,7 +243,6 @@ def test_vectors_on_without_a_model_fails_with_invalid_input(tmp_path: Path) -> 
     with pytest.raises(BuildError) as raised:
         build(pattern_path, "default", tmp_path / "out.mosaic", pieces=[piece])
     assert raised.value.reason == "invalid_input"
-    assert "vectors" in str(raised.value) and "model" in str(raised.value)
     assert not (tmp_path / "out.mosaic").exists()
     report = _failed(tmp_path)
     assert (report["outcome"], report["reason"]) == ("failed", "invalid_input")

@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from mosaic_build.tessera.csv import Boolean, Date, Integer, Number, Quantity, Settings
@@ -60,21 +61,16 @@ def test_an_empty_mapping_is_the_default_settings() -> None:
     assert from_json({}) == Settings()
 
 
-@pytest.mark.parametrize(
-    ("text", "line", "named"),
-    [
-        ("type: Item\nconvert:\n  a: {kind: date, formats: x}\nprops: [a]\n", 3, "formats"),
-        ("props: [a]\nconvert: {a: {kind: quantity, number: n, unit: u}}\n", 2, "units"),
-        ('props: [a]\nconvert: {a: {kind: boolean, "true": [y], "false": n}}\n', 2, "false"),
-        ("type: item\n", None, "type"),
-        ("props: [a]\nconvert: {b: {kind: integer}}\n", None, "'b'"),
-    ],
+CASES = json.loads(
+    (Path(__file__).parent / "cases" / "csv_settings_refusals.json").read_text("utf-8")
 )
-def test_refusals_name_the_file_line_and_setting(
-    tmp_path: Path, text: str, line: int | None, named: str
-) -> None:
+
+
+@pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])
+def test_refusals_name_the_file_line_and_setting(tmp_path: Path, case: dict[str, Any]) -> None:
+    line, named = case["line"], case["named"]
     path = tmp_path / "settings.yaml"
-    path.write_text(text, encoding="utf-8")
+    path.write_text(case["text"], encoding="utf-8")
     with pytest.raises(ValueError) as e:
         read(path)
     message = str(e.value)

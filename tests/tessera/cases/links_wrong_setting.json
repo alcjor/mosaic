@@ -1,0 +1,44 @@
+[
+ {
+  "name": "makers: {type: maker, edge: made_by}",
+  "links": "  makers: {type: maker, edge: made_by}\n",
+  "line": 4,
+  "named": "type"
+ },
+ {
+  "name": "makers: {type: Maker, edge: MadeBy}",
+  "links": "  makers: {type: Maker, edge: MadeBy}\n",
+  "line": 4,
+  "named": "edge"
+ },
+ {
+  "name": "makers: {type: Maker, edge: made_by, dir",
+  "links": "  makers: {type: Maker, edge: made_by, direction: up}\n",
+  "line": 4,
+  "named": "direction"
+ },
+ {
+  "name": "makers: {type: Maker, edge: made_by, sep",
+  "links": "  makers: {type: Maker, edge: made_by, separator: ''}\n",
+  "line": 4,
+  "named": "separator"
+ },
+ {
+  "name": "makers: {type: Maker, edge: made_by, col",
+  "links": "  makers: {type: Maker, edge: made_by, colour: red}\n",
+  "line": 4,
+  "named": "colour"
+ },
+ {
+  "name": "makers: {edge: made_by}",
+  "links": "  makers: {edge: made_by}\n",
+  "line": 4,
+  "named": "type"
+ },
+ {
+  "name": "makers: [Maker, made_by]",
+  "links": "  makers: [Maker, made_by]\n",
+  "line": 4,
+  "named": "makers"
+ }
+]

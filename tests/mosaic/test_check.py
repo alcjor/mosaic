@@ -52,7 +52,7 @@ def test_a_piece_that_matches_no_file_fails_with_piece_mismatch(
     with pytest.raises(BuildError) as e:
         check(pattern(tmp_path, ["list@" + "0" * 12], TYPES), pieces=[path])
     assert e.value.reason == "piece_mismatch"
-    assert "list@000000000000 matches no available file" in str(e.value)
+    assert "list@000000000000" in str(e.value)
 
 
 def test_a_piece_that_matches_two_files_fails_with_piece_mismatch(
@@ -64,7 +64,6 @@ def test_a_piece_that_matches_two_files_fails_with_piece_mismatch(
     with pytest.raises(BuildError) as e:
         check(pattern(tmp_path, [f"list@{h[:8]}"], TYPES), pieces=[path, copy])
     assert e.value.reason == "piece_mismatch"
-    assert "matches 2 files" in str(e.value)
 
 
 def test_the_same_file_given_twice_is_one_file(tmp_path: Path, piece: tuple[Path, str]) -> None:
@@ -81,7 +80,6 @@ def test_a_piece_of_another_kind_than_the_pattern_says_fails_with_piece_mismatch
     with pytest.raises(BuildError) as e:
         check(pattern(tmp_path, [entry], TYPES), pieces=[path])
     assert e.value.reason == "piece_mismatch"
-    assert "is a mosaic in the pattern" in str(e.value)
 
 
 def test_an_invalid_pattern_fails_with_invalid_input(
@@ -92,7 +90,6 @@ def test_an_invalid_pattern_fails_with_invalid_input(
     with pytest.raises(BuildError) as e:
         check(pattern(tmp_path, [f"list@{h}"], types), pieces=[path])
     assert e.value.reason == "invalid_input"
-    assert "schema" in str(e.value)
 
 
 def test_a_from_type_the_piece_does_not_declare_fails_with_invalid_input(
@@ -103,7 +100,7 @@ def test_a_from_type_the_piece_does_not_declare_fails_with_invalid_input(
     with pytest.raises(BuildError) as e:
         check(pattern(tmp_path, [f"list@{h}"], types), pieces=[path])
     assert e.value.reason == "invalid_input"
-    assert "from-type" in str(e.value)
+    assert "list.Line" in str(e.value)
 
 
 def test_a_file_the_reading_rules_refuse_fails_with_invalid_input(

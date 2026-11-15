@@ -1,0 +1,77 @@
+[
+ {
+  "name": "no property",
+  "props": {
+   "Other": "x"
+  },
+  "fields": {
+   "tag": "Tag"
+  }
+ },
+ {
+  "name": "null",
+  "props": {
+   "Tag": null
+  },
+  "fields": {
+   "tag": "Tag"
+  }
+ },
+ {
+  "name": "boolean",
+  "props": {
+   "Tag": true
+  },
+  "fields": {
+   "tag": "Tag"
+  }
+ },
+ {
+  "name": "array",
+  "props": {
+   "Tag": [
+    1
+   ]
+  },
+  "fields": {
+   "tag": "Tag"
+  }
+ },
+ {
+  "name": "object",
+  "props": {
+   "Tag": {
+    "a": 1
+   }
+  },
+  "fields": {
+   "tag": "Tag"
+  }
+ },
+ {
+  "name": "white space only",
+  "props": {
+   "Tag": " 　 "
+  },
+  "fields": {
+   "tag": "Tag"
+  }
+ },
+ {
+  "name": "only the stripped prefix",
+  "props": {
+   "Tag": "P_"
+  },
+  "fields": {
+   "tag": "Tag",
+   "strip": "P_"
+  }
+ },
+ {
+  "name": "no such field",
+  "props": {},
+  "fields": {
+   "tag": "summary"
+  }
+ }
+]

@@ -1,0 +1,30 @@
+[
+ {
+  "name": "link-to-the-row-type",
+  "links": "  makers: {type: Book, edge: made_by}\n",
+  "line": 4,
+  "named": [
+   "'Book'"
+  ]
+ },
+ {
+  "name": "same-node-type",
+  "links": "  makers: {type: Maker, edge: made_by}\n  shelf:\n    edge: holds\n    type: Maker\n",
+  "line": 7,
+  "named": [
+   "links.shelf",
+   "'Maker'",
+   "links.makers"
+  ]
+ },
+ {
+  "name": "same-edge",
+  "links": "  makers: {type: Maker, edge: made_by}\n  shelf:\n    type: Shelf\n    edge: made_by\n",
+  "line": 7,
+  "named": [
+   "links.shelf",
+   "'made_by'",
+   "links.makers"
+  ]
+ }
+]
