@@ -1,0 +1,26 @@
+[
+ {
+  "name": "00-chains_3",
+  "text": "chains: 3\n"
+ },
+ {
+  "name": "01-chains_x",
+  "text": "chains: x\n"
+ },
+ {
+  "name": "02-chains",
+  "text": "chains: ~\n"
+ },
+ {
+  "name": "03-chains",
+  "text": "chains: []\n"
+ },
+ {
+  "name": "04-chains_C_start_A",
+  "text": "chains: [{C: {start: A}}]\n"
+ },
+ {
+  "name": "05-chains_true",
+  "text": "chains: true\n"
+ }
+]

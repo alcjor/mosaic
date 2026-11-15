@@ -1,0 +1,30 @@
+[
+ {
+  "name": "00-empty",
+  "text": ""
+ },
+ {
+  "name": "01-search_text",
+  "text": "search: text\n"
+ },
+ {
+  "name": "02-types",
+  "text": "types:\n  A: {}\n"
+ },
+ {
+  "name": "03-types",
+  "text": "types:\n  A: {label: L, columns: [], page: [], names: {}}\n"
+ },
+ {
+  "name": "04-export",
+  "text": "export: {}\n"
+ },
+ {
+  "name": "05-export_types",
+  "text": "export: {types: []}\n"
+ },
+ {
+  "name": "06-types",
+  "text": "types: {}\nexport: {types: [Z]}\n"
+ }
+]

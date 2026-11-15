@@ -1,0 +1,146 @@
+[
+ {
+  "name": "00-colour",
+  "text": "search: semantic\ncolour: red\n",
+  "line": 2,
+  "setting": "colour"
+ },
+ {
+  "name": "01-search",
+  "text": "search: fuzzy\n",
+  "line": 1,
+  "setting": "search"
+ },
+ {
+  "name": "02-search",
+  "text": "search: [text]\n",
+  "line": 1,
+  "setting": "search"
+ },
+ {
+  "name": "03-theme",
+  "text": "theme: sepia\n",
+  "line": 1,
+  "setting": "theme"
+ },
+ {
+  "name": "04-theme",
+  "text": "theme: true\n",
+  "line": 1,
+  "setting": "theme"
+ },
+ {
+  "name": "05-types",
+  "text": "types: [A, B]\n",
+  "line": 1,
+  "setting": "types"
+ },
+ {
+  "name": "06-types.B",
+  "text": "types:\n  A: {}\n  B: yes\n",
+  "line": 3,
+  "setting": "types.B"
+ },
+ {
+  "name": "07-types.B",
+  "text": "types:\n  A: {}\n  B:\n",
+  "line": 3,
+  "setting": "types.B"
+ },
+ {
+  "name": "08-types.A.colour",
+  "text": "types:\n  A:\n    label: Ay\n    colour: red\n",
+  "line": 4,
+  "setting": "types.A.colour"
+ },
+ {
+  "name": "09-types.A.label",
+  "text": "types:\n  A:\n    label: 3\n",
+  "line": 3,
+  "setting": "types.A.label"
+ },
+ {
+  "name": "10-types.A.label",
+  "text": "types:\n  A:\n    label: ''\n",
+  "line": 3,
+  "setting": "types.A.label"
+ },
+ {
+  "name": "11-types.A.columns",
+  "text": "types:\n  A:\n    columns: x\n",
+  "line": 3,
+  "setting": "types.A.columns"
+ },
+ {
+  "name": "12-types.A.columns",
+  "text": "types:\n  A:\n    columns:\n      - x\n      - 2\n",
+  "line": 5,
+  "setting": "types.A.columns"
+ },
+ {
+  "name": "13-types.A.columns",
+  "text": "types:\n  A:\n    columns: [x, x]\n",
+  "line": 3,
+  "setting": "types.A.columns"
+ },
+ {
+  "name": "14-types.A.page",
+  "text": "types:\n  A:\n    page: {x: 1}\n",
+  "line": 3,
+  "setting": "types.A.page"
+ },
+ {
+  "name": "15-types.A.names",
+  "text": "types:\n  A:\n    names: [x]\n",
+  "line": 3,
+  "setting": "types.A.names"
+ },
+ {
+  "name": "16-types.A.names.x",
+  "text": "types:\n  A:\n    names:\n      x: 1\n",
+  "line": 4,
+  "setting": "types.A.names.x"
+ },
+ {
+  "name": "17-types",
+  "text": "types:\n  \"\": {}\n",
+  "line": 2,
+  "setting": "types"
+ },
+ {
+  "name": "18-export",
+  "text": "export: [A]\n",
+  "line": 1,
+  "setting": "export"
+ },
+ {
+  "name": "19-export.types",
+  "text": "export:\n  types: A\n",
+  "line": 2,
+  "setting": "export.types"
+ },
+ {
+  "name": "20-export.carries",
+  "text": "export:\n  carries: [A]\n",
+  "line": 2,
+  "setting": "export.carries"
+ },
+ {
+  "name": "21-export.types",
+  "text": "export:\n  types: [A, A]\n",
+  "line": 2,
+  "setting": "export.types"
+ },
+ {
+  "name": "22-view_file",
+  "text": "- search\n- text\n",
+  "line": 1,
+  "setting": "view file"
+ },
+ {
+  "name": "23-view_file",
+  "text": "just text\n",
+  "line": 1,
+  "setting": "view file"
+ }
+]

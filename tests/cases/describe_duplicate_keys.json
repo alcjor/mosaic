@@ -1,0 +1,22 @@
+[
+ {
+  "name": "00-edges",
+  "text": "edges:\n  e: {describe: a}\n  e: {describe: b}\n",
+  "line": 3
+ },
+ {
+  "name": "01-edges",
+  "text": "edges:\n  e:\n    describe: a\n    describe: b\n",
+  "line": 4
+ },
+ {
+  "name": "02-types",
+  "text": "types:\n  A:\n    describe: a\n    describe: b\n",
+  "line": 4
+ },
+ {
+  "name": "03-edges",
+  "text": "edges: {}\nedges: {}\n",
+  "line": 2
+ }
+]

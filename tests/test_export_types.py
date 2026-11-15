@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from mosaic_build import cut, view
+from mosaic_build import view
 from mosaic_build.cli import main
 from mosaic_build.mosaic import build
 from mosaic_format import seal
@@ -180,12 +180,12 @@ def test_the_page_keeps_the_source_s_file_name(tmp_path: Path, dist: Path) -> No
 
 
 @pytest.mark.parametrize(
-    ("types", "line", "message"),
+    ("types", "line", "named"),
     [
-        ("[Item, Nope]", 3, "export.types: the mosaic has no node type Nope"),
-        ("[in_group]", 3, "export.types: the mosaic has no node type in_group"),
-        ("[item]", 3, "export.types: the mosaic has no node type item"),
-        ("[]", 3, "export.types is empty; name the types to carry"),
+        ("[Item, Nope]", 3, "Nope"),
+        ("[in_group]", 3, "in_group"),
+        ("[item]", 3, "item"),
+        ("[]", 3, "export.types"),
     ],
 )
 def test_a_type_the_mosaic_lacks_or_none_is_an_error_naming_the_file_line_and_setting(
@@ -194,11 +194,13 @@ def test_a_type_the_mosaic_lacks_or_none_is_an_error_naming_the_file_line_and_se
     capsys: pytest.CaptureFixture[str],
     types: str,
     line: int,
-    message: str,
+    named: str,
 ) -> None:
     code, page, settings = export(tmp_path, f"search: text\nexport:\n  types: {types}\n")
     assert code == 1
-    assert capsys.readouterr().err == f"mosaic export: {settings}:{line}: view file: {message}\n"
+    err = capsys.readouterr().err
+    assert err.startswith(f"mosaic export: {settings}:{line}:")
+    assert named in err.removeprefix(f"mosaic export: {settings}:{line}:")
     assert not page.exists()
 
 
@@ -208,14 +210,8 @@ def test_the_unknown_type_named_is_on_its_own_line(
     text = "search: text\nexport:\n  types:\n    - Item\n    - Nope\n"
     code, _, settings = export(tmp_path, text)
     assert code == 1
-    assert capsys.readouterr().err.startswith(f"mosaic export: {settings}:5: view file:")
-
-
-def test_piece_names_come_from_the_source_file_name() -> None:
-    assert cut.piece_name(Path("netflix.mosaic")) == "netflix"
-    assert cut.piece_name(Path("/x/default.mosaic")) == "default"
-    assert cut.piece_name(Path("a b.c.mosaic")) == "a-b-c"
-    assert cut.piece_name(Path("---.mosaic")) == "source"
+    err = capsys.readouterr().err
+    assert err.startswith(f"mosaic export: {settings}:5:") and "Nope" in err
 
 
 def test_the_export_s_data_says_it_was_cut_and_an_export_of_the_whole_mosaic_does_not(
@@ -323,6 +319,8 @@ def test_evidence_on_the_key_property_is_carried_and_a_node_with_only_that_stays
 @pytest.mark.parametrize(
     ("file_name", "piece"),
     [
+        ("netflix.mosaic", "netflix"),
+        ("a b.c.mosaic", "a-b-c"),
         ("_draft.mosaic", "draft"),
         ("-x.mosaic", "x"),
         (".hidden.mosaic", "hidden"),

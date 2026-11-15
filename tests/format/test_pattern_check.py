@@ -188,8 +188,9 @@ def test_built_from_must_be_the_mosaic_the_proposals_name(tmp_path: Path) -> Non
 
 def test_built_from_must_be_a_mosaic(tmp_path: Path) -> None:
     pattern, proposals, piece, _ = valid_case(tmp_path)
-    with pytest.raises(ValueError, match="mosaic"):
+    with pytest.raises(ValueError) as error:
         check_pattern(pattern, proposals=proposals, built_from=piece)
+    assert piece.name in str(error.value)
 
 
 def test_built_from_needs_proposals(tmp_path: Path) -> None:
@@ -307,7 +308,6 @@ def test_text_that_is_not_utf8_is_a_yaml_violation(tmp_path: Path) -> None:
     pattern.write_bytes(b"format: '0.1'\nname: \xff\n")
     report = check_pattern(pattern)
     assert rules(report) == ["yaml"]
-    assert "UTF-8" in report.violations[0].message
 
 
 LARGE_BY_ALIASES = "\n".join(

@@ -1,0 +1,32 @@
+[
+ {
+  "name": "00-search",
+  "text": "search: fuzzy\n",
+  "line": 1,
+  "setting": "search"
+ },
+ {
+  "name": "01-theme",
+  "text": "# c\n\n\ntheme: sepia\n",
+  "line": 4,
+  "setting": "theme"
+ },
+ {
+  "name": "02-colour",
+  "text": "types:\n  A:\n    colour: red\n",
+  "line": 3,
+  "setting": "colour"
+ },
+ {
+  "name": "03-colour",
+  "text": "colour: red\n",
+  "line": 1,
+  "setting": "colour"
+ },
+ {
+  "name": "04-A",
+  "text": "types:\n  A: {}\n  A: {}\n",
+  "line": 3,
+  "setting": "A"
+ }
+]

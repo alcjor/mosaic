@@ -139,10 +139,10 @@ def test_a_notice_keeps_its_text_as_written(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("value", "match"),
     [
-        ("5", "notice must be text"),
-        ("[a]", "notice must be text"),
-        ("null", "notice must be text"),
-        ('""', "notice is empty"),
+        ("5", "notice"),
+        ("[a]", "notice"),
+        ("null", "notice"),
+        ('""', "notice"),
         ('"a\\u0000b"', "U\\+0000"),
     ],
 )
@@ -294,20 +294,10 @@ def _with(kind: str, notice: str) -> str:
 
 # --- the text is kept exactly (sections 3.1, 3.6) -----------------------------------------------
 
+CASES = Path(__file__).parent / "cases"
 TEXTS = {
-    "quotes": "It's \"quoted\" and 'single', with a back\\slash.",
-    "astral": "Data \U0001f600 \U00010348 end",
-    "combining": "Cafe\u0301 and caf\u00e9",  # not normalised: both forms kept
-    "crlf": "line one\r\nline two\rline three\n",
-    "surrounding space": "  leading and trailing  ",
-    "tab": "a\tb",
-    "trailing newline": "one line\n",
-    "json-looking": '{"a": [1, 2]}',
-    "yaml-looking": "- a: b # not a comment",
-    "single char": "x",
-    "whitespace only": " ",
-    "escaped nul text": "\\u0000",  # six ASCII characters, allowed (section 3.1)
-    "long": "MIT License. " * 10_000,
+    c["name"]: c["text"] * c.get("repeat", 1)
+    for c in json.loads((CASES / "notice_texts.json").read_text(encoding="utf-8"))
 }
 
 

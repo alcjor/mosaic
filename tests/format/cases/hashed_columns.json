@@ -1,0 +1,394 @@
+[
+  {
+    "name": "header.format_version",
+    "table": "header",
+    "column": "format_version",
+    "where": "one = 1",
+    "value": "'0.2'"
+  },
+  {
+    "name": "header.kind",
+    "table": "header",
+    "column": "kind",
+    "where": "one = 1",
+    "value": "'mosaic'"
+  },
+  {
+    "name": "source.sid",
+    "table": "source",
+    "column": "sid",
+    "where": "sid = 1",
+    "value": "7"
+  },
+  {
+    "name": "source.id",
+    "table": "source",
+    "column": "id",
+    "where": "sid = 1",
+    "value": "'src:b'"
+  },
+  {
+    "name": "source.kind",
+    "table": "source",
+    "column": "kind",
+    "where": "sid = 1",
+    "value": "'database'"
+  },
+  {
+    "name": "source.hash",
+    "table": "source",
+    "column": "hash",
+    "where": "sid = 1",
+    "value": "'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'"
+  },
+  {
+    "name": "source.notice",
+    "table": "source",
+    "column": "notice",
+    "where": "sid = 1",
+    "value": "NULL"
+  },
+  {
+    "name": "type.name",
+    "table": "type",
+    "column": "name",
+    "where": "name = 'Group'",
+    "value": "'Grp'"
+  },
+  {
+    "name": "type.kind",
+    "table": "type",
+    "column": "kind",
+    "where": "name = 'Group'",
+    "value": "'edge'"
+  },
+  {
+    "name": "type.description",
+    "table": "type",
+    "column": "description",
+    "where": "name = 'Group'",
+    "value": "'Groups'"
+  },
+  {
+    "name": "type.key_prop",
+    "table": "type",
+    "column": "key_prop",
+    "where": "name = 'Group'",
+    "value": "'gid'"
+  },
+  {
+    "name": "type.from_type",
+    "table": "type",
+    "column": "from_type",
+    "where": "name = 'in_group'",
+    "value": "'Group'"
+  },
+  {
+    "name": "type.to_type",
+    "table": "type",
+    "column": "to_type",
+    "where": "name = 'in_group'",
+    "value": "'Thing'"
+  },
+  {
+    "name": "type.props",
+    "table": "type",
+    "column": "props",
+    "where": "name = 'Group'",
+    "value": "'{\"x\":\"text\"}'"
+  },
+  {
+    "name": "node.nid",
+    "table": "node",
+    "column": "nid",
+    "where": "nid = 1",
+    "value": "9"
+  },
+  {
+    "name": "node.id",
+    "table": "node",
+    "column": "id",
+    "where": "nid = 1",
+    "value": "'Group:g2'"
+  },
+  {
+    "name": "node.type",
+    "table": "node",
+    "column": "type",
+    "where": "nid = 1",
+    "value": "'Thing'"
+  },
+  {
+    "name": "node.key",
+    "table": "node",
+    "column": "key",
+    "where": "nid = 1",
+    "value": "'g2'"
+  },
+  {
+    "name": "node.label",
+    "table": "node",
+    "column": "label",
+    "where": "nid = 1",
+    "value": "'G One'"
+  },
+  {
+    "name": "node.summary",
+    "table": "node",
+    "column": "summary",
+    "where": "nid = 1",
+    "value": "'about'"
+  },
+  {
+    "name": "node.props",
+    "table": "node",
+    "column": "props",
+    "where": "nid = 1",
+    "value": "'{}'"
+  },
+  {
+    "name": "edge.eid",
+    "table": "edge",
+    "column": "eid",
+    "where": "eid = 1",
+    "value": "5"
+  },
+  {
+    "name": "edge.type",
+    "table": "edge",
+    "column": "type",
+    "where": "eid = 1",
+    "value": "'other'"
+  },
+  {
+    "name": "edge.src",
+    "table": "edge",
+    "column": "src",
+    "where": "eid = 1",
+    "value": "1"
+  },
+  {
+    "name": "edge.dst",
+    "table": "edge",
+    "column": "dst",
+    "where": "eid = 1",
+    "value": "2"
+  },
+  {
+    "name": "edge.qualifier",
+    "table": "edge",
+    "column": "qualifier",
+    "where": "eid = 1",
+    "value": "'q'"
+  },
+  {
+    "name": "edge.props",
+    "table": "edge",
+    "column": "props",
+    "where": "eid = 1",
+    "value": "'{}'"
+  },
+  {
+    "name": "alias.text",
+    "table": "alias",
+    "column": "text",
+    "where": "text = 'zeta'",
+    "value": "'Zeta'"
+  },
+  {
+    "name": "alias.nid",
+    "table": "alias",
+    "column": "nid",
+    "where": "text = 'zeta'",
+    "value": "2"
+  },
+  {
+    "name": "alias.origin",
+    "table": "alias",
+    "column": "origin",
+    "where": "text = 'zeta'",
+    "value": "'source'"
+  },
+  {
+    "name": "evidence.evid",
+    "table": "evidence",
+    "column": "evid",
+    "where": "evid = 3",
+    "value": "4"
+  },
+  {
+    "name": "evidence.nid",
+    "table": "evidence",
+    "column": "nid",
+    "where": "evid = 1",
+    "value": "2"
+  },
+  {
+    "name": "evidence.eid",
+    "table": "evidence",
+    "column": "eid",
+    "where": "evid = 2",
+    "value": "1"
+  },
+  {
+    "name": "evidence.prop",
+    "table": "evidence",
+    "column": "prop",
+    "where": "evid = 1",
+    "value": "'label'"
+  },
+  {
+    "name": "evidence.sid",
+    "table": "evidence",
+    "column": "sid",
+    "where": "evid = 1",
+    "value": "2"
+  },
+  {
+    "name": "evidence.locator",
+    "table": "evidence",
+    "column": "locator",
+    "where": "evid = 1",
+    "value": "'file=a.csv;row=9'"
+  },
+  {
+    "name": "evidence.method",
+    "table": "evidence",
+    "column": "method",
+    "where": "evid = 1",
+    "value": "'inferred'"
+  },
+  {
+    "name": "evidence.producer",
+    "table": "evidence",
+    "column": "producer",
+    "where": "evid = 1",
+    "value": "'golden/2'"
+  },
+  {
+    "name": "evidence.confidence",
+    "table": "evidence",
+    "column": "confidence",
+    "where": "evid = 3",
+    "value": "0.81"
+  },
+  {
+    "name": "evidence.via",
+    "table": "evidence",
+    "column": "via",
+    "where": "evid = 1",
+    "value": "'[\"0000000000000000000000000000000000000000000000000000000000000000\"]'"
+  },
+  {
+    "name": "snippet.evid",
+    "table": "snippet",
+    "column": "evid",
+    "where": "evid = 2",
+    "value": "3"
+  },
+  {
+    "name": "snippet.text",
+    "table": "snippet",
+    "column": "text",
+    "where": "evid = 1",
+    "value": "'g1,G One'"
+  },
+  {
+    "name": "mention.mid",
+    "table": "mention",
+    "column": "mid",
+    "where": "mid = 1",
+    "value": "2"
+  },
+  {
+    "name": "mention.text",
+    "table": "mention",
+    "column": "text",
+    "where": "mid = 1",
+    "value": "'G1'"
+  },
+  {
+    "name": "mention.locator",
+    "table": "mention",
+    "column": "locator",
+    "where": "mid = 1",
+    "value": "'row=2'"
+  },
+  {
+    "name": "mention.nid",
+    "table": "mention",
+    "column": "nid",
+    "where": "mid = 1",
+    "value": "1"
+  },
+  {
+    "name": "mention.role",
+    "table": "mention",
+    "column": "role",
+    "where": "mid = 1",
+    "value": "'Thing.other'"
+  },
+  {
+    "name": "mention.kind",
+    "table": "mention",
+    "column": "kind",
+    "where": "mid = 1",
+    "value": "'phrase'"
+  },
+  {
+    "name": "source_text.sid",
+    "table": "source_text",
+    "column": "sid",
+    "where": "sid = 1",
+    "value": "2"
+  },
+  {
+    "name": "source_text.text",
+    "table": "source_text",
+    "column": "text",
+    "where": "sid = 1",
+    "value": "'id,name'"
+  },
+  {
+    "name": "external_ref.xid",
+    "table": "external_ref",
+    "column": "xid",
+    "where": "xid = 1",
+    "value": "2"
+  },
+  {
+    "name": "external_ref.nid",
+    "table": "external_ref",
+    "column": "nid",
+    "where": "xid = 1",
+    "value": "1"
+  },
+  {
+    "name": "external_ref.system",
+    "table": "external_ref",
+    "column": "system",
+    "where": "xid = 1",
+    "value": "'other'"
+  },
+  {
+    "name": "external_ref.kind",
+    "table": "external_ref",
+    "column": "kind",
+    "where": "xid = 1",
+    "value": "'timeseries'"
+  },
+  {
+    "name": "external_ref.locator",
+    "table": "external_ref",
+    "column": "locator",
+    "where": "xid = 1",
+    "value": "'{\"doc\":\"t2\"}'"
+  },
+  {
+    "name": "external_ref.sid",
+    "table": "external_ref",
+    "column": "sid",
+    "where": "xid = 1",
+    "value": "2"
+  }
+]

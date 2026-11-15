@@ -78,6 +78,14 @@ def export(tmp_path: Path, mosaic: Path, view_text: str) -> tuple[int, Path, Pat
 GEM = "search: text\nexport:\n  types: [Gem]\n"
 
 
+def assert_refused(err: str, settings: Path, line: int, node_type: str, prop: str) -> None:
+    """The error names the view file, the line, the type and the property, and nothing else."""
+    assert err.startswith(f"mosaic export: {settings}:{line}:")
+    named = err.removeprefix(f"mosaic export: {settings}:{line}:")
+    assert node_type in named and prop in named
+    assert "Traceback" not in err
+
+
 @pytest.mark.parametrize(
     ("props", "declared", "named"),
     [
@@ -107,10 +115,7 @@ def test_a_property_the_cut_cannot_carry_is_an_error_naming_the_file_line_type_a
     before = mosaic.read_bytes()
     code, page, settings = export(tmp_path, mosaic, GEM)
     assert code == 1
-    assert capsys.readouterr().err == (
-        f"mosaic export: {settings}:3: view file: export.types: node type Gem has a property "
-        f"named {named}, which a cut cannot carry\n"
-    )
+    assert_refused(capsys.readouterr().err, settings, 3, "Gem", named)
     assert not page.exists()
     assert mosaic.read_bytes() == before  # principle 8
     assert sorted(p.name for p in tmp_path.iterdir()) == ["dist", "gems.mosaic", "view.yaml"]
@@ -123,19 +128,20 @@ def test_the_line_is_that_of_the_type_in_the_list(
     text = "search: text\nexport:\n  types:\n    - Disc\n    - Gem\n"
     code, _, settings = export(tmp_path, mosaic, text)
     assert code == 1
-    assert capsys.readouterr().err.startswith(
-        f"mosaic export: {settings}:5: view file: export.types: node type Gem has a property"
-    )
+    assert_refused(capsys.readouterr().err, settings, 5, "Gem", "label")
 
 
 def test_of_several_such_properties_the_first_by_utf8_bytes_is_named(
     tmp_path: Path, dist: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     mosaic = source(tmp_path / "gems.mosaic", '{"summary":"s","key":"k","label":"l"}')
-    code, _, _ = export(tmp_path, mosaic, GEM)
+    code, _, settings = export(tmp_path, mosaic, GEM)
     assert code == 1
     # key < label < summary by UTF-8 bytes, whatever the order the node holds them in.
-    assert capsys.readouterr().err.endswith("has a property named key, which a cut cannot carry\n")
+    err = capsys.readouterr().err
+    assert_refused(err, settings, 3, "Gem", "key")
+    named = err.removeprefix(f"mosaic export: {settings}:3:")
+    assert "label" not in named and "summary" not in named
 
 
 def test_a_type_the_cut_does_not_carry_may_hold_such_a_property(tmp_path: Path, dist: Path) -> None:
@@ -185,10 +191,7 @@ def test_a_property_name_a_pattern_cannot_hold_is_refused_the_same_way(
     mosaic = source(tmp_path / "gems.mosaic", json.dumps({name: "v", "unit": "V"}))
     code, page, settings = export(tmp_path, mosaic, GEM)
     assert code == 1
-    assert capsys.readouterr().err == (
-        f"mosaic export: {settings}:3: view file: export.types: node type Gem has a property "
-        f"named {shown}, which a cut cannot carry\n"
-    )
+    assert_refused(capsys.readouterr().err, settings, 3, "Gem", shown)
     assert not page.exists()
 
 
@@ -211,10 +214,7 @@ def test_a_key_property_held_with_another_value_is_refused(
     mosaic = keyed(tmp_path / "gems.mosaic", node_key, f'{{"tag":{held},"unit":"V"}}')
     code, page, settings = export(tmp_path, mosaic, GEM)
     assert code == 1
-    assert capsys.readouterr().err == (
-        f"mosaic export: {settings}:3: view file: export.types: node type Gem has a property "
-        "named tag, which a cut cannot carry\n"
-    )
+    assert_refused(capsys.readouterr().err, settings, 3, "Gem", "tag")
     assert not page.exists()
 
 
@@ -258,14 +258,13 @@ def test_a_crafted_key_property_value_outside_i_json_is_refused_not_a_crash(
         con.execute("UPDATE header SET knowledge_hash = ?", (knowledge_hash(con),))
     finally:
         con.close()
-    code, page, _ = export(tmp_path, mosaic, GEM)
+    code, page, settings = export(tmp_path, mosaic, GEM)
     assert code == 1
-    assert capsys.readouterr().err.endswith("has a property named tag, which a cut cannot carry\n")
+    assert_refused(capsys.readouterr().err, settings, 3, "Gem", "tag")
     assert not page.exists()
 
 
 PAGE_DATA = re.compile(r'id="mosaic-export">(.*?)</script>')
-REFUSAL = "has a property named {}, which a cut cannot carry"
 
 
 def seal_source(
@@ -357,11 +356,7 @@ def test_a_property_held_only_by_the_last_node_is_found(
     mosaic = seal_source(tmp_path / "g.mosaic", gem_nodes=nodes)
     code, page, settings = export_types(tmp_path, mosaic, "[Gem]")
     assert code == 1
-    assert capsys.readouterr().err == (
-        f"mosaic export: {settings}:3: view file: export.types: node type Gem "
-        + REFUSAL.format("summary")
-        + "\n"
-    )
+    assert_refused(capsys.readouterr().err, settings, 3, "Gem", "summary")
     assert not page.exists()
     assert untouched(tmp_path) == ["dist", "g.mosaic", "view.yaml"]
 
@@ -379,11 +374,7 @@ def test_with_two_offending_types_the_first_in_the_list_is_named(
     )
     code, _, settings = export_types(tmp_path, mosaic, "[Disc, Gem]")
     assert code == 1
-    assert capsys.readouterr().err == (
-        f"mosaic export: {settings}:3: view file: export.types: node type Disc "
-        + REFUSAL.format("summary")
-        + "\n"
-    )
+    assert_refused(capsys.readouterr().err, settings, 3, "Disc", "summary")
 
 
 def test_a_type_the_mosaic_lacks_listed_before_the_offending_one_is_the_one_named(

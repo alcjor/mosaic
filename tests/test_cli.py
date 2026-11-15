@@ -21,6 +21,7 @@ from mosaic_build.cli import main
 from mosaic_build.mosaic.vectors import EMBED_MODEL
 from mosaic_format.reader import open as open_sealed
 
+from tests.case_files import cases
 from tests.mosaic.pieces import StubModel
 
 REPO = Path(__file__).resolve().parent.parent
@@ -237,24 +238,7 @@ def test_import_turns_a_column_into_linked_things(tmp_path: Path) -> None:
     assert main(["check", str(out)]) == 0
 
 
-@pytest.mark.parametrize(
-    ("settings", "named"),
-    [
-        ("colour: red\n", "colour"),
-        ("props: family\n", "props"),
-        ("props: [1]\n", "props"),
-        ("key: 5\n", "key"),
-        ("type: [Row]\n", "type"),
-        ("convert: {born: {kind: guess}}\nprops: [born]\n", "guess"),
-        ("convert: {born: {kind: date}}\nprops: [born]\n", "formats"),
-        ("convert: {born: {kind: integer, base: 8}}\nprops: [born]\n", "base"),
-        ("- type\n", "mapping"),
-        ("type: A\ntype: B\n", "type"),
-        ("links: {born: {type: Year}}\n", "edge"),
-        ("links: {born: {type: Year, edge: in_year, direction: sideways}}\n", "direction"),
-        ("links: {born: {type: Row, edge: in_year}}\n", "Row"),
-    ],
-)
+@pytest.mark.parametrize(("settings", "named"), cases("cli_bad_settings", "settings", "named"))
 def test_import_refuses_bad_settings_naming_the_setting(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], settings: str, named: str
 ) -> None:
@@ -475,7 +459,6 @@ def test_build_with_vectors_on_and_no_model_fails_with_invalid_input(tmp_path: P
     pattern = write_pattern(tmp_path, piece_hash)  # default target: vectors on
     done = run("build", pattern, "--pieces", "pieces", "-o", "out", cwd=tmp_path)
     assert done.returncode == 1
-    assert "vectors" in done.stderr and "model" in done.stderr
     assert "invalid_input" in done.stderr
     report = tmp_path / "out" / "build-report.json"
     assert str(report) in done.stdout

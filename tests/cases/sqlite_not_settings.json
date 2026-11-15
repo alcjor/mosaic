@@ -1,0 +1,98 @@
+[
+ {
+  "name": "00-empty",
+  "content": ""
+ },
+ {
+  "name": "01-blank-lines",
+  "content": "\n\n"
+ },
+ {
+  "name": "02-comment-only",
+  "content": "# only a comment\n"
+ },
+ {
+  "name": "03-document-marker-only",
+  "content": "---\n"
+ },
+ {
+  "name": "04-scalar",
+  "content": "just words\n"
+ },
+ {
+  "name": "05-number",
+  "content": "42\n"
+ },
+ {
+  "name": "06-list",
+  "content": "- Writer\n- Volume\n"
+ },
+ {
+  "name": "07-tables-without-value",
+  "content": "tables:\n"
+ },
+ {
+  "name": "08-tables-null",
+  "content": "tables: ~\n"
+ },
+ {
+  "name": "09-tables-empty",
+  "content": "tables: {}\n"
+ },
+ {
+  "name": "10-tables-empty-list",
+  "content": "tables: []\n"
+ },
+ {
+  "name": "11-tables-scalar",
+  "content": "tables: Writer\n"
+ },
+ {
+  "name": "12-tables-list",
+  "content": "tables:\n  - Writer\n"
+ },
+ {
+  "name": "13-table-is-a-number",
+  "content": "tables: {Writer: 5}\n"
+ },
+ {
+  "name": "14-table-is-a-list",
+  "content": "tables: {Writer: [Name]}\n"
+ },
+ {
+  "name": "15-table-name-is-a-number",
+  "content": "tables: {1: {}}\n"
+ },
+ {
+  "name": "16-unknown-top-level-key",
+  "content": "tables: {Writer: {}}\ncolour: red\n"
+ },
+ {
+  "name": "17-no-tables-key",
+  "content": "{Writer: {}}\n"
+ },
+ {
+  "name": "18-two-documents",
+  "content": "tables:\n  Writer: {}\n---\ntables:\n  Volume: {}\n"
+ },
+ {
+  "name": "19-unclosed-flow",
+  "content": "tables: {Writer: {props: [Name,\n"
+ },
+ {
+  "name": "20-tab-indent",
+  "content": "tables:\n\tWriter: {}\n"
+ },
+ {
+  "name": "21-nul-byte",
+  "content": "tables: {Writer: {}}\u0000\n"
+ },
+ {
+  "name": "22-not-utf8",
+  "content": "tables: {Writer: {label: \u00e9}}\n"
+ },
+ {
+  "name": "23-utf-16-looking",
+  "content": "\u00ff\u00fe\u0000\u0000"
+ }
+]

@@ -276,11 +276,11 @@ No dates: each milestone starts when the one before passes. M0 to M4 are built: 
 - **Slow tests in CI (done):** the slow suite runs on `main`, not in every working session.
 - **Lighter checks on open (done):** opening a file checks its structure only (`verify` asks for the hashes too, in the kit and in Python; an open file has `verify()`). `mosaic view` opens on structure and the page shows "checking…", then "verified" or "not verified" with a warning, and keeps showing the file; `mosaic export` still checks before it writes. The hashes are checked by `mosaic build` and `mosaic check`, in the viewer in the background with a "verified" or "not verified" mark, and by an agent host once per file.
 - **Fewer rules of our own (done):** a standard YAML loader with a duplicate-key check replaces the strict reader (done: `ruamel.yaml`'s safe loader, plus two rules of ours, text keys and JSON values, so a date is quoted; the depth limit, the exact core-schema scalars and `<<` as a plain key are gone); Python 3.12 is the lowest supported version (done: the fast tests also run on 3.12 in CI); a maintained library is preferred to about 100 lines of our own, except in the kit, which ships inside every export.
-- **Tests as data:** rule tests become case files where they differ only by input, and tests of test helpers go.
-- **Platforms:** Linux and macOS, with UTF-8 input. Builds are byte-identical on those; other platforms and encodings are not promised.
-- **Errors:** a command's exit code and error name are the contract; the wording of a message is free.
-- **Spec after code:** a feature is built first and its spec section is written once it has settled.
-- **Export:** the single-file export is checked by a few end-to-end tests, not by repeating every viewer test.
+- **Tests as data (done):** rule tests become case files where they differ only by input (`cases/` beside the tests), and tests of test helpers go.
+- **Platforms (done):** Linux and macOS, with UTF-8 input. Builds are byte-identical on those; other platforms and encodings are not promised.
+- **Errors (done):** a command's exit code and error name are the contract; the wording of a message is free, and the tests check only the code, the name and what the error names (a file, a line, a key). The Python reader's refusals have no rule name yet, so its tests still tell them apart by their words; giving them the kit's rule names is the fix.
+- **Spec after code (done):** a feature is built first and its spec section is written once it has settled.
+- **Export (done):** the single-file export is checked by a few end-to-end tests in a browser (it opens offline, refuses a changed mosaic, a cut says where it comes from, a semantic cut searches), not by repeating every viewer test.
 
 **Under consideration, to decide with M7.** Today one source needs three files: the import settings, the pattern and the view. Each answers its own question (how to read this source; how the sources fit together and what ships; how it should look), so the three stay. These changes would make them lighter to write:
 
@@ -294,7 +294,7 @@ No dates: each milestone starts when the one before passes. M0 to M4 are built: 
 
 **Decided: a view is never part of a mosaic.** A mosaic is data that any tool can read through the kit; most of those tools have no viewer. The view file belongs to the viewer and stays outside the file; the single-file HTML export carries the view it was made with.
 
-**Agreed: the kit and the format are the product.** The viewer is a reference: it uses only the kit's public interface, and a test enforces it. Between the two sits a small reference layer of elements (card, search, table, graph as web components) that any page can use; it is an example, not the product. Two embed examples run in CI from M5: a plain web page of about 50 lines and a Node script that answer a question from a mosaic without the viewer. A flight map on the OpenFlights mosaic follows with M7.
+**Agreed: the kit and the format are the product.** The viewer is a reference: it uses only the kit's public interface, and a test enforces it. Between the two sits a small reference layer of elements (card, search, table, graph as web components) that any page can use; it is an example, not the product. Two embed examples run in CI with the slow tests (`examples/embed`, built): a plain web page of about 50 lines and a Node script that answer a question from a mosaic without the viewer. A flight map on the OpenFlights mosaic follows with M7.
 
 **Agreed: semantic search is opt-in.** An export carries text search by default; vectors are added on request. The M9 benchmark decides whether that default changes. No re-ranker for 0.1.
 

@@ -1,0 +1,194 @@
+[
+ {
+  "name": "00-'in'",
+  "item": "in"
+ },
+ {
+  "name": "01-'out'",
+  "item": "out"
+ },
+ {
+  "name": "02-'in in'",
+  "item": "in in"
+ },
+ {
+  "name": "03-'in out'",
+  "item": "in out"
+ },
+ {
+  "name": "04-'out in'",
+  "item": "out in"
+ },
+ {
+  "name": "05-'out out'",
+  "item": "out out"
+ },
+ {
+  "name": "06-'in out in'",
+  "item": "in out in"
+ },
+ {
+  "name": "07-'in  out'",
+  "item": "in  out"
+ },
+ {
+  "name": "08-'a\\tb'",
+  "item": "a\tb"
+ },
+ {
+  "name": "09-'a\\tin'",
+  "item": "a\tin"
+ },
+ {
+  "name": "10-'a\\nb'",
+  "item": "a\nb"
+ },
+ {
+  "name": "11-'a in\\n'",
+  "item": "a in\n"
+ },
+ {
+  "name": "12-'a in\\r'",
+  "item": "a in\r"
+ },
+ {
+  "name": "13-'a\\n'",
+  "item": "a\n"
+ },
+ {
+  "name": "14-' a'",
+  "item": " a"
+ },
+ {
+  "name": "15-'a '",
+  "item": "a "
+ },
+ {
+  "name": "16-'a in '",
+  "item": "a in "
+ },
+ {
+  "name": "17-'a\\xa0in'",
+  "item": "a\u00a0in"
+ },
+ {
+  "name": "18-'a\\u3000in'",
+  "item": "a\u3000in"
+ },
+ {
+  "name": "19-'a\\u2003in'",
+  "item": "a\u2003in"
+ },
+ {
+  "name": "20-'a\\u2028in'",
+  "item": "a\u2028in"
+ },
+ {
+  "name": "21-'a\\x85in'",
+  "item": "a\u0085in"
+ },
+ {
+  "name": "22-'a\\u200bin'",
+  "item": "a\u200bin"
+ },
+ {
+  "name": "23-'a\\u200b'",
+  "item": "a\u200b"
+ },
+ {
+  "name": "24-'\\u200b'",
+  "item": "\u200b"
+ },
+ {
+  "name": "25-'a\\x00b'",
+  "item": "a\u0000b"
+ },
+ {
+  "name": "26-'a\\x00 in'",
+  "item": "a\u0000 in"
+ },
+ {
+  "name": "27-'a/b'",
+  "item": "a/b"
+ },
+ {
+  "name": "28-'a.b'",
+  "item": "a.b"
+ },
+ {
+  "name": "29-'a,b'",
+  "item": "a,b"
+ },
+ {
+  "name": "30-'a:b'",
+  "item": "a:b"
+ },
+ {
+  "name": "31-'a#b'",
+  "item": "a#b"
+ },
+ {
+  "name": "32-\"a'b\"",
+  "item": "a'b"
+ },
+ {
+  "name": "33-'a\"b'",
+  "item": "a\"b"
+ },
+ {
+  "name": "34-'[a]'",
+  "item": "[a]"
+ },
+ {
+  "name": "35-'{a}'",
+  "item": "{a}"
+ },
+ {
+  "name": "36-'*a'",
+  "item": "*a"
+ },
+ {
+  "name": "37-'&a'",
+  "item": "&a"
+ },
+ {
+  "name": "38-'!a'",
+  "item": "!a"
+ },
+ {
+  "name": "39-'- a'",
+  "item": "- a"
+ },
+ {
+  "name": "40-'IN'",
+  "item": "IN"
+ },
+ {
+  "name": "41-'a IN'",
+  "item": "a IN"
+ },
+ {
+  "name": "42-'a Out'",
+  "item": "a Out"
+ },
+ {
+  "name": "43-'a inn'",
+  "item": "a inn"
+ },
+ {
+  "name": "44-'a in out'",
+  "item": "a in out"
+ },
+ {
+  "name": "45-'\u65e5\u672c in'",
+  "item": "\u65e5\u672c in"
+ },
+ {
+  "name": "46-'\ud83d\ude00'",
+  "item": "\ud83d\ude00"
+ },
+ {
+  "name": "47-'\ud83d\ude00 out'",
+  "item": "\ud83d\ude00 out"
+ }
+]

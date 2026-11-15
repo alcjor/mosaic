@@ -1,0 +1,98 @@
+[
+ {
+  "name": "00-cards",
+  "text": "cards: [Title]\n",
+  "line": 1,
+  "setting": "cards"
+ },
+ {
+  "name": "01-cards",
+  "text": "cards:\n  \"\": {}\n",
+  "line": 2,
+  "setting": "cards"
+ },
+ {
+  "name": "02-cards.Title",
+  "text": "cards:\n  Title: yes\n",
+  "line": 2,
+  "setting": "cards.Title"
+ },
+ {
+  "name": "03-cards.Title",
+  "text": "cards:\n  Title:\n",
+  "line": 2,
+  "setting": "cards.Title"
+ },
+ {
+  "name": "04-cards.Title.colour",
+  "text": "cards:\n  Title:\n    colour: red\n",
+  "line": 3,
+  "setting": "cards.Title.colour"
+ },
+ {
+  "name": "05-cards.Title.show",
+  "text": "cards:\n  Title:\n    show: rating\n",
+  "line": 3,
+  "setting": "cards.Title.show"
+ },
+ {
+  "name": "06-cards.Title.show",
+  "text": "cards:\n  Title:\n    show: [rating, rating]\n",
+  "line": 3,
+  "setting": "cards.Title.show"
+ },
+ {
+  "name": "07-cards.Title.show",
+  "text": "cards:\n  Title:\n    show:\n      - rating\n      - ''\n",
+  "line": 5,
+  "setting": "cards.Title.show"
+ },
+ {
+  "name": "08-cards.Title.links",
+  "text": "cards:\n  Title:\n    links: {directed_by: out}\n",
+  "line": 3,
+  "setting": "cards.Title.links"
+ },
+ {
+  "name": "09-cards.Title.links",
+  "text": "cards:\n  Title:\n    links: [directed_by sideways]\n",
+  "line": 3,
+  "setting": "cards.Title.links"
+ },
+ {
+  "name": "10-cards.Title.links",
+  "text": "cards:\n  Title:\n    links: [directed_by out in]\n",
+  "line": 3,
+  "setting": "cards.Title.links"
+ },
+ {
+  "name": "11-cards.Title.links",
+  "text": "cards:\n  Title:\n    links: [' directed_by']\n",
+  "line": 3,
+  "setting": "cards.Title.links"
+ },
+ {
+  "name": "12-cards.Title.links",
+  "text": "cards:\n  Title:\n    links: [directed_by  out]\n",
+  "line": 3,
+  "setting": "cards.Title.links"
+ },
+ {
+  "name": "13-cards.Title.counts",
+  "text": "cards:\n  Title:\n    counts: [features, features]\n",
+  "line": 3,
+  "setting": "cards.Title.counts"
+ },
+ {
+  "name": "14-cards.Title.counts",
+  "text": "cards:\n  Title:\n    counts: [features in, features in]\n",
+  "line": 3,
+  "setting": "cards.Title.counts"
+ },
+ {
+  "name": "15-cards.Title.counts",
+  "text": "cards:\n  Title:\n    counts: [3]\n",
+  "line": 3,
+  "setting": "cards.Title.counts"
+ }
+]

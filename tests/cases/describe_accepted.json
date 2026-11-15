@@ -1,0 +1,30 @@
+[
+ {
+  "name": "00-edges",
+  "text": "edges: {}\n"
+ },
+ {
+  "name": "01-edges",
+  "text": "edges:\n  e: {}\n"
+ },
+ {
+  "name": "02-edges",
+  "text": "edges:\n  e: {describe: ' '}\n"
+ },
+ {
+  "name": "03-edges",
+  "text": "edges:\n  e: {describe: '0'}\n"
+ },
+ {
+  "name": "04-types",
+  "text": "types:\n  A: {describe: ' '}\n"
+ },
+ {
+  "name": "05-types",
+  "text": "types: {}\nedges: {}\n"
+ },
+ {
+  "name": "06-edges_e_describe_a_f",
+  "text": "edges: {e: {describe: a}, f: {}}\n"
+ }
+]

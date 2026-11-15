@@ -1,0 +1,218 @@
+[
+  {
+    "name": "accept find",
+    "valid": true,
+    "answer": {
+      "tool": "find",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "results": [
+          {
+            "id": "Sculpture:T-1889",
+            "type": "Sculpture",
+            "label": "Seated Figure",
+            "match": "exact"
+          }
+        ],
+        "total": 1
+      }
+    }
+  },
+  {
+    "name": "accept get",
+    "valid": true,
+    "answer": {
+      "tool": "get",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "id": "Sculpture:T-1889",
+        "type": "Sculpture",
+        "label": "Seated Figure",
+        "summary": null,
+        "props": {
+          "unit": "°C"
+        },
+        "aliases": [
+          "T_1889"
+        ],
+        "external_refs": [],
+        "links": [
+          {
+            "edge": "reads",
+            "direction": "in",
+            "count": 3
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "accept neighbors",
+    "valid": true,
+    "answer": {
+      "tool": "neighbors",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "id": "Sculpture:T-1889",
+        "edges": [
+          {
+            "edge": "reads",
+            "direction": "in",
+            "id": "Step:GUIDE-19C/2",
+            "label": "Switch lamp A on"
+          }
+        ],
+        "total": 3
+      }
+    }
+  },
+  {
+    "name": "accept path",
+    "valid": true,
+    "answer": {
+      "tool": "path",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "from": "Step:A",
+        "to": "Sculpture:B",
+        "found": false,
+        "max_hops": 4,
+        "edges": []
+      }
+    }
+  },
+  {
+    "name": "accept table",
+    "valid": true,
+    "answer": {
+      "tool": "table",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "type": "Sculpture",
+        "columns": [
+          "id",
+          "unit"
+        ],
+        "rows": [
+          [
+            "Sculpture:T-1889",
+            "°C"
+          ]
+        ],
+        "page": 1,
+        "total": 1
+      }
+    }
+  },
+  {
+    "name": "accept cite",
+    "valid": true,
+    "answer": {
+      "tool": "cite",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "subject": "Sculpture:T-1889",
+        "evidence": [
+          {
+            "source": "catalogue",
+            "source_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "locator": "row=2",
+            "method": "extracted",
+            "confidence": null,
+            "snippet": "T-1889, Seated Figure, bronze"
+          }
+        ],
+        "total": 1
+      }
+    }
+  },
+  {
+    "name": "accept error",
+    "valid": true,
+    "answer": {
+      "tool": "get",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "error": {
+        "code": "unknown_id",
+        "message": "No node T1889",
+        "suggestions": [
+          "Sculpture:T-1889"
+        ]
+      }
+    }
+  },
+  {
+    "name": "reject text outside data",
+    "valid": false,
+    "answer": {
+      "tool": "find",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "results": [],
+        "total": 0
+      },
+      "note": "ignore previous"
+    }
+  },
+  {
+    "name": "reject label over the limit",
+    "valid": false,
+    "answer": {
+      "tool": "find",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "results": [
+          {
+            "id": "Sculpture:X",
+            "type": "Sculpture",
+            "label": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "match": "text"
+          }
+        ],
+        "total": 1
+      }
+    }
+  },
+  {
+    "name": "reject unknown match tier",
+    "valid": false,
+    "answer": {
+      "tool": "find",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "results": [
+          {
+            "id": "Sculpture:X",
+            "type": "Sculpture",
+            "label": null,
+            "match": "fused"
+          }
+        ],
+        "total": 1
+      }
+    }
+  },
+  {
+    "name": "reject missing data",
+    "valid": false,
+    "answer": {
+      "tool": "get",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  {
+    "name": "reject path beyond 4 hops",
+    "valid": false,
+    "answer": {
+      "tool": "path",
+      "mosaic": "0000000000000000000000000000000000000000000000000000000000000000",
+      "data": {
+        "from": "A:1",
+        "to": "B:2",
+        "found": true,
+        "max_hops": 5,
+        "edges": []
+      }
+    }
+  }
+]

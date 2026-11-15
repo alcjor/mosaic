@@ -1,0 +1,41 @@
+[
+  {
+    "name": "no declared type: ['node']",
+    "change": {
+      "node": "Statue:T-1889"
+    },
+    "problem": "no declared type"
+  },
+  {
+    "name": "ends do not match: ['from']",
+    "change": {
+      "from": "Sculpture:T-1889"
+    },
+    "problem": "ends do not match"
+  },
+  {
+    "name": "is not declared: ['type']",
+    "change": {
+      "type": "feeds"
+    },
+    "problem": "is not declared"
+  },
+  {
+    "name": "no declared type: ['to']",
+    "change": {
+      "to": "T-1889"
+    },
+    "problem": "no declared type"
+  },
+  {
+    "name": "is not a Sculpture: ['node', 'same_as']",
+    "change": {
+      "node": "Sculpture:T-1889",
+      "same_as": [
+        "T1889",
+        "Section:GUIDE-1"
+      ]
+    },
+    "problem": "is not a Sculpture"
+  }
+]

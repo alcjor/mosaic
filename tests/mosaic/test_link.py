@@ -348,7 +348,7 @@ def test_a_previous_mosaic_the_reading_rules_refuse_fails_the_build(tmp_path: Pa
     with pytest.raises(BuildError) as e:
         build(tmp_path, [sculptures("A")], SCULPTURE, entries=[], previous=bad)
     assert e.value.reason == "invalid_input"
-    assert "previous" in str(e.value)
+    assert "previous.mosaic" in str(e.value)
 
 
 # --- step 5: map edges (section 5.3; Q5) ----------------------------------------------------

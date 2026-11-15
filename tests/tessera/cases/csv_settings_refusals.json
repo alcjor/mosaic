@@ -1,0 +1,32 @@
+[
+ {
+  "name": "date-formats",
+  "text": "type: Item\nconvert:\n  a: {kind: date, formats: x}\nprops: [a]\n",
+  "line": 3,
+  "named": "formats"
+ },
+ {
+  "name": "quantity-units",
+  "text": "props: [a]\nconvert: {a: {kind: quantity, number: n, unit: u}}\n",
+  "line": 2,
+  "named": "units"
+ },
+ {
+  "name": "boolean-false",
+  "text": "props: [a]\nconvert: {a: {kind: boolean, \"true\": [y], \"false\": n}}\n",
+  "line": 2,
+  "named": "false"
+ },
+ {
+  "name": "type-lowercase",
+  "text": "type: item\n",
+  "line": null,
+  "named": "type"
+ },
+ {
+  "name": "convert-unknown-column",
+  "text": "props: [a]\nconvert: {b: {kind: integer}}\n",
+  "line": null,
+  "named": "'b'"
+ }
+]

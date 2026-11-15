@@ -1,0 +1,116 @@
+[
+ {
+  "name": "colour: red",
+  "text": "colour: red\n",
+  "line": 1,
+  "named": "colour"
+ },
+ {
+  "name": "- tables",
+  "text": "- tables\n",
+  "line": null,
+  "named": ""
+ },
+ {
+  "name": "tables: [Writer]",
+  "text": "tables: [Writer]\n",
+  "line": 1,
+  "named": "tables"
+ },
+ {
+  "name": "tables: {}",
+  "text": "tables: {}\n",
+  "line": 1,
+  "named": "tables"
+ },
+ {
+  "name": "tables:   Writer: null",
+  "text": "tables:\n  Writer: null\n",
+  "line": 2,
+  "named": "tables.Writer"
+ },
+ {
+  "name": "tables:   Writer:     colour: red",
+  "text": "tables:\n  Writer:\n    colour: red\n",
+  "line": 3,
+  "named": "tables.Writer.colour"
+ },
+ {
+  "name": "tables:   Writer:     type: [W]",
+  "text": "tables:\n  Writer:\n    type: [W]\n",
+  "line": 3,
+  "named": "tables.Writer.type"
+ },
+ {
+  "name": "tables:   Writer:     type: writer",
+  "text": "tables:\n  Writer:\n    type: writer\n",
+  "line": 3,
+  "named": "tables.Writer.type"
+ },
+ {
+  "name": "tables:   Writer:     label: 5",
+  "text": "tables:\n  Writer:\n    label: 5\n",
+  "line": 3,
+  "named": "tables.Writer.label"
+ },
+ {
+  "name": "tables:   Writer:     summary: [Note]",
+  "text": "tables:\n  Writer:\n    summary: [Note]\n",
+  "line": 3,
+  "named": "tables.Writer.summary"
+ },
+ {
+  "name": "tables:   Writer:     props: Name",
+  "text": "tables:\n  Writer:\n    props: Name\n",
+  "line": 3,
+  "named": "tables.Writer.props"
+ },
+ {
+  "name": "tables:   Writer:     props:       - Name       - ",
+  "text": "tables:\n  Writer:\n    props:\n      - Name\n      - Name\n",
+  "line": 5,
+  "named": "Name"
+ },
+ {
+  "name": "tables:   Writer:     props: [Born]     convert: {",
+  "text": "tables:\n  Writer:\n    props: [Born]\n    convert: {Born: {kind: guess}}\n",
+  "line": 4,
+  "named": "guess"
+ },
+ {
+  "name": "tables:   Writer:     convert: {Born: {kind: integ",
+  "text": "tables:\n  Writer:\n    convert: {Born: {kind: integer}}\n",
+  "line": 3,
+  "named": "Born"
+ },
+ {
+  "name": "tables:   Writer:     foreign_keys: [WriterId]",
+  "text": "tables:\n  Writer:\n    foreign_keys: [WriterId]\n",
+  "line": 3,
+  "named": "tables.Writer.foreign_keys"
+ },
+ {
+  "name": "tables:   Volume:     foreign_keys:       WriterId",
+  "text": "tables:\n  Volume:\n    foreign_keys:\n      WriterId: WrittenBy\n",
+  "line": 4,
+  "named": "tables.Volume.foreign_keys.WriterId"
+ },
+ {
+  "name": "tables:   Volume:     foreign_keys:       WriterId",
+  "text": "tables:\n  Volume:\n    foreign_keys:\n      WriterId: by\n      ShelfCode: by\n",
+  "line": 5,
+  "named": "tables.Volume.foreign_keys.ShelfCode"
+ },
+ {
+  "name": "tables:   A: {type: T}   B: {type: T}",
+  "text": "tables:\n  A: {type: T}\n  B: {type: T}\n",
+  "line": 3,
+  "named": "tables.B"
+ },
+ {
+  "name": "tables:   Writer: {}   Writer: {}",
+  "text": "tables:\n  Writer: {}\n  Writer: {}\n",
+  "line": 3,
+  "named": "Writer"
+ }
+]

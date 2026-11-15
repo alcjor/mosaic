@@ -1,0 +1,104 @@
+[
+ {
+  "name": "00-chains",
+  "text": "chains: [a, b]\n",
+  "line": 1,
+  "setting": "chains"
+ },
+ {
+  "name": "01-chains",
+  "text": "chains:\n",
+  "line": 1,
+  "setting": "chains"
+ },
+ {
+  "name": "02-chains.C",
+  "text": "chains:\n  C:\n",
+  "line": 2,
+  "setting": "chains.C"
+ },
+ {
+  "name": "03-chains.C",
+  "text": "chains:\n  C: x\n",
+  "line": 2,
+  "setting": "chains.C"
+ },
+ {
+  "name": "04-chains.C",
+  "text": "chains:\n  C:\n    pin: A:x\n",
+  "line": 2,
+  "setting": "chains.C"
+ },
+ {
+  "name": "05-chains.C.start",
+  "text": "chains:\n  C:\n    start: ''\n",
+  "line": 3,
+  "setting": "chains.C.start"
+ },
+ {
+  "name": "06-chains.C.start",
+  "text": "chains:\n  C:\n    start: 3\n",
+  "line": 3,
+  "setting": "chains.C.start"
+ },
+ {
+  "name": "07-chains.C.pin",
+  "text": "chains:\n  C:\n    start: A\n    pin: ''\n",
+  "line": 4,
+  "setting": "chains.C.pin"
+ },
+ {
+  "name": "08-chains.C.from",
+  "text": "chains:\n  C:\n    start: A\n    from: B\n",
+  "line": 4,
+  "setting": "chains.C.from"
+ },
+ {
+  "name": "09-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps: e out\n",
+  "line": 4,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "10-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - e both\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "11-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - e sideways\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "12-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - 'e  out'\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "13-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - 7\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "14-chains.C.steps",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - pin: A:x\n",
+  "line": 5,
+  "setting": "chains.C.steps"
+ },
+ {
+  "name": "15-chains.C.steps.to",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        to: B\n",
+  "line": 6,
+  "setting": "chains.C.steps.to"
+ },
+ {
+  "name": "16-chains.C.steps.pin",
+  "text": "chains:\n  C:\n    start: A\n    steps:\n      - link: e out\n        pin: 4\n",
+  "line": 6,
+  "setting": "chains.C.steps.pin"
+ }
+]

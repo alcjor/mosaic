@@ -31,6 +31,7 @@ from mosaic_build import export, view, view_file
 from mosaic_build.cli import main
 from mosaic_build.view_file import CardView, from_json, read
 
+from tests.case_files import cases
 from tests.conftest import REPO
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -109,28 +110,9 @@ def test_the_example_sets_cards_and_matches_the_schema() -> None:
     jsonschema.validate(yaml.safe_load(EXAMPLE.read_text(encoding="utf-8")), SCHEMA)
 
 
-WRONG = [
-    # (view file, line, setting named in the message)
-    ("cards: [Title]\n", 1, "cards"),
-    ('cards:\n  "": {}\n', 2, "cards"),
-    ("cards:\n  Title: yes\n", 2, "cards.Title"),
-    ("cards:\n  Title:\n", 2, "cards.Title"),
-    ("cards:\n  Title:\n    colour: red\n", 3, "cards.Title.colour"),
-    ("cards:\n  Title:\n    show: rating\n", 3, "cards.Title.show"),
-    ("cards:\n  Title:\n    show: [rating, rating]\n", 3, "cards.Title.show"),
-    ("cards:\n  Title:\n    show:\n      - rating\n      - ''\n", 5, "cards.Title.show"),
-    ("cards:\n  Title:\n    links: {directed_by: out}\n", 3, "cards.Title.links"),
-    ("cards:\n  Title:\n    links: [directed_by sideways]\n", 3, "cards.Title.links"),
-    ("cards:\n  Title:\n    links: [directed_by out in]\n", 3, "cards.Title.links"),
-    ("cards:\n  Title:\n    links: [' directed_by']\n", 3, "cards.Title.links"),
-    ("cards:\n  Title:\n    links: [directed_by  out]\n", 3, "cards.Title.links"),
-    ("cards:\n  Title:\n    counts: [features, features]\n", 3, "cards.Title.counts"),
-    ("cards:\n  Title:\n    counts: [features in, features in]\n", 3, "cards.Title.counts"),
-    ("cards:\n  Title:\n    counts: [3]\n", 3, "cards.Title.counts"),
-]
-
-
-@pytest.mark.parametrize(("text", "line", "setting"), WRONG)
+@pytest.mark.parametrize(
+    ("text", "line", "setting"), cases("cards_wrong", "text", "line", "setting")
+)
 def test_a_wrong_card_names_the_file_line_and_setting(
     tmp_path: Path, text: str, line: int, setting: str
 ) -> None:
@@ -142,7 +124,9 @@ def test_a_wrong_card_names_the_file_line_and_setting(
     assert setting in message, message
 
 
-@pytest.mark.parametrize(("text", "line", "setting"), WRONG)
+@pytest.mark.parametrize(
+    ("text", "line", "setting"), cases("cards_wrong", "text", "line", "setting")
+)
 def test_the_schema_refuses_each_wrong_card(text: str, line: int, setting: str) -> None:
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(yaml.safe_load(text), SCHEMA)
@@ -194,15 +178,7 @@ def _schema_accepts(text: str) -> bool:
 # Duplicates (spec 0.1 section 5: duplicate keys are rejected) and ordering.
 
 
-@pytest.mark.parametrize(
-    ("text", "line"),
-    [
-        ("cards:\n  A: {}\n  A: {}\n", 3),
-        ("cards:\n  A:\n    show: [x]\n    show: [y]\n", 4),
-        ("cards:\n  A: {}\ncards:\n  B: {}\n", 3),
-        ("cards:\n  A:\n    links: [x]\n    counts: [y]\n    links: [z]\n", 5),
-    ],
-)
+@pytest.mark.parametrize(("text", "line"), cases("cards_duplicate_keys", "text", "line"))
 def test_a_duplicate_key_in_cards_names_file_and_line(tmp_path: Path, text: str, line: int) -> None:
     path = _write(tmp_path, text)
     with pytest.raises(ValueError) as e:
@@ -225,35 +201,7 @@ def test_adding_cards_changes_no_other_setting(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("text", "line", "setting"),
-    [
-        ("cards:\n  A:\n    show: [true]\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    show: [null]\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    show: [~]\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    show: [1.5]\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    show: [[x]]\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    show: [{x: y}]\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    links: [false]\n", 3, "cards.A.links"),
-        ("cards:\n  A:\n    counts: [null]\n", 3, "cards.A.counts"),
-        ("cards:\n  A:\n    show:\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    links:\n", 3, "cards.A.links"),
-        ("cards:\n  A:\n    counts:\n", 3, "cards.A.counts"),
-        ("cards:\n  A:\n    show: {x: y}\n", 3, "cards.A.show"),
-        ("cards:\n  A:\n    show: 3\n", 3, "cards.A.show"),
-        ("cards:\n  A: []\n", 2, "cards.A"),
-        ("cards:\n  A: ''\n", 2, "cards.A"),
-        ("cards:\n  A: 0\n", 2, "cards.A"),
-        ("cards:\n  A: [show]\n", 2, "cards.A"),
-        ("cards: ''\n", 1, "cards"),
-        ("cards: 3\n", 1, "cards"),
-        ("cards: ~\n", 1, "cards"),
-        ("cards:\n", 1, "cards"),
-        ("cards:\n  A: {show: [x], Show: [y]}\n", 2, "cards.A.Show"),
-        ("cards:\n  A: {SHOW: [x]}\n", 2, "cards.A.SHOW"),
-        ("cards:\n  A: {link: [x]}\n", 2, "cards.A.link"),
-        ("cards:\n  A: {count: [x]}\n", 2, "cards.A.count"),
-        ("card:\n  A: {}\n", 1, "card"),
-    ],
+    ("text", "line", "setting"), cases("cards_wrong_kind", "text", "line", "setting")
 )
 def test_a_card_of_the_wrong_kind_names_file_line_and_setting(
     tmp_path: Path, text: str, line: int, setting: str
@@ -277,59 +225,8 @@ def test_of_several_wrong_cards_the_first_written_is_named(tmp_path: Path) -> No
 
 # Links: an edge type name, alone or followed by one space and in or out.
 
-ODD_LINKS = [
-    "in",
-    "out",
-    "in in",
-    "in out",
-    "out in",
-    "out out",
-    "in out in",
-    "in  out",
-    "a\tb",
-    "a\tin",
-    "a\nb",
-    "a in\n",
-    "a in\r",
-    "a\n",
-    " a",
-    "a ",
-    "a in ",
-    "a\u00a0in",
-    "a\u3000in",
-    "a\u2003in",
-    "a\u2028in",
-    "a\u0085in",
-    "a\u200bin",
-    "a\u200b",
-    "\u200b",
-    "a\x00b",
-    "a\x00 in",
-    "a/b",
-    "a.b",
-    "a,b",
-    "a:b",
-    "a#b",
-    "a'b",
-    'a"b',
-    "[a]",
-    "{a}",
-    "*a",
-    "&a",
-    "!a",
-    "- a",
-    "IN",
-    "a IN",
-    "a Out",
-    "a inn",
-    "a in out",
-    "日本 in",
-    "\U0001f600",
-    "\U0001f600 out",
-]
 
-
-@pytest.mark.parametrize("item", ODD_LINKS, ids=[repr(i) for i in ODD_LINKS])
+@pytest.mark.parametrize("item", cases("cards_odd_links", "item"))
 def test_the_reader_and_the_schema_agree_on_each_odd_link(tmp_path: Path, item: str) -> None:
     """One definition of a link: what the reader takes, the schema takes, and the converse."""
     text = f"cards:\n  A:\n    links: [{json.dumps(item)}]\n    counts: [{json.dumps(item)}]\n"
