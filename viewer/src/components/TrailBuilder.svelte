@@ -2,7 +2,9 @@
   /**
    * Trails' builder (V-1, V-2, V-3, V-5): the chain as one line that reads as a sentence,
    * "Start at [a thing or any Type] → link → [any Type] then follow → link → [any Type] … Add a
-   * step". Each part is a compact control:
+   * step". A new trail (no chain) asks for its start first: a search over every type that pins
+   * the start to the thing picked, or, as an explicit choice, "any Type". Each part is a compact
+   * control:
    *
    * - a place (the start, or where a step leads) is a chip naming the thing it is pinned to, or
    *   "any Type"; it opens a panel to pin the place to one thing found by search or to leave it
@@ -37,7 +39,7 @@
     shape?: Shape | null;
     onchange: (chain: Chain | null) => void;
     /** Things of `type` whose names match `query`, through the kit's `find`, or why it failed. */
-    find: (type: string, query: string) => Promise<Answer>;
+    find: (type: string | null, query: string) => Promise<Answer>;
     /** What each place's search found, kept for the open mosaic (lib/placesearch.svelte.ts). */
     searches?: PlaceSearches;
     /** A pinned thing's name, where the page knows it. */
@@ -67,6 +69,19 @@
     onchange(type === "" ? null : chain === null ? { start: type, pin: null, steps: [] } : restart(schema, chain, type));
   }
 
+  /** The slot of a new trail's start search: no chain, so no place yet. */
+  const NEW = "new";
+
+  async function searchStart(): Promise<void> {
+    const q = (searches.queries[NEW] ?? "").trim();
+    if (q !== "") await searches.run(NEW, () => find(null, q));
+  }
+
+  function startAt(thing: { id: string; type: string }): void {
+    searches.reset();
+    onchange({ start: thing.type, pin: thing.id, steps: [] });
+  }
+
   /** Remove step `index`: the places from it on become other places, so what they found goes. */
   function removeStep(index: number): void {
     if (chain === null) return;
@@ -92,10 +107,10 @@
   }
 </script>
 
-{#snippet types(selected: string | null)}
-  <option value="" selected={selected === null}>Choose a type…</option>
+{#snippet types(selected: string | null, any = false)}
+  <option value="" selected={selected === null}>{any ? "Or any thing of a type…" : "Choose a type…"}</option>
   {#each schema.nodeTypes as t (t.name)}
-    <option value={t.name} selected={selected === t.name}>{typeName(t.name)} · {figure(t.count)}</option>
+    <option value={t.name} selected={selected === t.name}>{any ? `any ${typeName(t.name)}` : typeName(t.name)} · {figure(t.count)}</option>
   {/each}
 {/snippet}
 
@@ -147,7 +162,34 @@
 <div class="bar body-app" role="group" aria-label="Trail builder">
   <strong class="label-app">Start at</strong>
   {#if chain === null}
-    <select class="choice body-app" aria-label="Start at" onchange={(e) => start(e.currentTarget.value)}>{@render types(null)}</select>
+    <form class="find start" onsubmit={(e) => (e.preventDefault(), void searchStart())}>
+      <input class="choice field body-app" type="search" aria-label="Start at a thing" placeholder="Start at…" bind:value={searches.queries[NEW]} />
+      <Button type="submit">Find</Button>
+    </form>
+    <select class="choice body-app" aria-label="Start at any thing of a type" onchange={(e) => start(e.currentTarget.value)}>{@render types(null, true)}</select>
+    {@const answer = searches.found[NEW]}
+    {#if answer !== undefined}
+      <div class="starts">
+        {#if "error" in answer}
+          <p class="note caption">Could not search: {answer.error}</p>
+        {:else if answer.length === 0}
+          <p class="note caption">Nothing matches “{searches.queries[NEW]?.trim() ?? ""}”.</p>
+        {:else}
+          <ul class="things" aria-label="Things to start at">
+            {#each answer as thing (thing.id)}
+              <li>
+                <button class="thing" type="button" data-start={thing.id} onclick={() => startAt(thing)}>
+                  <Shard type={thing.type} />
+                  <span class="body-app">{thing.label ?? thing.id}</span>
+                  <span class="caption muted">{typeName(thing.type)}</span>
+                  <span class="code caption">{thing.id}</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    {/if}
   {:else}
     {@render place(-1, chain.start, chain.pin)}
     {#each chain.steps as s, i (i)}
@@ -246,6 +288,16 @@
     min-inline-size: 0;
   }
 
+  .start {
+    flex: 1 1 16rem;
+  }
+
+  /* A new trail's search answers on a line of their own, under the search. */
+  .starts {
+    flex-basis: 100%;
+    order: 1;
+  }
+
   .note {
     margin: 0;
     color: var(--ink-muted);
@@ -271,7 +323,8 @@
     overflow-wrap: anywhere;
   }
 
-  .thing .code {
+  .thing .code,
+  .thing .muted {
     color: var(--ink-muted);
   }
 

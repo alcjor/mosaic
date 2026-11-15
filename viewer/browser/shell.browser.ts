@@ -50,6 +50,27 @@ test("every style the page uses comes from a token it defines", async () => {
   expect(await page.locator("[style]:not(svg *)").count()).toBe(0);
 });
 
+test("the page reads in IBM Plex, its fonts carried by the page itself", async () => {
+  const { page } = await viewer.open();
+  const fonts = await page.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all([document.fonts.load('16px "IBM Plex Sans"'), document.fonts.load('16px "IBM Plex Mono"')]);
+    const faces = [...document.styleSheets].flatMap((sheet) => [...sheet.cssRules]).filter((rule) => rule instanceof CSSFontFaceRule);
+    return {
+      body: getComputedStyle(document.body).fontFamily,
+      code: getComputedStyle(document.querySelector(".code")!).fontFamily,
+      loaded: [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family.replaceAll('"', "")),
+      sources: faces.map((rule) => (rule as CSSFontFaceRule).style.getPropertyValue("src")),
+    };
+  });
+  expect(fonts.body.startsWith('"IBM Plex Sans"')).toBe(true);
+  expect(fonts.code.startsWith('"IBM Plex Mono"')).toBe(true);
+  expect(fonts.loaded).toEqual(expect.arrayContaining(["IBM Plex Sans", "IBM Plex Mono"]));
+  // Six faces (Sans 400 to 700, Mono 400 and 600), each in the stylesheet as data, so nothing is fetched.
+  expect(fonts.sources).toHaveLength(6);
+  for (const src of fonts.sources) expect(src).toMatch(/^url\("data:font\/woff2;base64,/);
+});
+
 test("below 960px a place is one column that fits the width, its pane under it", async () => {
   const { page, shot } = await viewer.open("#v=explore&q=harbor&node=Place%3Aharbor", { width: 420, height: 800 });
   // Explore has no tabs: the selected thing's card is under the graph.

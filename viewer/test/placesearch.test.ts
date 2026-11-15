@@ -77,11 +77,13 @@ describe("the Chain view's searches belong to the open mosaic (V-3)", () => {
 });
 
 describe("searching the kit for a place's things", () => {
-  it("gives the things find gives, at most 10, of the place's type", async () => {
+  it("gives the things find gives, at most 10, of the place's type, or of any type", async () => {
     const asked: unknown[] = [];
     const file = { find: async (args: unknown) => (asked.push(args), { tool: "find" as const, mosaic: "m", data: { results: [{ id: "Person:ada", type: "Person", label: "Ada", match: "exact" as const }], total: 1 } }) };
-    expect(await findThings(file as never, "Person", "Ada")).toEqual([{ id: "Person:ada", label: "Ada" }]);
+    expect(await findThings(file as never, "Person", "Ada")).toEqual([{ id: "Person:ada", type: "Person", label: "Ada" }]);
     expect(asked).toEqual([{ query: "Ada", type: "Person", limit: 10 }]);
+    await findThings(file as never, null, "Ada");
+    expect(asked[1]).toEqual({ query: "Ada", limit: 10 });
   });
 
   it("gives the kit's error as an error, not as nothing found", async () => {

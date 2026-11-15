@@ -49,7 +49,7 @@ test("a column header sorts the table; a filter is added from a popover and remo
   await expect.poll(() => names(page)).toEqual(["Cleo", "Ada"]);
   expect(new URL(page.url()).hash).toContain("w=");
   expect(await page.locator('ul[aria-label="Filters"] li').allInnerTexts()).toEqual(["visits contains harbor"]);
-  expect(await page.locator("[data-total]").innerText()).toContain("2 of 4");
+  expect(await page.locator("[data-total]").innerText()).toBe("2 of 4 · Person");
   await shot("sorted-and-filtered");
   await page.getByRole("button", { name: /^Remove filter/ }).click();
   await expect.poll(() => names(page)).toHaveLength(4);

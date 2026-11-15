@@ -185,6 +185,21 @@ test("the card shows properties and sources, and its link chips select things in
   await expect.poll(() => page.locator(`${pane} article section[data-edge]`).count()).toBe(0);
 });
 
+test("a link group's heading stays clean: a source button shows where its links come from", async () => {
+  const { page, shot } = await viewer.open(harbor);
+  const links = page.locator(`${pane} article[aria-label="Place:harbor"]`).getByRole("region", { name: "Links" });
+  const group = links.locator("section[data-edge]").first();
+  await group.waitFor();
+  const source = group.getByRole("button", { name: /^Source: / });
+  // Nothing but the heading shows until the button is used, from the keyboard here.
+  expect(await group.locator(".rows:not([hidden])").count()).toBe(0);
+  await source.focus();
+  await page.keyboard.press("Enter");
+  expect(await source.getAttribute("aria-expanded")).toBe("true");
+  expect(await group.locator(".rows:not([hidden]) .where").first().innerText()).toMatch(/\S/);
+  await shot("link-source");
+});
+
 test("in the dark theme the stage and the pane are dark, and the page never scrolls", async () => {
   const { page, shot } = await viewer.open(harbor);
   await page.emulateMedia({ colorScheme: "dark" });

@@ -60,7 +60,7 @@ const showAs = (page: Page, name: string) => page.getByRole("group", { name: "Sh
 
 test("a trail built in one line shows one column of cards per step, joined by lines", async () => {
   const { page, shot } = await viewer.open("#v=trails");
-  await page.getByLabel("Start at").selectOption("Reader");
+  await page.getByLabel("Start at any thing of a type").selectOption("Reader");
   await page.getByRole("button", { name: "Add a step" }).click();
   await page.getByRole("menuitem", { name: "borrowed → Book" }).click();
   await cards(page, 1).first().waitFor();
@@ -83,6 +83,24 @@ test("a trail built in one line shows one column of cards per step, joined by li
   await page.getByRole("menuitem", { name: "Remove this step" }).click();
   await expect.poll(() => page.locator("[data-column]").count()).toBe(2);
   expect(hash(page)).not.toContain("written_by");
+});
+
+test("a new trail asks for a thing to start at, and reads nothing until one is chosen", async () => {
+  const { page, shot } = await viewer.open("#v=trails");
+  // Nothing is asked of the mosaic yet: no counts, no columns.
+  expect(await page.locator(".counts").innerText()).toBe("");
+  expect(await page.locator("[data-column]").count()).toBe(0);
+  await page.getByLabel("Start at a thing").fill("Lamp");
+  await page.getByRole("button", { name: "Find" }).click();
+  await page.locator('[data-start="Book:lamps"]').waitFor();
+  await shot("start-search");
+  await page.locator('[data-start="Book:lamps"]').click();
+  // The start is pinned to that thing, and its trail is read.
+  await expect.poll(() => hash(page)).toContain("c=Book");
+  await cards(page, 0).first().waitFor();
+  expect(await names(page, 0)).toEqual(["Lamp Oil"]);
+  await expect.poll(() => page.getByRole("button", { name: "Start: Lamp Oil" }).count()).toBe(1);
+  await shot("start");
 });
 
 test("picking a card lights up everything connected to it; picking it again clears", async () => {

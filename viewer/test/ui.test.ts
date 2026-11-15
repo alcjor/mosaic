@@ -6,28 +6,9 @@ import Button from "../src/components/ui/Button.svelte";
 import Chip from "../src/components/ui/Chip.svelte";
 import EmptyState from "../src/components/ui/EmptyState.svelte";
 import Table from "../src/components/ui/Table.svelte";
-import Tabs from "../src/components/ui/Tabs.svelte";
 import { nextSort } from "../src/components/ui/table.js";
 
 const text = (s: string) => createRawSnippet(() => ({ render: () => `<span>${s}</span>` }));
-
-describe("Tabs", () => {
-  const tabs = [
-    { value: "near", label: "Neighbours" },
-    { value: "src", label: "Sources" },
-  ];
-  const panel = createRawSnippet((v: () => string) => ({ render: () => `<p>panel ${v()}</p>` }));
-
-  it("shows only the selected tab's panel, and marks that tab selected", () => {
-    for (const value of ["near", "src"]) {
-      const { body } = render(Tabs, { props: { tabs, value, label: "Context", panel } });
-      expect(body).toContain(`panel ${value}`);
-      expect(body).not.toContain(`panel ${value === "near" ? "src" : "near"}`);
-      const label = tabs.find((t) => t.value === value)!.label;
-      expect(body).toMatch(new RegExp(`aria-selected="true"[^>]*>(<!---->)?${label}<`));
-    }
-  });
-});
 
 describe("Table", () => {
   const columns = [

@@ -170,8 +170,7 @@
     <span class="grow"></span>
     {#if shown}
       <span class="caption muted" data-total={shown.total}>
-        {count !== null && shown.total !== count ? `${number(shown.total)} of ` : ""}{number(count ?? shown.total)}
-        {(count ?? shown.total) === 1 ? "thing" : "things"}
+        {count !== null && shown.total !== count ? `${number(shown.total)} of ` : ""}{number(count ?? shown.total)} · {shape?.typeLabel(route.type) ?? route.type}
       </span>
     {/if}
   </div>

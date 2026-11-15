@@ -34,8 +34,8 @@
   const figure = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   const results = (n: number) => `${figure(n)} result${n === 1 ? "" : "s"}`;
 
-  /** Things of `type` named like `query`, for pinning a chain's place: the kit's `find`. */
-  function findIn(type: string, query: string): Promise<Answer> {
+  /** Things of `type` (any type when null) named like `query`, for a chain's place: the kit's `find`. */
+  function findIn(type: string | null, query: string): Promise<Answer> {
     return viewer.file === null ? Promise.resolve([]) : findThings(viewer.file, type, query);
   }
 
@@ -133,7 +133,7 @@
       </TrailBuilder>
       {#if viewer.chain === null}
         <div class="empty">
-          <EmptyState message="Choose a type to start a trail from, then add steps along its links." />
+          <EmptyState message="Find the thing to start a trail at, or start at any thing of a type, then add steps along its links." />
           {#if viewer.savedChains.length > 0}
             <nav class="saved" aria-label="Saved trails">
               <h2 class="section-label">Saved trails</h2>

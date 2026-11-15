@@ -159,7 +159,7 @@
           <div class="edge">
             <h3 class="caption">{edgeName(group.edge, group.direction)} · {group.count}</h3>
             {#if group.cited.length > 0}
-              <CitationChip short sections={group.cited.map((t) => ({ title: `${t.label ?? t.id}${t.qualifier ? ` · ${t.qualifier}` : ""}`, evidence: t.evidence }))} />
+              <CitationChip icon sections={group.cited.map((t) => ({ title: `${t.label ?? t.id}${t.qualifier ? ` · ${t.qualifier}` : ""}`, evidence: t.evidence }))} />
             {/if}
           </div>
           <ul class="things">
@@ -330,8 +330,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-1) var(--space-3);
+    gap: var(--space-1);
     margin-block-end: var(--space-2);
   }
 
