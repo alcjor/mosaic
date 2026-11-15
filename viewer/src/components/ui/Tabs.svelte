@@ -5,7 +5,9 @@
 <script lang="ts">
   /**
    * Tabs (bits-ui): a row of tabs over one panel. `panel` renders the selected tab's content;
-   * the others stay empty. Arrow keys move between tabs.
+   * the others stay empty. Without `panel` it is the row of tabs alone, and the caller shows
+   * the content `value` names (content that must stay on the page while another tab shows).
+   * Arrow keys move between tabs.
    */
   import { Tabs } from "bits-ui";
   import type { Snippet } from "svelte";
@@ -21,7 +23,7 @@
     value?: string;
     label: string;
     onchange?: (value: string) => void;
-    panel: Snippet<[string]>;
+    panel?: Snippet<[string]>;
   } = $props();
 </script>
 
@@ -31,11 +33,13 @@
       <Tabs.Trigger class="ui-tab step-title" value={tab.value} disabled={tab.disabled}>{tab.label}</Tabs.Trigger>
     {/each}
   </Tabs.List>
-  {#each tabs as tab (tab.value)}
-    <Tabs.Content class="ui-tab-panel" value={tab.value}>
-      {#if tab.value === value}{@render panel(tab.value)}{/if}
-    </Tabs.Content>
-  {/each}
+  {#if panel}
+    {#each tabs as tab (tab.value)}
+      <Tabs.Content class="ui-tab-panel" value={tab.value}>
+        {#if tab.value === value}{@render panel(tab.value)}{/if}
+      </Tabs.Content>
+    {/each}
+  {/if}
 </Tabs.Root>
 
 <style>

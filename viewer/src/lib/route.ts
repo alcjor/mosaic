@@ -7,27 +7,28 @@
  * descending order, and `w=<JSON list of {column, op, value}>`: everything `table` is asked
  * (section 8.6), so a table view can be linked to and reloaded.
  *
- * A view of the whole mosaic from the shell's switcher adds `v=<view>` (lib/views.ts); a name
- * that is no view is ignored, as anything else the address does not name.
+ * The place the page is at is `v=<place>` (lib/places.ts): `home`, `explore`, `trails` or
+ * `tables`. Home is the default and is not written; a name that is no place is ignored, as
+ * anything else the address does not name.
  *
- * The neighbourhood view (`v=neighbourhood`) adds the choices made in it (G-8): each
+ * Explore (`v=explore`) adds the choices made in it (G-8): each
  * thing expanded as `x=<id>`, in the order opened; each thing hidden as `h=<id>`; the edge types
  * shown as `e=<name>` when not every one is, one empty `e=` when none is; and the limit as
  * `l=<n>` when it is not the default. They are read as written; lib/graph/hood-address.ts applies
  * them to a mosaic.
  *
- * The chain view (`v=chain`, need V-17) adds the chain shown: its start type as
+ * Trails (`v=trails`, need V-17) adds the chain shown: its start type as
  * `c=<type>`, each step's link as `k=<link>` spelled as in the view file (an edge type alone is
  * followed out; `<edge> in` is followed in), and the thing each place is pinned to as
  * `p<place>=<id>`, the start being place 0. Then, beside the defaults, the view as `show=table`,
- * the place in the results as `at=<n>` from 1, the table's sort as `co=<place> <column>` with
+ * the table's current row as `at=<n>` from 1, the table's sort as `co=<place> <column>` with
  * `cd=1` for descending, and its filters as `cf=<JSON list of [place, column, text]>`, places from
  * 1 as the table numbers them. lib/chainlink.ts applies them to a mosaic.
  *
  * Mind the two numberings: a pin's place counts from 0 (`p0` is the start), a sort's or a
  * filter's from 1 (`1` is the start), as the table's group headers show it.
  */
-import { viewNamed, type ViewId } from "./views.js";
+import { placeNamed, type PlaceId } from "./places.js";
 
 /** One `where` condition of `table` (section 8.6). */
 export interface Condition {
@@ -64,8 +65,8 @@ export interface ChainLinkRoute {
   readonly pin: string | null;
   /** Each step: its link as the view file spells it, and the thing it is pinned to. */
   readonly steps: readonly { readonly link: string; readonly pin: string | null }[];
-  readonly show: "cards" | "table";
-  /** The place in the results, from 1. */
+  readonly show: "columns" | "table";
+  /** The table's current row, from 1. */
   readonly at: number;
   /** The table's sort: a column by its place (from 1) and its key. */
   readonly sort: { readonly place: number; readonly column: string; readonly desc: boolean } | null;
@@ -80,11 +81,11 @@ export interface Route {
   readonly node: string | null;
   /** The table view open, or null. */
   readonly table?: TableRoute | null;
-  /** The view of the whole mosaic open from the switcher, or null. */
-  readonly view?: ViewId | null;
-  /** In the neighbourhood view, the choices made in it, or null for none. */
+  /** The place the page is at; Home when null or absent. */
+  readonly view?: PlaceId | null;
+  /** In Explore, the choices made in the graph, or null for none. */
   readonly hood?: HoodChoices | null;
-  /** In the chain view, the chain shown and where in its results, or null for none. */
+  /** In Trails, the chain shown and its table's choices, or null for none. */
   readonly chain?: ChainLinkRoute | null;
 }
 
@@ -122,7 +123,7 @@ function chainLink(params: URLSearchParams): ChainLinkRoute | null {
     start,
     pin: pinOf(0),
     steps,
-    show: params.get("show") === "table" ? "table" : "cards",
+    show: params.get("show") === "table" ? "table" : "columns",
     at: at !== null && COUNT.test(at) ? Number(at) : 1,
     sort: order === null ? null : { place: Number(order[1]), column: order[2]!, desc: params.get("cd") === "1" },
     filters: chainFilters(params.get("cf")),
@@ -166,11 +167,11 @@ export function parseRoute(hash: string): Route {
           order: column === null || column === "" ? null : { column, desc: params.get("d") === "1" },
           where: conditions(params.get("w")),
         };
-  const named = viewNamed(params.get("v") ?? "");
+  const named = placeNamed(params.get("v") ?? "");
   let route: Route = { query: params.get("q") ?? "", node: node === null || node === "" ? null : node };
   if (table !== null) route = { ...route, table };
-  if (named !== undefined) route = { ...route, view: named.id };
-  if (named?.id === "neighbourhood") {
+  if (named !== undefined && named.id !== "home") route = { ...route, view: named.id };
+  if (named?.id === "explore") {
     const edges = params.getAll("e");
     const hood: HoodChoices = {
       expanded: params.getAll("x").filter((x) => x !== ""),
@@ -180,7 +181,7 @@ export function parseRoute(hash: string): Route {
     };
     if (hood.expanded.length > 0 || hood.hidden.length > 0 || hood.edges !== null || hood.limit !== null) route = { ...route, hood };
   }
-  if (named?.id === "chain") {
+  if (named?.id === "trails") {
     const chain = chainLink(params);
     if (chain !== null) route = { ...route, chain };
   }
@@ -192,8 +193,8 @@ export function routeHash(route: Route): string {
   const params = new URLSearchParams();
   if (route.query !== "") params.set("q", route.query);
   if (route.node !== null) params.set("node", route.node);
-  if (route.view) params.set("v", route.view);
-  const hood = route.view === "neighbourhood" ? route.hood : null;
+  if (route.view && route.view !== "home") params.set("v", route.view);
+  const hood = route.view === "explore" ? route.hood : null;
   if (hood) {
     for (const x of hood.expanded) params.append("x", x);
     for (const h of hood.hidden) params.append("h", h);
@@ -203,7 +204,7 @@ export function routeHash(route: Route): string {
     }
     if (hood.limit !== null) params.set("l", hood.limit);
   }
-  const chain = route.view === "chain" ? route.chain : null;
+  const chain = route.view === "trails" ? route.chain : null;
   if (chain) {
     params.set("c", chain.start);
     if (chain.pin !== null) params.set("p0", chain.pin);

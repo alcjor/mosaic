@@ -3,6 +3,7 @@
    * The search results (brand book, section 6: ResultRow): each result's label, type, id and
    * how it matched, grouped by tier in `find`'s order, exact first. A row opens its node.
    */
+  import EmptyState from "./ui/EmptyState.svelte";
   import type { SearchView, ToolFailure } from "../lib/mosaic.js";
   import { TIER_NAMES } from "../lib/mosaic.js";
 
@@ -22,7 +23,7 @@
 {#if "message" in view}
   <p class="banner body-screen" role="alert">{view.message}</p>
 {:else if view.groups.length === 0}
-  <p class="empty body-screen">No results for “{view.query}”.</p>
+  <EmptyState message="No results for “{view.query}”." />
 {:else}
   <p class="count caption">{view.total} {view.total === 1 ? "result" : "results"}</p>
   {#each view.groups as group (group.match)}
@@ -113,8 +114,7 @@
     text-transform: uppercase;
   }
 
-  .count,
-  .empty {
+  .count {
     margin: var(--space-3);
     color: var(--ink-muted);
   }

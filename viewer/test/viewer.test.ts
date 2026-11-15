@@ -626,6 +626,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
     const failure = viewer.page as ToolFailure;
     expect("message" in failure).toBe(true);
     expect(failure.message).toContain("Item:appel");
+    viewer.place = "explore";
     const { body } = render(App, { props: { viewer } });
     expect(body).toContain("Item:appel");
     for (const s of failure.suggestions) expect(body).toContain(s);

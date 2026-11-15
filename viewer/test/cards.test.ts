@@ -6,7 +6,6 @@
 // default from what the mosaic holds. Brand book §6: EntityCard, PropertyTable, CitationChip.
 import { render } from "svelte/server";
 import { describe, expect, it } from "vitest";
-import App from "../src/App.svelte";
 import EntityCard from "../src/components/EntityCard.svelte";
 import { cardFacts, chipLabel, type Fact, SHOWN } from "../src/lib/cards.js";
 import { nodePage, openMosaic, type NodeView } from "../src/lib/mosaic.js";
@@ -234,16 +233,6 @@ describe("the card, drawn", () => {
     file.close();
   });
 
-  it("the node page shows the type's card, with its chips", async () => {
-    const viewer = new Viewer();
-    await viewer.open(reading("mosaic.mosaic"), "mosaic.mosaic");
-    await viewer.show("Item:a");
-    expect(viewer.facts).not.toBeNull();
-    const { body } = render(App, { props: { viewer } });
-    expect(body).toMatch(/data-fact="property:code"/);
-    expect(body).toMatch(/data-fact="count:in_group out"/);
-    expect(body).toContain(">doc:row=1 +1<");
-  });
 });
 
 describe("cards: further cases", () => {

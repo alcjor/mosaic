@@ -3,6 +3,7 @@
    * The node types the page lists (all the mosaic declares, or the view file's, in its order),
    * each opening its table, with its node count and its label.
    */
+  import EmptyState from "./ui/EmptyState.svelte";
   import type { NodeType } from "@mosaic/kit";
   import TypeChip from "./TypeChip.svelte";
 
@@ -21,7 +22,7 @@
 
 <h2 class="heading section-label">Tables</h2>
 {#if types.length === 0}
-  <p class="empty body-screen">This mosaic declares no node type.</p>
+  <EmptyState message="This mosaic declares no node type." />
 {/if}
 <ul class="rows">
   {#each types as type (type.name)}
@@ -79,10 +80,5 @@
   .count {
     color: var(--ink-muted);
     font-family: var(--font-mono);
-  }
-
-  .empty {
-    margin: var(--space-3);
-    color: var(--ink-muted);
   }
 </style>

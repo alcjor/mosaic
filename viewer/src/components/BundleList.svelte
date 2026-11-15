@@ -6,6 +6,7 @@
    * reaching it), or the list says that the kit lists only these (how each is found is in
    * lib/graph/hood.ts).
    */
+  import Button from "./ui/Button.svelte";
   import type { Bundle } from "../lib/graph/hood.js";
   import { once } from "../lib/graph/hoodview.js";
   import { noun, number } from "../lib/graph/mapview.js";
@@ -59,7 +60,7 @@
         {#each bundle.allLabels as label, i (i)}{#if i > 0}<span class="dot" aria-hidden="true"> · </span>{/if}<span class="each">{label ?? "(no name)"}</span>{/each}
       </p>
     {:else if bundle.table}
-      <a class="button step-title" href={tableHref(bundle.table)}>Open the rest as a table</a>
+      <Button variant="primary" href={tableHref(bundle.table)}>Open the rest as a table</Button>
       {#if bundle.byName}
         <p class="caption muted">
           The table finds them by its name, so a thing linked to another whose name holds “{owner}” is listed too.
@@ -104,8 +105,7 @@
     background: var(--surface-tint);
   }
 
-  .row:focus-visible,
-  .button:focus-visible {
+  .row:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
@@ -121,19 +121,5 @@
 
   .muted {
     color: var(--ink-muted);
-  }
-
-  .button {
-    display: inline-block;
-    margin-block: var(--space-2);
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-md);
-    background: var(--accent);
-    color: var(--surface);
-    text-decoration: none;
-  }
-
-  .button:hover {
-    background: var(--shard-3);
   }
 </style>

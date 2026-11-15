@@ -153,8 +153,8 @@ describe("the Chain view, drawn, with the view file's chains", () => {
   it("lists each saved chain by its label, as a button that opens it", () => {
     const { body } = render(ChainView, { props: props(null, { saved: [items, { name: "Groups", chain: { start: "Group", pin: null, steps: [] } }] }) });
     const list = body.split('aria-label="Saved chains"')[1]!;
-    expect(list).toMatch(/<button[^>]*>\s*Items in x\s*<\/button>/);
-    expect(list).toMatch(/<button[^>]*>\s*Groups\s*<\/button>/);
+    expect(list).toMatch(/<button[^>]*>(?:<!--[^>]*-->)*\s*Items in x\s*(?:<!--[^>]*-->)*<\/button>/);
+    expect(list).toMatch(/<button[^>]*>(?:<!--[^>]*-->)*\s*Groups\s*(?:<!--[^>]*-->)*<\/button>/);
     expect(list.indexOf("Items in x")).toBeLessThan(list.indexOf("Groups"));
   });
 
@@ -169,7 +169,7 @@ describe("the Chain view, drawn, with the view file's chains", () => {
     expect(body).toContain("chains:\n  Old:\n    start: Group\n  Item → Group:\n    start: Item\n    steps:\n      - in_group\n".replace("  Item → Group:", '  "Item → Group":'));
     expect(body).toContain("Copy the text");
     // Behind a button, closed until asked for: the results stay next to their count.
-    expect(body).toMatch(/<button[^>]*aria-expanded="false"[^>]*>\s*Keep the chain in the view file/);
+    expect(body).toMatch(/<button[^>]*aria-expanded="false"[^>]*>(?:<!--[^>]*-->)*\s*Keep the chain in the view file/);
     expect(body).toMatch(/<div class="place keep[^"]*"[^>]*hidden/);
   });
 

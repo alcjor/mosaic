@@ -39,7 +39,7 @@ function spec(): MosaicSpec {
 
 const hrefFor = (id: string) => routeHash({ query: "", node: id });
 const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
 const ALL = ["carries", "points_at", "related"];
 
 async function draw(file: SealedFile, state: HoodState, unapplied: readonly string[] = []) {

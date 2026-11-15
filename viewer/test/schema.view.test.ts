@@ -10,7 +10,6 @@ import { openMosaic } from "../src/lib/mosaic.js";
 import { talliesFor, Walker } from "../src/lib/graph/session.js";
 import { routeHash, type TableRoute } from "../src/lib/route.js";
 import { DEFAULT_VIEW, parseView, Shape, type ViewSettings } from "../src/lib/view.js";
-import { VIEWS } from "../src/lib/views.js";
 import { noun, partialNote, walksFor } from "../src/lib/graph/mapview.js";
 import { Tallies } from "../src/lib/graph/tally.js";
 
@@ -50,9 +49,6 @@ async function drawn(walk = false, view = DEFAULT_VIEW) {
 const attr = (html: string, name: string) => [...html.matchAll(new RegExp(`${name}="([^"]*)"`, "g"))].map((m) => m[1]!);
 
 describe("the Schema view (G-1)", () => {
-  it("is available in the shell's switcher", () => {
-    expect(VIEWS.find((v) => v.id === "schema")).toMatchObject({ available: true });
-  });
 
   it("draws every node type as a shard with its count, and every edge type as an arrow", async () => {
     const html = await drawn();

@@ -1,7 +1,8 @@
 <script lang="ts">
   /**
    * Button (brand book, section 6): 32px, primary (one per view), secondary or ghost. With
-   * `href` it is a link that looks like a button; a disabled link loses its href.
+   * `href` it is a link that looks like a button; a disabled link loses its href. With
+   * `pressed` it is a toggle. Other attributes (`data-*`, `aria-*`) go to the element.
    */
   import type { Snippet } from "svelte";
 
@@ -11,8 +12,10 @@
     disabled = false,
     type = "button",
     label,
+    pressed,
     onclick,
     children,
+    ...rest
   }: {
     variant?: "primary" | "secondary" | "ghost";
     href?: string;
@@ -20,13 +23,17 @@
     type?: "button" | "submit" | "reset";
     /** An accessible name, for a button whose content is only an icon. */
     label?: string;
+    /** For a toggle: whether it is on. */
+    pressed?: boolean;
     onclick?: (event: MouseEvent) => void;
     children: Snippet;
+    [attribute: string]: unknown;
   } = $props();
 </script>
 
 {#if href !== undefined}
   <a
+    {...rest}
     class="button step-title {variant}"
     href={disabled ? undefined : href}
     aria-disabled={disabled ? "true" : undefined}
@@ -34,7 +41,7 @@
     onclick={disabled ? (e) => e.preventDefault() : onclick}>{@render children()}</a
   >
 {:else}
-  <button class="button step-title {variant}" {type} {disabled} aria-label={label} {onclick}>{@render children()}</button>
+  <button {...rest} class="button step-title {variant}" {type} {disabled} aria-label={label} aria-pressed={pressed} {onclick}>{@render children()}</button>
 {/if}
 
 <style>
@@ -69,13 +76,18 @@
     color: var(--ink);
   }
 
+  .button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--surface);
+  }
+
   .primary:hover:not(:disabled, [aria-disabled="true"]) {
     background: var(--shard-3);
     color: var(--ceramic);
   }
 
-  .secondary:hover:not(:disabled, [aria-disabled="true"]),
-  .ghost:hover:not(:disabled, [aria-disabled="true"]) {
+  .secondary:hover:not(:disabled, [aria-disabled="true"], [aria-pressed="true"]),
+  .ghost:hover:not(:disabled, [aria-disabled="true"], [aria-pressed="true"]) {
     background: var(--surface-tint);
   }
 

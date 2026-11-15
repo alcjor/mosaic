@@ -55,11 +55,11 @@ async function picture(file: SealedFile, state: HoodState) {
 describe("the address of a neighbourhood (G-8)", () => {
   it("holds the centre, as the neighbourhood view", () => {
     const route = parseRoute(linkOf(hoodOf("Hub:h")));
-    expect(route).toMatchObject({ node: "Hub:h", view: "neighbourhood" });
+    expect(route).toMatchObject({ node: "Hub:h", view: "explore" });
   });
 
   it("says nothing more for a neighbourhood with no choices made", () => {
-    expect(linkOf(hoodOf("Hub:h"))).toBe(routeHash({ query: "", node: "Hub:h", view: "neighbourhood" }));
+    expect(linkOf(hoodOf("Hub:h"))).toBe(routeHash({ query: "", node: "Hub:h", view: "explore" }));
   });
 
   it("holds the things expanded, in the order opened, the things hidden, the edge types shown and the limit", () => {
@@ -83,11 +83,11 @@ describe("the address of a neighbourhood (G-8)", () => {
 
   it("keeps the search beside it, as a link to a thing does", () => {
     const hash = routeHash({ ...hoodRoute(expand(hoodOf("Hub:h"), "Tag:t0")), query: "tags" });
-    expect(parseRoute(hash)).toMatchObject({ query: "tags", node: "Hub:h", view: "neighbourhood", hood: { expanded: ["Tag:t0"] } });
+    expect(parseRoute(hash)).toMatchObject({ query: "tags", node: "Hub:h", view: "explore", hood: { expanded: ["Tag:t0"] } });
   });
 
   it("holds no choices for other views", () => {
-    const hash = linkOf(expand(hoodOf("Hub:h"), "Tag:t0")).replace("v=neighbourhood", "v=schema");
+    const hash = linkOf(expand(hoodOf("Hub:h"), "Tag:t0")).replace("v=explore", "v=schema");
     expect(parseRoute(hash).hood ?? null).toBeNull();
   });
 });
@@ -307,7 +307,7 @@ describe("hood address: further cases", () => {
     it("keeps ids and edge types made of address characters apart, at the route", () => {
       const nasty = ["a&x=b", "a=b", "#", "?", "%", "%zz", "+", "a b", ",", ";", "\n", "\0", "\u0000x", "é", "😀", "‮", "x\ty", "&", "x=1&h=2&l=3&e=carries"];
       const hood = { expanded: nasty.map((n) => `Tag:${n}`), hidden: nasty.map((n) => `Item:${n}`), edges: nasty, limit: "10" };
-      const route: Route = { query: "q&x=1", node: "Hub:h&l=3", view: "neighbourhood", hood };
+      const route: Route = { query: "q&x=1", node: "Hub:h&l=3", view: "explore", hood };
       const back = parseRoute(routeHash(route));
       expect(back.query).toBe("q&x=1");
       expect(back.node).toBe("Hub:h&l=3");
@@ -315,7 +315,7 @@ describe("hood address: further cases", () => {
     });
 
     it("keeps an id and a single empty edge list distinct from no choices, at the route", () => {
-      const back = parseRoute(routeHash({ query: "", node: "Hub:h", view: "neighbourhood", hood: { expanded: [], hidden: [], edges: [], limit: null } }));
+      const back = parseRoute(routeHash({ query: "", node: "Hub:h", view: "explore", hood: { expanded: [], hidden: [], edges: [], limit: null } }));
       expect(back.hood?.edges).toEqual([]);
     });
 
@@ -638,7 +638,7 @@ describe("hood address: further cases", () => {
   describe("what a link says it could not apply, drawn (G-8)", () => {
     const hrefFor = (id: string) => routeHash({ query: "", node: id });
     const tableHref = (table: Parameters<typeof routeHash>[0]["table"]) => routeHash({ query: "", node: null, table });
-    const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+    const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
 
     async function draw(file: SealedFile, state: HoodState, unapplied: readonly string[]) {
       const initial = await new HoodLoader(file).load(state);

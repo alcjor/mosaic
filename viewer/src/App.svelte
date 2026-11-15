@@ -1,47 +1,53 @@
 <script lang="ts">
   /**
    * The viewer's shell (brand book, section 6): a header band with the mosaic's name, its short
-   * knowledge hash and the search field; then the results, the node's card, and its links and
-   * sources; or the tables rebuilt from the mosaic's node types, each page one `table` call. The
-   * kit runs in this page: a mosaic is opened from a file the reader picks, or from
-   * the address's `?mosaic=<url>`, and nothing is asked of a server but the file itself. When the
+   * knowledge hash and the search field; under it the four places (lib/places.ts):
+   *
+   * - Home: the map of types and the view file's saved trails. A type leads to its table, a
+   *   saved trail opens in Trails.
+   * - Explore: the graph round the thing the address names, beside the selected thing's card,
+   *   with the search results that led there. Opening a search result lands here.
+   * - Trails: a chain, built step by step, shown as columns (one per place) or as one table.
+   * - Tables: a type's table.
+   *
+   * The kit runs in this page: a mosaic is opened from a file the reader picks, or from the
+   * address's `?mosaic=<url>`, and nothing is asked of a server but the file itself. When the
    * address also names the model (`?model=<url>`, from `mosaic view --model`), it is loaded in
    * the page first, so `find` searches by vectors too; a model that fails to load is shown as an
    * error and the page searches by names and full text only (section 3.8). The view file's
-   * settings, from the address's `?view=<url>` (lib/view.ts), shape the page: the types listed,
-   * their labels, columns and node pages, the theme and the search mode; what they name that the
-   * mosaic does not have is shown as a notice, and the page still opens. The page asks for them
-   * again every second, so a view file saved under `mosaic view` reshapes it; settings that
-   * cannot be read (a file saved with an error) are shown as an error and the page stays as it was.
-   * A single-file export (lib/exported.ts) holds its mosaic, its view file's settings and SQLite's
-   * WebAssembly in the document: the page opens them, fetches nothing, watches nothing, and says
-   * it is a read-only export (brand book, section 6, Shell).
+   * settings, from the address's `?view=<url>` (lib/view.ts), shape the page; what they name that
+   * the mosaic does not have is shown as a notice, and the page still opens. The page asks for
+   * them again every second, so a view file saved under `mosaic view` reshapes it; settings that
+   * cannot be read are shown as an error and the page stays as it was. A single-file export
+   * (lib/exported.ts) holds its mosaic, its view file's settings and SQLite's WebAssembly in the
+   * document: the page opens them, fetches nothing, watches nothing, and says it is a read-only
+   * export.
    *
-   * The shell: the header band with the dark mark; below it the view switcher
-   * (components/ViewBar.svelte, lib/views.ts), whose views not built yet say when they come; then
-   * three columns at 1280px and up (results, the card, the context column), two from 960px
-   * (the context column under the card), and below 960px one column at a time, chosen by tabs.
-   * A table view keeps the thing that was open in the address, so the switch's Card goes back
-   * to it.
+   * Below 960px a place's side panes become tabs.
    */
-  import { onMount, tick } from "svelte";
+  import { onMount } from "svelte";
   import CardPicker from "./components/CardPicker.svelte";
   import ChainView from "./components/ChainView.svelte";
-  import EntityCard from "./components/EntityCard.svelte";
   import NodeContext from "./components/NodeContext.svelte";
-  import ResultList from "./components/ResultList.svelte";
-  import ResultRow from "./components/ResultRow.svelte";
-  import ResultTableView from "./components/ResultTableView.svelte";
   import NeighbourhoodView from "./components/NeighbourhoodView.svelte";
-  import OverviewView from "./components/OverviewView.svelte";
+  import PlaceBar from "./components/PlaceBar.svelte";
+  import ResultList from "./components/ResultList.svelte";
+  import ResultTableView from "./components/ResultTableView.svelte";
   import SchemaView from "./components/SchemaView.svelte";
   import SearchField from "./components/SearchField.svelte";
   import TableView from "./components/TableView.svelte";
+  import TrailColumns from "./components/TrailColumns.svelte";
   import TypeList from "./components/TypeList.svelte";
-  import ViewBar from "./components/ViewBar.svelte";
-  import { fetchNamedModel, fetchNamedMosaic, loadModel, shortHash } from "./lib/mosaic.js";
+  import Button from "./components/ui/Button.svelte";
+  import EmptyState from "./components/ui/EmptyState.svelte";
+  import Panel from "./components/ui/Panel.svelte";
+  import Tabs from "./components/ui/Tabs.svelte";
+  import { pin } from "./lib/chain.js";
+  import { linkOf } from "./lib/chainlink.js";
+  import { fetchNamedModel, fetchNamedMosaic, loadModel, shortHash, type NodeView } from "./lib/mosaic.js";
   import { hoodRoute } from "./lib/graph/hood-address.js";
   import type { HoodState } from "./lib/graph/hood.js";
+  import type { PlaceId } from "./lib/places.js";
   import { parseRoute, routeHash, type ChainLinkRoute, type Condition, type HoodChoices, type TableRoute } from "./lib/route.js";
   import { useSqliteWasm } from "@mosaic/kit";
   import { cutFrom, readExport, runtimeOf } from "./lib/exported.js";
@@ -49,7 +55,6 @@
   import { findThings, type Answer } from "./lib/placesearch.svelte.js";
   import { applyTheme, DEFAULT_VIEW, Shape, watchView } from "./lib/view.js";
   import { Viewer } from "./lib/viewer.svelte.js";
-  import { viewNamed, type ThingViewId, type ViewId } from "./lib/views.js";
 
   let {
     viewer = new Viewer(),
@@ -70,110 +75,72 @@
 
   $effect(() => applyTheme(document.documentElement, viewer.view.theme));
 
-  const hrefFor = (id: string): string => routeHash({ query: viewer.query, node: id });
-  const tableHref = (table: TableRoute): string => routeHash({ query: viewer.query, node: viewer.nodeId, table });
+  /** A thing opens in Explore. */
+  const hrefFor = (id: string): string => routeHash({ query: viewer.query, node: id, view: "explore" });
+  /** A table opens in Tables; the thing open in Explore stays in the address. */
+  const tableHref = (table: TableRoute): string => routeHash({ query: viewer.query, node: viewer.nodeId, view: "tables", table });
   const typeHref = (type: string): string => tableHref({ type, page: 1, order: null, where: [] });
-  const viewHref = (view: ViewId): string => routeHash({ query: viewer.query, node: viewer.nodeId, view });
+  /** A chain opens in Trails, as columns. */
+  const trailHref = (chain: ChainLinkRoute | null): string => routeHash({ query: viewer.query, node: viewer.nodeId, view: "trails", chain });
 
-  /** The view of the whole mosaic that is open, if the address names one. */
-  let view = $derived(viewer.viewId === null ? undefined : viewNamed(viewer.viewId));
+  /** The graph's choices as last made, so going back to Explore finds the same picture. */
+  let lastHood = $state.raw<HoodState | null>(null);
 
-  /** How the current thing is shown: its card, its type's table, or nothing. */
-  let thing = $derived<ThingViewId | null>(
-    view
-      ? view.id === "neighbourhood" && viewer.nodeId !== null
-        ? "graph"
-        : null
-      : viewer.tableRoute
-        ? "table"
-        : viewer.nodeId !== null
-          ? "card"
-          : null,
-  );
+  /** Where a place's link leads: the place as it was left. */
+  function placeHref(place: PlaceId): string {
+    if (place === "explore") {
+      const hood = lastHood !== null && lastHood.centre === viewer.nodeId ? (hoodRoute(lastHood).hood ?? null) : null;
+      return routeHash({ query: viewer.query, node: viewer.nodeId, view: "explore", hood });
+    }
+    if (place === "trails") return trailHref(viewer.chainLink());
+    if (place === "tables") return routeHash({ query: viewer.query, node: viewer.nodeId, view: "tables", table: viewer.tableRoute });
+    return routeHash({ query: viewer.query, node: viewer.nodeId });
+  }
 
-  /** The type of the thing whose page is open, once `get` has answered. */
-  let thingType = $derived(viewer.page && "node" in viewer.page ? viewer.page.node.type : null);
-  /** The open thing's type's card, as the picker starts from it. */
-  let pickedCard = $derived(viewer.file !== null && thingType !== null ? startingCard(viewer.view, viewer.file, thingType) : null);
+  let shape = $derived(viewer.shape ?? (viewer.file === null ? null : new Shape(DEFAULT_VIEW, viewer.file)));
 
   /** Things of `type` named like `query`, for pinning a chain's place: the kit's `find`. */
   function findIn(type: string, query: string): Promise<Answer> {
     return viewer.file === null ? Promise.resolve([]) : findThings(viewer.file, type, query);
   }
 
-  function thingHref(id: ThingViewId): string | null {
-    if (id === "card") return viewer.nodeId === null ? null : hrefFor(viewer.nodeId);
-    // A thing's graph is its neighbourhood, centred on it (G-3).
-    if (id === "graph") return viewer.nodeId === null ? null : viewHref("neighbourhood");
-    if (id === "table") {
-      if (viewer.tableRoute) return tableHref(viewer.tableRoute);
-      return thingType === null ? null : typeHref(thingType);
-    }
-    return null;
-  }
-
-  function thingNote(id: ThingViewId): string {
-    if (id === "graph") return "Open a thing first to see its neighbourhood: search for it, or pick a row of a table.";
-    return id === "card"
-      ? "Open a thing first: search for it, or pick a row of a table."
-      : "Open a thing first to see its type's table, or pick a type under Tables.";
-  }
-
-  type Tab = "results" | "main" | "context";
-
   /** The tab a person picked since the address last changed, if any. */
-  let pickedTab = $state<Tab | null>(null);
+  let pickedTab = $state<string | null>(null);
 
-  /** The columns as tabs: the context column only beside a thing's page. */
-  let tabs = $derived.by(() => {
-    const main = view ? view.label : viewer.tableRoute ? "Table" : "Card";
-    const all: { id: Tab; label: string }[] = [
-      { id: "results", label: "Results" },
-      { id: "main", label: main },
-    ];
-    if (!view && !viewer.tableRoute) all.push({ id: "context", label: "Links and sources" });
-    return all;
-  });
+  /** Explore's panes as tabs, below 960px. */
+  const exploreTabs = [
+    { value: "results", label: "Results" },
+    { value: "graph", label: "Graph" },
+    { value: "card", label: "Card" },
+  ];
+  /** Tables' panes as tabs, below 960px. */
+  const tableTabs = [
+    { value: "types", label: "Types" },
+    { value: "table", label: "Table" },
+  ];
 
-  /** The tab shown below 960px: the one picked, else the open thing, view or table, else the results. */
-  let tab = $derived.by((): Tab => {
-    if (pickedTab !== null && tabs.some((t) => t.id === pickedTab)) return pickedTab;
-    return view || viewer.tableRoute || viewer.nodeId !== null ? "main" : "results";
-  });
-
-  /** A column's attributes as a tab panel, below 960px only. */
-  function panel(id: Tab): Record<string, string | boolean | undefined> {
-    if (!narrow) return {};
-    return { role: "tabpanel", id: `panel-${id}`, "aria-labelledby": `tab-${id}`, hidden: id !== tab };
-  }
-
-  async function choose(id: Tab, focus: boolean): Promise<void> {
-    pickedTab = id;
-    if (focus) {
-      await tick();
-      document.getElementById(`tab-${id}`)?.focus();
+  /** The tab shown below 960px: the one picked, else what the address opened. */
+  let tab = $derived.by((): string => {
+    if (viewer.place === "explore") {
+      if (pickedTab !== null && exploreTabs.some((t) => t.value === pickedTab)) return pickedTab;
+      return viewer.nodeId !== null ? "card" : "results";
     }
-  }
-
-  /** Arrow keys, Home and End move between the tabs (WAI-ARIA tabs pattern, automatic activation). */
-  function tabKey(event: KeyboardEvent): void {
-    const at = tabs.findIndex((t) => t.id === tab);
-    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[event.key];
-    if (to === undefined) return;
-    event.preventDefault();
-    void choose(tabs[(to + tabs.length) % tabs.length]!.id, true);
-  }
+    if (pickedTab !== null && tableTabs.some((t) => t.value === pickedTab)) return pickedTab;
+    return viewer.tableRoute !== null ? "table" : "types";
+  });
 
   function filtered(condition: Condition): void {
     const table = viewer.tableRoute;
     if (table) location.hash = tableHref({ ...table, page: 1, where: [...table.where, condition] });
   }
 
-  /** The choices a neighbourhood's address holds (G-8), for the neighbourhood view to open. */
+  /** The choices Explore's address holds (G-8), for the graph to open. */
   let hoodAddress = $state<HoodChoices | null>(null);
 
-  /** The neighbourhood's address follows each choice made in it, without a step for Back (G-8). */
+  /** Explore's address follows each choice made in the graph, without a step for Back (G-8). */
   function writeHood(state: HoodState): void {
+    lastHood = state;
+    if (viewer.place !== "explore" || state.centre !== viewer.nodeId) return;
     const hash = routeHash({ ...hoodRoute(state), query: viewer.query });
     if (hash !== location.hash) history.replaceState(history.state, "", hash);
   }
@@ -182,34 +149,35 @@
   let addressRead = $state(false);
 
   /**
-   * The chain view's address follows the chain, the view, the place and the table's sort and
+   * Trails' address follows the chain, the view and the table's sort and
    * filters, without a step for Back (V-17): it is the link to give a colleague. It waits
    * while a link is applied, and until the address has been read on the open mosaic.
    */
   $effect(() => {
-    if (!addressRead || viewer.linking || viewer.viewId !== "chain" || viewer.status !== "ready") return;
+    if (!addressRead || viewer.linking || viewer.place !== "trails" || viewer.status !== "ready") return;
     const chain = viewer.chainAddress();
     if (chain === undefined) return;
-    const hash = routeHash({ query: viewer.query, node: viewer.nodeId, view: "chain", chain });
+    const hash = trailHref(chain);
     if (hash !== location.hash) history.replaceState(history.state, "", hash);
   });
 
-  /** The link part of a chain view's address, to tell whether a link names the chain shown. */
-  const chainHash = (chain: ChainLinkRoute | null): string => routeHash({ query: "", node: null, view: "chain", chain });
+  /** The link part of a Trails address, to tell whether a link names the chain shown. */
+  const chainHash = (chain: ChainLinkRoute | null): string => routeHash({ query: "", node: null, view: "trails", chain });
 
-  /** Follow the address after `#`: the query, and the node, the table view or the chain it names. */
+  /** Follow the address after `#`: the place, the query, and the node, the table or the chain it names. */
   function follow(): void {
     const route = parseRoute(location.hash);
-    viewer.viewId = route.view ?? null;
+    viewer.place = route.view ?? "home";
     hoodAddress = route.hood ?? null;
     pickedTab = null;
     if (route.query !== viewer.query || viewer.results === null) void viewer.search(route.query);
     if (route.node !== viewer.nodeId || viewer.page === null) void viewer.show(route.node);
-    const table = route.table ?? null;
+    // Another place's address does not name the table: Tables keeps the one it had.
+    const table = route.view === "tables" ? (route.table ?? null) : viewer.tableRoute;
     if (routeHash({ query: "", node: null, table }) !== routeHash({ query: "", node: null, table: viewer.tableRoute }) || viewer.table === null) {
       void viewer.showTable(table);
     }
-    if (route.view === "chain" && route.chain && viewer.file !== null && chainHash(route.chain) !== chainHash(viewer.chainLink())) {
+    if (route.view === "trails" && route.chain && viewer.file !== null && chainHash(route.chain) !== chainHash(viewer.chainLink())) {
       void viewer.openChainLink(route.chain);
     }
     addressRead = viewer.file !== null;
@@ -324,7 +292,7 @@
       value={viewer.query}
       disabled={viewer.file === null}
       mode={viewer.mode}
-      onsearch={(query) => (location.hash = routeHash({ query, node: viewer.nodeId }))}
+      onsearch={(query) => (location.hash = routeHash({ query, node: viewer.nodeId, view: "explore" }))}
       onmode={(mode) => void viewer.setMode(mode)}
     />
   </div>
@@ -344,7 +312,7 @@
   <div class="loading" role="progressbar" aria-label="Opening the mosaic"></div>
 {/if}
 {#if viewer.file}
-  <ViewBar view={viewer.viewId} {thing} {viewHref} {thingHref} {thingNote} />
+  <PlaceBar place={viewer.place} hrefFor={placeHref} />
 {/if}
 {#if viewer.seal === "not verified"}
   <p class="banner body-screen" role="alert" data-seal-warning>
@@ -377,104 +345,65 @@
   </ul>
 {/if}
 
-{#if viewer.file === null}
+{#snippet context(page: NodeView)}
+  {#if viewer.file !== null}
+    {@const card = startingCard(viewer.view, viewer.file, page.node.type)}
+    <CardPicker
+      type={card.name}
+      options={pickOptions(viewer.file, card.name)}
+      {card}
+      chosen={viewer.chosen.includes(card.name)}
+      text={cardsText(viewer.view.cards?.length ? viewer.view.cards : [card])}
+      shape={viewer.shape}
+      onpick={(part, name, on) => void viewer.chooseCard(toggle(card, part, name, on))}
+      onreset={() => void viewer.resetCard(card.name)}
+    />
+    <aside aria-label="Links and sources">
+      <NodeContext view={page} {hrefFor} shape={viewer.shape} />
+    </aside>
+  {/if}
+{/snippet}
+
+{#if viewer.file === null || shape === null}
   <main class="start">
-    <p class="empty body-screen">Open a mosaic to search it. It is read in this page; nothing is sent anywhere.</p>
+    <EmptyState message="Open a mosaic to search it. It is read in this page; nothing is sent anywhere." />
   </main>
-{:else}
-  <main class="columns">
-    {#if narrow}
-      <div class="tabs" role="tablist" aria-label="Columns" tabindex="-1" onkeydown={tabKey}>
-        {#each tabs as t (t.id)}
-          <button
-            class="tab body-screen"
-            type="button"
-            role="tab"
-            id="tab-{t.id}"
-            aria-selected={t.id === tab}
-            aria-controls="panel-{t.id}"
-            tabindex={t.id === tab ? 0 : -1}
-            onclick={() => void choose(t.id, false)}>{t.label}</button
-          >
-        {/each}
-      </div>
-    {/if}
-    <nav class="results" aria-label="Results" {...panel("results")}>
-      {#if viewer.results}
-        <ResultList view={viewer.results} selected={viewer.nodeId} {hrefFor} typeLabel={(type) => viewer.shape?.typeLabel(type) ?? type} />
+{:else if viewer.place === "home"}
+  <main class="place home" data-place="home">
+    <Panel title="Saved trails">
+      {#if viewer.savedChains.length === 0}
+        <EmptyState message="No saved trails yet. Build one in Trails and keep it in the view file.">
+          {#snippet action()}<Button href={placeHref("trails")}>Build a trail</Button>{/snippet}
+        </EmptyState>
       {:else}
-        <p class="empty body-screen">Search for a name, an alias or words in the text.</p>
+        <ul class="saved">
+          {#each viewer.savedChains as s (s.name)}
+            <li><Button href={trailHref(linkOf(s.chain, "columns", 0, [], { sort: null, filters: [] }))} data-trail={s.name}>{s.name}</Button></li>
+          {/each}
+        </ul>
       {/if}
-      <TypeList
-        types={viewer.shape?.types ?? viewer.file.nodeTypes}
-        selected={viewer.tableRoute?.type ?? null}
-        hrefFor={typeHref}
-        labelFor={(type) => viewer.shape?.typeLabel(type) ?? type}
-      />
+    </Panel>
+    <section aria-labelledby="home-map">
+      <h1 class="title panel-title" id="home-map">Map of types</h1>
+      <SchemaView file={viewer.file} {shape} {hrefFor} {tableHref} />
+    </section>
+  </main>
+{:else if viewer.place === "explore"}
+  <main class="place explore" data-place="explore">
+    {#if narrow}
+      <div class="tabs"><Tabs tabs={exploreTabs} value={tab} label="Explore" onchange={(v) => (pickedTab = v)} /></div>
+    {/if}
+    <nav class="results" aria-label="Results" hidden={narrow && tab !== "results"}>
+      {#if viewer.results}
+        <ResultList view={viewer.results} selected={viewer.nodeId} {hrefFor} typeLabel={(type) => shape.typeLabel(type)} />
+      {:else}
+        <EmptyState message="Search for a name, an alias or words in the text." />
+      {/if}
     </nav>
-    {#if view}
-      <section class="wide" aria-label={view.label} {...panel("main")}>
-        <h2 class="title panel-title">{view.label}</h2>
-        {#if !view.available}
-          <p class="empty body-screen">{view.note}</p>
-        {:else if view.id === "schema"}
-          <SchemaView file={viewer.file} shape={viewer.shape ?? new Shape(DEFAULT_VIEW, viewer.file)} {hrefFor} {tableHref} />
-        {:else if view.id === "overview"}
-          <OverviewView
-            file={viewer.file}
-            shape={viewer.shape ?? new Shape(DEFAULT_VIEW, viewer.file)}
-            {hrefFor}
-            {tableHref}
-            hoodHref={(id) => routeHash({ query: viewer.query, node: id, view: "neighbourhood" })}
-          />
-        {:else if view.id === "neighbourhood"}
-          <NeighbourhoodView
-            file={viewer.file}
-            shape={viewer.shape ?? new Shape(DEFAULT_VIEW, viewer.file)}
-            centre={viewer.nodeId}
-            {hrefFor}
-            {tableHref}
-            hoodHref={(id) => routeHash({ query: viewer.query, node: id, view: "neighbourhood" })}
-            address={hoodAddress}
-            onchoices={writeHood}
-          />
-        {:else if view.id === "chain"}
-          <ChainView schema={viewer.file} chain={viewer.chain} count={viewer.chainCount} shape={viewer.shape} onchange={(c) => viewer.chooseChain(c)} find={findIn} searches={viewer.searches} saved={viewer.savedChains} fileChains={viewer.view.chains ?? []} />
-          {#if viewer.chain !== null}
-            <div class="show-as" role="group" aria-label="Show the results as">
-              <button class="step-title" type="button" aria-pressed={viewer.chainShow === "cards"} onclick={() => void viewer.showChainAs("cards")}>Cards</button>
-              <button class="step-title" type="button" aria-pressed={viewer.chainShow === "table"} onclick={() => void viewer.showChainAs("table")}>Table</button>
-            </div>
-          {/if}
-          {#if viewer.chainShow === "table" && viewer.chainTable !== null}
-            <ResultTableView table={viewer.chainTable} count={viewer.chainCount} {hrefFor} onshow={() => void viewer.showChainAs("cards")} onclear={() => void viewer.clearChainFilters()} />
-          {:else if viewer.chainRow !== null}
-            <ResultRow row={viewer.chainRow} index={viewer.chainIndex} count={viewer.chainCount} arranged={viewer.chainArranged} notice={viewer.chainNotice} shape={viewer.shape} {hrefFor} onmove={(i) => void viewer.moveResult(i)} />
-          {:else if viewer.chainArranged !== null && viewer.chainArranged.matching === 0}
-            <div class="empty no-match">
-              <p class="body-screen" role="status">No result matches the table's filters.</p>
-              <button class="clear step-title" type="button" onclick={() => void viewer.clearChainFilters()}>Clear filters</button>
-            </div>
-          {:else if viewer.chainFailure !== null}
-            <p class="empty body-screen" role="alert">{viewer.chainFailure}</p>
-          {/if}
-        {/if}
-      </section>
-    {:else if viewer.tableRoute}
-      <div class="wide" {...panel("main")}>
-        {#key viewer.tableRoute.type}
-          <TableView
-            view={viewer.table}
-            route={viewer.tableRoute}
-            hrefFor={tableHref}
-            nodeHref={hrefFor}
-            onfilter={filtered}
-            shape={viewer.shape}
-          />
-        {/key}
-      </div>
-    {:else if viewer.page && "message" in viewer.page}
-      <section class="entity" {...panel("main")}>
+    <div class="graph" hidden={narrow && tab === "results"}>
+      {#if viewer.nodeId === null}
+        <EmptyState message="No thing is open. Search for one in the field above, then pick a result to see it and what it links to." />
+      {:else if viewer.page && "message" in viewer.page}
         <p class="banner body-screen" role="alert">{viewer.page.message}</p>
         {#if viewer.page.suggestions.length > 0}
           <p class="caption">Closest:</p>
@@ -484,35 +413,76 @@
             {/each}
           </ul>
         {/if}
-      </section>
-      <aside class="context" {...panel("context")}></aside>
-    {:else if viewer.page}
-      <section class="entity" {...panel("main")}>
-        <EntityCard node={viewer.page.node} shape={viewer.shape} facts={viewer.facts} {hrefFor} />
-        {#if viewer.file !== null && pickedCard !== null}
-          {@const file = viewer.file}
-          {@const card = pickedCard}
-          <CardPicker
-            type={card.name}
-            options={pickOptions(file, card.name)}
-            {card}
-            chosen={viewer.chosen.includes(card.name)}
-            text={cardsText(viewer.view.cards?.length ? viewer.view.cards : [card])}
-            shape={viewer.shape}
-            onpick={(part, name, on) => void viewer.chooseCard(toggle(card, part, name, on))}
-            onreset={() => void viewer.resetCard(card.name)}
-          />
-        {/if}
-      </section>
-      <aside class="context" aria-label="Links and sources" {...panel("context")}>
-        <NodeContext view={viewer.page} {hrefFor} shape={viewer.shape} />
-      </aside>
+      {:else}
+        <NeighbourhoodView
+          file={viewer.file}
+          {shape}
+          centre={viewer.nodeId}
+          {hrefFor}
+          {tableHref}
+          hoodHref={hrefFor}
+          address={hoodAddress}
+          onchoices={writeHood}
+          only={narrow ? (tab === "card" ? "card" : "graph") : null}
+          extra={context}
+        />
+      {/if}
+    </div>
+  </main>
+{:else if viewer.place === "trails"}
+  <main class="place trails" data-place="trails">
+    <ChainView
+      schema={viewer.file}
+      chain={viewer.chain}
+      count={viewer.chainCount}
+      shape={viewer.shape}
+      onchange={(c) => viewer.chooseChain(c)}
+      find={findIn}
+      searches={viewer.searches}
+      saved={viewer.savedChains}
+      fileChains={viewer.view.chains ?? []}
+    />
+    {#if viewer.chain === null}
+      <EmptyState message="Choose a type to start a trail from, then add steps along its links." />
     {:else}
-      <section class="entity" {...panel("main")}><p class="empty body-screen">Pick a result to see its page.</p></section>
-      <aside class="context" {...panel("context")}>
-        <p class="empty body-screen">A thing's links and sources show here.</p>
-      </aside>
+      {@const chain = viewer.chain}
+      <div class="show-as" role="group" aria-label="Show the trail as">
+        <Button pressed={viewer.chainShow === "columns"} onclick={() => void viewer.showChainAs("columns")}>Columns</Button>
+        <Button pressed={viewer.chainShow === "table"} onclick={() => void viewer.showChainAs("table")}>Table</Button>
+      </div>
+      {#if viewer.chainShow === "table" && viewer.chainTable !== null}
+        <ResultTableView table={viewer.chainTable} count={viewer.chainCount} {hrefFor} onclear={() => void viewer.clearChainFilters()} />
+      {:else if viewer.chainFailure !== null}
+        <p class="banner body-screen" role="alert">{viewer.chainFailure}</p>
+      {:else if viewer.chainColumns !== null}
+        <TrailColumns
+          trail={viewer.chainColumns}
+          shape={viewer.shape}
+          {hrefFor}
+          onpin={(place, id) => viewer.chooseChain(pin(chain, place === 0 ? "start" : place - 1, id))}
+        />
+      {:else}
+        <p class="caption" role="status">Reading the trail…</p>
+      {/if}
     {/if}
+  </main>
+{:else}
+  <main class="place tables" data-place="tables">
+    {#if narrow}
+      <div class="tabs"><Tabs tabs={tableTabs} value={tab} label="Tables" onchange={(v) => (pickedTab = v)} /></div>
+    {/if}
+    <nav class="types" aria-label="Types" hidden={narrow && tab !== "types"}>
+      <TypeList types={shape.types} selected={viewer.tableRoute?.type ?? null} hrefFor={typeHref} labelFor={(type) => shape.typeLabel(type)} />
+    </nav>
+    <div class="table" hidden={narrow && tab !== "table"}>
+      {#if viewer.tableRoute}
+        {#key viewer.tableRoute.type}
+          <TableView view={viewer.table} route={viewer.tableRoute} hrefFor={tableHref} nodeHref={hrefFor} onfilter={filtered} shape={viewer.shape} />
+        {/key}
+      {:else}
+        <EmptyState message="Pick a type to see its table." />
+      {/if}
+    </div>
   </main>
 {/if}
 
@@ -630,190 +600,81 @@
   .start {
     max-inline-size: 40rem;
     margin-inline: auto;
-    padding: var(--space-5) var(--space-4);
+  }
+
+  .place {
+    box-sizing: border-box;
+    min-inline-size: 0;
+  }
+
+  [hidden] {
+    display: none;
+  }
+
+  .home,
+  .trails {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+    align-content: start;
+    padding: var(--space-4);
+  }
+
+  .title {
+    margin: 0 var(--space-4) var(--space-2);
+    color: var(--heading);
+  }
+
+  .saved {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .show-as {
     display: inline-flex;
-    margin-block-start: var(--space-4);
+    gap: var(--space-1);
   }
 
-  .show-as button {
-    min-block-size: var(--space-6);
-    padding: 0 var(--space-3);
-    border: 1px solid var(--accent);
-    background: var(--surface);
-    color: var(--accent);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .show-as button:first-child {
-    border-start-start-radius: var(--radius-md);
-    border-end-start-radius: var(--radius-md);
-  }
-
-  .show-as button:last-child {
-    border-inline-start: none;
-    border-start-end-radius: var(--radius-md);
-    border-end-end-radius: var(--radius-md);
-  }
-
-  .no-match {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    align-items: center;
-  }
-
-  .no-match p {
-    margin: 0;
-  }
-
-  .clear {
-    min-block-size: var(--space-6);
-    padding: 0 var(--space-3);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-md);
-    background: var(--surface);
-    color: var(--accent);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .clear:hover {
-    background: var(--surface-tint);
-  }
-
-  .clear:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  .show-as button[aria-pressed="true"] {
-    background: var(--accent);
-    color: var(--surface);
-  }
-
-  .show-as button:focus-visible {
-    position: relative;
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  .empty {
-    margin: var(--space-3);
-    color: var(--ink-muted);
-  }
-
-  .columns {
+  .explore,
+  .tables {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-content: start;
   }
 
-  .columns > [hidden] {
-    display: none;
-  }
-
   .tabs {
-    display: flex;
-    gap: var(--space-1);
     padding: var(--space-2) var(--space-4) 0;
-    border-block-end: 1px solid var(--border);
   }
 
-  .tab {
-    padding: var(--space-2) var(--space-3);
-    border: none;
-    border-block-end: 2px solid transparent;
-    background: none;
-    color: var(--ink);
-    font: inherit;
-    cursor: pointer;
-  }
-
-  .tab:hover:not([aria-selected="true"]) {
-    background: var(--surface-tint);
-  }
-
-  .tab:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  .tab[aria-selected="true"] {
-    border-block-end-color: var(--accent);
-    background: var(--surface-tint);
-    color: var(--accent);
-  }
-
-  .results,
-  .context {
-    border-block-end: 1px solid var(--border);
-  }
-
-  .wide {
+  .graph,
+  .table {
     min-inline-size: 0;
   }
 
-  .title {
-    margin: var(--space-5) var(--space-4) var(--space-2);
-    color: var(--heading);
+  .graph {
+    padding-block-start: var(--space-3);
   }
 
   .suggestions {
     margin: 0;
-    padding-inline-start: var(--space-4);
+    padding-inline-start: var(--space-6);
   }
 
-  /* From 960px: the results beside the card, the context column under the card. */
+  /* From 960px: a place's side pane beside its main pane. */
   @media (width >= 960px) {
-    .columns {
-      grid-template-columns: 320px minmax(0, 1fr);
-      grid-template-areas:
-        "results main"
-        "results context";
-      grid-template-rows: auto 1fr;
+    .explore,
+    .tables {
+      grid-template-columns: 280px minmax(0, 1fr);
       min-block-size: calc(100vh - var(--app-header));
     }
 
-    .results {
-      grid-area: results;
-      border-block-end: none;
+    .results,
+    .types {
       border-inline-end: 1px solid var(--border);
-    }
-
-    .entity,
-    .wide {
-      grid-area: main;
-    }
-
-    .context {
-      grid-area: context;
-      border-block: 1px solid var(--border) none;
-    }
-
-    .wide {
-      grid-row: 1 / span 2;
-    }
-  }
-
-  /* From 1280px: three columns, results (320px), the card, the context column (320px). */
-  @media (width >= 1280px) {
-    .columns {
-      grid-template-columns: 320px minmax(0, 1fr) 320px;
-      grid-template-areas: "results main context";
-      grid-template-rows: auto;
-    }
-
-    .context {
-      border-block: none;
-      border-inline-start: 1px solid var(--border);
-    }
-
-    .wide {
-      grid-area: 1 / 2 / 2 / 4;
     }
   }
 

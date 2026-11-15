@@ -29,9 +29,9 @@ async function table(): Promise<Viewer> {
   await v.showChainAs("table");
   return v;
 }
-const drawn = (v: Viewer) => render(ResultTableView, { props: { table: v.chainTable!, count: v.chainCount, onshow: () => {} } }).body;
+const drawn = (v: Viewer) => render(ResultTableView, { props: { table: v.chainTable!, count: v.chainCount } }).body;
 /** The row numbers the table shows, in order. */
-const numbers = (body: string) => [...body.matchAll(/aria-label="Show result ([\d,]+) as cards"/g)].map((m) => Number(m[1]!.replace(/,/g, "")));
+const numbers = (body: string) => [...body.matchAll(/<td class="num mono[^"]*">\s*([\d,]+)/g)].map((m) => Number(m[1]!.replace(/,/g, "")));
 const ids = (v: Viewer) => v.chainTable!.rows!.map((r) => r.ids[1]);
 
 describe("while another page is read, the table still says and numbers the page it shows (V-13)", () => {
@@ -113,7 +113,7 @@ describe("tableshown: further cases", () => {
   const exact = (total: number) => ({ total, exact: true, done: true, notes: [] });
   const drawn = (v: Viewer, count: { total: number; exact: boolean; done: boolean; notes: never[] } | null = null) =>
     render(ResultTableView, { props: { table: v.chainTable!, count: count ?? v.chainCount, onshow: () => {} } }).body;
-  const numbers = (body: string) => [...body.matchAll(/aria-label="Show result ([\d,]+) as cards"/g)].map((m) => Number(m[1]!.replace(/,/g, "")));
+  const numbers = (body: string) => [...body.matchAll(/<td class="num mono[^"]*">\s*([\d,]+)/g)].map((m) => Number(m[1]!.replace(/,/g, "")));
   const range = (from: number, n: number) => Array.from({ length: n }, (_, i) => from + i);
   const col = (v: Viewer, key: string) => v.chainTable!.table.columns.findIndex((c) => c.place === 1 && c.key === key);
 
@@ -281,31 +281,6 @@ describe("tableshown: further cases", () => {
       const first = numbers(drawn(v, exact(60)))[0]!;
       expect(first).toBe(t.shownPage * 20 + 1);
       expect(t.rows!.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe("the cards and the table agree on which page is shown (V-12, V-13)", () => {
-    it("a result asked for on page 2 opens the table on page 2, and names it", async () => {
-      const v = await table();
-      await v.showChainAs("cards");
-      await v.showResult(23);
-      await v.showChainAs("table");
-      const t = v.chainTable!;
-      await t.shown;
-      expect(t.shownPage).toBe(1);
-      const body = drawn(v);
-      expect(body).toContain("Rows 21–40 of 45 results");
-      expect(numbers(body)).toEqual(range(21, 20));
-    });
-
-    it("back in the table after a move to page 3, it names page 3", async () => {
-      const v = await table();
-      await v.chainTable!.show(2);
-      await v.showChainAs("cards");
-      await v.showChainAs("table");
-      await v.chainTable!.shown;
-      expect(v.chainTable!.shownPage).toBe(2);
-      expect(numbers(drawn(v))).toEqual(range(41, 5));
     });
   });
 

@@ -8,7 +8,6 @@ import { describe, expect, it } from "vitest";
 import ChainView from "../src/components/ChainView.svelte";
 import { remove, type Chain, type ChainSchema, type Step, change, checkChain, extend, offers, pin, restart, shorten } from "../src/lib/chain.js";
 import { Viewer } from "../src/lib/viewer.svelte.js";
-import { VIEWS } from "../src/lib/views.js";
 import { reading } from "./fixtures.js";
 import { buildMosaic, type EdgeSpec, type NodeSpec } from "../../kit/test/build-mosaic.js";
 
@@ -62,9 +61,6 @@ describe("removing a step (V-5)", () => {
 });
 
 describe("the Chain view", () => {
-  it("is available in the shell's switcher", () => {
-    expect(VIEWS.find((v) => v.id === "chain")).toMatchObject({ available: true });
-  });
 
   it("each change shows its effect on the count at once: a running count, then the exact one", async () => {
     const viewer = new Viewer();

@@ -41,7 +41,7 @@ function spec(): MosaicSpec {
 
 const hrefFor = (id: string) => routeHash({ query: "", node: id });
 const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
 
 async function open(): Promise<SealedFile> {
   return openMosaic(buildMosaic(spec()), "hub.mosaic");
@@ -202,28 +202,25 @@ describe("an expanded thing folded into a bundle (G-5)", () => {
 });
 
 describe("a selected neighbour's actions (G-5)", () => {
-  it("offer Expand, Hide, Re-centre here and Open its page", async () => {
+  it("offer Unfold, Hide and Re-centre here", async () => {
     const html = await drawn((s) => s, "Tag:t0");
     const panel = html.slice(html.indexOf('aria-label="Selection"'));
-    expect(attr(panel, "data-action")).toEqual(["expand", "hide"]);
+    expect(attr(panel, "data-action")).toEqual(["expand", "hide", "recentre"]);
     expect(panel).toContain(`href="${hoodHref("Tag:t0").replaceAll("&", "&amp;")}"`);
-    expect(panel).toContain(`href="${hrefFor("Tag:t0")}"`);
     expect(text(panel)).toContain("Re-centre here");
-    expect(text(panel)).toContain("Open its page");
   });
 
   it("offer Collapse instead of Expand when it is expanded", async () => {
     const html = await drawn((s) => expand(s, "Tag:t0"), "Tag:t0");
     const panel = html.slice(html.indexOf('aria-label="Selection"'));
-    expect(attr(panel, "data-action")).toEqual(["collapse", "hide"]);
+    expect(attr(panel, "data-action")).toEqual(["collapse", "hide", "recentre"]);
   });
 
-  it("offer only Open its page for the thing at the centre", async () => {
+  it("offer no action for the thing at the centre", async () => {
     const html = await drawn((s) => s, "Hub:h");
     const panel = html.slice(html.indexOf('aria-label="Selection"'));
     expect(attr(panel, "data-action")).toEqual([]);
     expect(text(panel)).not.toContain("Re-centre here");
-    expect(text(panel)).toContain("Open its page");
   });
 });
 
@@ -238,7 +235,7 @@ describe("neighbourhood choices: further cases", () => {
   const pad = (i: number, n = 2) => String(i).padStart(n, "0");
   const hrefFor = (id: string) => routeHash({ query: "", node: id });
   const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-  const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+  const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
 
   /** What a reader sees: the text without tags, spaces collapsed. */
   const text = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
@@ -561,7 +558,6 @@ describe("neighbourhood choices: further cases", () => {
       const html = await drawn(spec, (s) => s, { selected: `Tag:${key}` });
       const hrefs = attr(panelOf(html), "href").map(unescape);
       expect(hrefs).toContain(hoodHref(`Tag:${key}`));
-      expect(hrefs).toContain(hrefFor(`Tag:${key}`));
     });
   });
 

@@ -24,7 +24,7 @@ const NAMED = 20;
 /** The route of a neighbourhood with the choices made in it. */
 export function hoodRoute(state: HoodState): Route {
   const plain = state.expanded.length === 0 && state.hidden.length === 0 && state.edges === null && state.limit === DEFAULT_LIMIT;
-  const route: Route = { query: "", node: state.centre, view: "neighbourhood" };
+  const route: Route = { query: "", node: state.centre, view: "explore" };
   return plain
     ? route
     : {

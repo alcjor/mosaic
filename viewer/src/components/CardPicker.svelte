@@ -10,6 +10,7 @@
    * picker works by keyboard (Tab, Space) as by pointer. Controls follow the brand book, section
    * 6: secondary buttons, the focus ring on every control.
    */
+  import Button from "./ui/Button.svelte";
   import type { Part, PickOptions } from "../lib/cardpick.js";
   import type { CardSettings, Shape } from "../lib/view.js";
 
@@ -70,9 +71,9 @@
 </script>
 
 <section class="picker" aria-label="Choose what {typeName} cards show">
-  <button class="secondary step-title" type="button" aria-expanded={open} aria-controls="{id}-panel" onclick={() => (open = !open)}>
+  <Button aria-expanded={open} aria-controls="{id}-panel" onclick={() => (open = !open)}>
     Choose what {typeName} cards show
-  </button>
+  </Button>
   <div class="panel" id="{id}-panel" hidden={!open}>
     <p class="note caption">
       Every {typeName} card in the page shows what you pick, in the order picked. The page cannot change the view file: copy the text below into it to keep the card.
@@ -93,9 +94,9 @@
     <label class="section-label" for="{id}-text">View file text</label>
     <textarea class="text code" id="{id}-text" readonly wrap="off" rows={text.split("\n").length} value={text} bind:this={area}></textarea>
     <div class="actions">
-      <button class="secondary step-title" type="button" onclick={copy}>Copy the text</button>
+      <Button onclick={copy}>Copy the text</Button>
       {#if chosen}
-        <button class="ghost step-title" type="button" onclick={onreset}>Back to the view file's card</button>
+        <Button variant="ghost" onclick={onreset}>Back to the view file's card</Button>
       {/if}
       <p class="said caption" role="status">{said}</p>
     </div>
@@ -107,45 +108,10 @@
     margin-block-start: var(--space-4);
   }
 
-  .secondary,
-  .ghost {
-    min-block-size: var(--space-6);
-    padding: 0 var(--space-3);
-    border-radius: var(--radius-md);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .secondary {
-    border: 1px solid var(--accent);
-    background: var(--surface);
-    color: var(--accent);
-  }
-
-  .secondary:hover {
-    background: var(--surface-tint);
-  }
-
-  .ghost {
-    border: none;
-    background: none;
-    color: var(--ink);
-  }
-
-  .ghost:hover {
-    background: var(--surface-tint);
-  }
-
-  .secondary:focus-visible,
-  .ghost:focus-visible,
   .option input:focus-visible,
   .text:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-  }
-
-  .secondary[aria-expanded="true"] {
-    background: var(--surface-tint);
   }
 
   .panel {

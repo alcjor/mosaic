@@ -5,6 +5,7 @@
    * sources from `cite` (CitationChip). With a view file, the links are those of the edge types
    * its `page` names, in that order, under its labels.
    */
+  import EmptyState from "./ui/EmptyState.svelte";
   import type { NodeView } from "../lib/mosaic.js";
   import { inPageOrder, type Shape } from "../lib/view.js";
 
@@ -26,7 +27,7 @@
 <section class="block" aria-label="Links">
   <h2 class="heading section-label">Links</h2>
   {#if links.length === 0}
-    <p class="empty body-screen">No links.</p>
+    <EmptyState message="No links." />
   {/if}
   {#each links as group (`${group.edge} ${group.direction}`)}
     <section class="group" aria-label={edgeName(group.edge, group.direction)} data-edge={group.edge} data-direction={group.direction}>
@@ -141,7 +142,6 @@
     overflow-wrap: anywhere;
   }
 
-  .empty,
   .more {
     margin: var(--space-1) var(--space-3);
     color: var(--ink-muted);

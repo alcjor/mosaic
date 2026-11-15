@@ -20,7 +20,7 @@ import { DEFAULT_VIEW, Shape } from "../src/lib/view.js";
 const pad = (i: number, n = 2) => String(i).padStart(n, "0");
 const hrefFor = (id: string) => routeHash({ query: "", node: id });
 const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
 const text = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 const attr = (html: string, name: string) => [...html.matchAll(new RegExp(`${name}="([^"]*)"`, "g"))].map((m) => m[1]!);
 const bytes = (a: string, b: string) => Buffer.compare(Buffer.from(a), Buffer.from(b));

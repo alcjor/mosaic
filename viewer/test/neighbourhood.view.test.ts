@@ -14,7 +14,6 @@ import { HoodLoader, hoodOf, openBundle, type Limit, LIMITS } from "../src/lib/g
 import { openMosaic } from "../src/lib/mosaic.js";
 import { routeHash, type TableRoute } from "../src/lib/route.js";
 import { DEFAULT_VIEW, parseView, Shape, type ViewSettings } from "../src/lib/view.js";
-import { THING_VIEWS, VIEWS } from "../src/lib/views.js";
 import { groupText, partNotes, placeThingNames, THING_COLUMNS } from "../src/lib/graph/hoodview.js";
 
 const pad = (i: number) => String(i).padStart(2, "0");
@@ -61,13 +60,9 @@ const text = (html: string) => html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ")
 const attr = (html: string, name: string) => [...html.matchAll(new RegExp(`${name}="([^"]*)"`, "g"))].map((m) => m[1]!);
 
 describe("the Neighbourhood view and the Graph switch (G-3)", () => {
-  it("are available in the shell's switcher", () => {
-    expect(VIEWS.find((v) => v.id === "neighbourhood")).toMatchObject({ available: true });
-    expect(THING_VIEWS.find((v) => v.id === "graph")).toMatchObject({ available: true });
-  });
 
   it("ask for a thing when none is open", async () => {
-    expect(await drawn(5, DEFAULT_VIEW, null)).toContain("Open a thing first: search for it, or pick a row of a table.");
+    expect(await drawn(5, DEFAULT_VIEW, null)).toContain("Search for a thing to explore it");
   });
 
   it("draw the thing at the centre", async () => {

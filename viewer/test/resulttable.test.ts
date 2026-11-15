@@ -225,7 +225,7 @@ describe("the table, drawn", () => {
     expect(body).toContain('href="#node=Item:a"');
     expect(body).toContain("Rows 1–2 of 2 results");
     expect(body).toContain("Save as CSV");
-    expect(body).toMatch(/<button[^>]*disabled[^>]*>\s*Next/);
+    expect(body).toMatch(/<button[^>]*disabled[^>]*>(?:<!--[^>]*-->)*\s*Next/);
   });
 
   it("while the count runs, at least how many", async () => {
@@ -237,13 +237,13 @@ describe("the table, drawn", () => {
   });
 });
 
-describe("cards or table, in the Chain view (V-11)", () => {
-  it("the results show as cards first; as a table when asked, read at once; a new chain gets a new table", async () => {
+describe("columns or table, in Trails (V-11)", () => {
+  it("the results show as columns first; as a table when asked, read at once; a new chain gets a new table", async () => {
     const viewer = new Viewer();
     await viewer.open(reading("mosaic.mosaic"), "mosaic.mosaic");
     viewer.setChain(ITEMS);
     await viewer.shown;
-    expect(viewer.chainShow).toBe("cards");
+    expect(viewer.chainShow).toBe("columns");
     await viewer.showChainAs("table");
     expect(viewer.chainTable?.rows).toHaveLength(2);
     viewer.setChain({ ...ITEMS, pin: "Item:b" });

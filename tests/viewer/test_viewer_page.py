@@ -58,7 +58,7 @@ def test_the_viewer_searches_and_opens_node_pages_and_tables_with_the_kit_in_the
         assert walk["links"] == ["Group:x"]
         assert walk["sources"] and all(s.startswith("first/doc:") for s in walk["sources"])
         assert walk["opened"] == "Group:x"
-        assert walk["hash"] == "#q=Item&node=Group%3Ax"
+        assert walk["hash"] == "#q=Item&node=Group%3Ax&v=explore"
     # Tables rebuilt from node types, every view a table call.
     tables = seen["tables"]
     assert tables["listed"] == ["Group", "Item"]
@@ -71,7 +71,7 @@ def test_the_viewer_searches_and_opens_node_pages_and_tables_with_the_kit_in_the
     assert tables["filtered"] == ["Item:a"]
     assert "1 row" in tables["pager"]
     assert tables["opened"] == "Item:a"
-    assert tables["hash"] == "#q=Item&node=Item%3Aa"
+    assert tables["hash"] == "#q=Item&node=Item%3Aa&v=explore"
     assert tables["firstColumn"] == "label"
     # A column picked on Item's table is not sent for Group's, which has no such column.
     other = tables["other"]

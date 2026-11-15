@@ -4,7 +4,7 @@
  *
  *     const viewer = useViewer({ nodes: [...] });          // once per test file
  *     test("...", async () => {
- *       const { page, shot } = await viewer.open();         // a fresh page, ready to use
+ *       const { page, shot } = await viewer.open();         // a fresh page, ready to use; open("#v=tables") for an address
  *       await page.getByRole("searchbox").fill("x");
  *       await shot("search-results");                       // viewer/screenshots/<file>-search-results.png
  *     });
@@ -40,8 +40,11 @@ export interface OpenViewer {
   shot: (name: string) => Promise<string>;
 }
 
-/** Serve the built viewer and a mosaic built from `spec`; one browser for the test file. */
-export function useViewer(spec: MosaicSpec, file = "invented.mosaic") {
+/**
+ * Serve the built viewer and a mosaic built from `spec`; one browser for the test file. With
+ * `view`, the page is shaped by those view file settings (as `mosaic view` serves them).
+ */
+export function useViewer(spec: MosaicSpec, { file = "invented.mosaic", view = null }: { file?: string; view?: unknown } = {}) {
   let server: ReturnType<typeof Bun.serve>;
   let browser: Browser;
   const prefix = (expect.getState().testPath ?? "test").split("/").pop()!.replace(/\.browser\.ts$|\.ts$/, "");
@@ -55,6 +58,7 @@ export function useViewer(spec: MosaicSpec, file = "invented.mosaic") {
       fetch(request) {
         const path = decodeURIComponent(new URL(request.url).pathname);
         if (path === `/${file}`) return new Response(mosaic);
+        if (path === "/view.json" && view !== null) return Response.json(view);
         const local = normalize(join(dist, path === "/" ? "index.html" : path));
         if (!local.startsWith(dist) || !existsSync(local)) return new Response("not found", { status: 404 });
         return new Response(readFileSync(local), { headers: { "content-type": types[extname(local)] ?? "application/octet-stream" } });
@@ -69,11 +73,11 @@ export function useViewer(spec: MosaicSpec, file = "invented.mosaic") {
 
   return {
     /** A new page on the mosaic, once the page can search. Fails the test on a page error. */
-    async open(hash = ""): Promise<OpenViewer> {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    async open(hash = "", { width = 1280, height = 800 }: { width?: number; height?: number } = {}): Promise<OpenViewer> {
+      const page = await browser.newPage({ viewport: { width, height } });
       const errors: string[] = [];
       page.on("pageerror", (e) => errors.push(e.message));
-      await page.goto(`http://localhost:${server.port}/?mosaic=${encodeURIComponent(file)}${hash}`);
+      await page.goto(`http://localhost:${server.port}/?mosaic=${encodeURIComponent(file)}${view === null ? "" : "&view=view.json"}${hash}`);
       await page.waitForFunction(() => {
         const box = document.querySelector('input[type="search"]') as HTMLInputElement | null;
         return box !== null && !box.disabled;

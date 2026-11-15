@@ -13,9 +13,9 @@ import type { Chain } from "./chain.js";
 import { LinkReader } from "./links.js";
 import { PlaceSearches } from "./placesearch.svelte.js";
 import { ChainTable } from "./chaintable.svelte.js";
-import { resultCards, type ResultRow } from "./resultcards.js";
 import { ResultTable } from "./resulttable.js";
-import { ChainResults, type Count, type Result } from "./results.js";
+import { ChainResults, type Count } from "./results.js";
+import { COLUMN_RESULTS, columnsOf, type TrailColumns } from "./trailcolumns.js";
 import { nodePage, openMosaic, search, type NodeView, type SearchView, type ToolFailure } from "./mosaic.js";
 import type { ChainLinkRoute, TableRoute } from "./route.js";
 import { linkOf, linkSettings, tableChoices } from "./chainlink.js";
@@ -23,7 +23,7 @@ import { tableView, type TableView } from "./tables.js";
 import { chooseCard } from "./cardpick.js";
 import { checkChains, checkOne, type SavedChain } from "./viewchains.js";
 import { DEFAULT_VIEW, Shape, type CardSettings, type SearchMode, type ViewSettings } from "./view.js";
-import type { ViewId } from "./views.js";
+import type { PlaceId } from "./places.js";
 
 /** A chain's count as the page shows it: the count so far, and whether it is done. */
 export interface ChainCount extends Count {
@@ -66,8 +66,8 @@ export class Viewer {
   shape = $state.raw<Shape | null>(null);
   /** How `find` searches: with the embedder (*Semantic*) or by names and full text (*Text*). */
   mode = $state<SearchMode>(DEFAULT_VIEW.search);
-  /** The view of the whole mosaic the address names (lib/views.ts), or null. */
-  viewId = $state<ViewId | null>(null);
+  /** The place the address names (lib/places.ts); Home without one. */
+  place = $state<PlaceId>("home");
 
   #searches = 0;
   #pages = 0;
@@ -88,38 +88,24 @@ export class Viewer {
   /** The view file's settings, as read, before any card chosen in the page. */
   #fileView: ViewSettings = DEFAULT_VIEW;
 
-  /** The chain the *Chain* view builds, or null before one is started. */
+  /** The chain Trails builds, or null before one is started. */
   chain = $state.raw<Chain | null>(null);
   /** How many results the chain has, as counted so far: it grows until `done`. */
   chainCount = $state.raw<ChainCount | null>(null);
-  /** The result of the chain shown as a row of cards, from 0, in the chain's order. */
-  chainIndex = $state(0);
-  /** That result's row of cards, or null when the chain has none to show. */
-  chainRow = $state.raw<ResultRow | null>(null);
-  /** Why the result asked for could not be shown, naming it; null when it was. */
+  /** The chain as columns, one per place, each listing the things there; null until read. */
+  chainColumns = $state.raw<TrailColumns | null>(null);
+  /** Why the columns could not be read; null when they were. */
   chainFailure = $state<string | null>(null);
-  /**
-   * While the table sorts or filters the results, how many rows its filters keep and how
-   * many results there are: the cards then move among those rows, in the table's order; null
-   * when the cards follow the chain's order.
-   */
-  chainArranged = $state.raw<{ readonly matching: number; readonly total: number } | null>(null);
-  /** How the chain's results show: a row of cards per result, or all of them as one table. */
-  chainShow = $state<"cards" | "table">("cards");
+  /** How the chain's results show: as columns, one per place, or all of them as one table. */
+  chainShow = $state<"columns" | "table">("columns");
   /** The chain's results as one table, or null with no chain. */
   chainTable = $state.raw<ChainTable | null>(null);
-  /** Settles when the result asked for last is shown; for tests and the page. */
+  /** Settles when the columns of the latest chain are read; for tests and the page. */
   shown: Promise<void> = Promise.resolve();
   #results: ChainResults | null = null;
   #showing = 0;
-  /** Stops the walk of the result asked for before, when another is asked for. */
+  /** Stops the reading of the columns asked for before, when another chain is set. */
   #showStop: AbortController | null = null;
-  /** The result asked for last, which may still be on its way. */
-  #wanted = 0;
-  /** Settles when the result asked for last is shown, whoever asked for it. */
-  #latestShow: Promise<void> = Promise.resolve();
-  /** True once the table has opened on the cards' place since the last switch to it. */
-  #tablePlaced = false;
   /** What the chain's places found when searched for a thing to pin, on the open mosaic. */
   readonly searches = new PlaceSearches();
   /** What the last link to a chain named that the open mosaic or the chain's table lacks. */
@@ -157,9 +143,7 @@ export class Viewer {
       this.chainTable = null;
       this.#showStop?.abort();
       this.#showing++;
-      this.chainIndex = 0;
-      this.chainRow = null;
-      this.chainArranged = null;
+      this.chainColumns = null;
       this.chainFailure = null;
       this.shown = Promise.resolve();
       return;
@@ -167,8 +151,7 @@ export class Viewer {
     if (this.#links?.file !== file) this.#links = { file, reader: new LinkReader(file) };
     this.#results = new ChainResults(file, chain, this.#links.reader);
     this.#newTable();
-    this.chainRow = null;
-    this.shown = this.showResult(0);
+    this.shown = this.#readColumns();
     const stop = new AbortController();
     this.#counting = stop;
     this.chainCount = { total: 0, exact: false, done: false, notes: [] };
@@ -186,77 +169,27 @@ export class Viewer {
   }
 
   /**
-   * Show result `index` of the chain, in the chain's order, kept between the first
-   * and the last there is: a row of cards, one per place, joined by the links between them. A
-   * newer call stops this one's walk; a failure clears the row and says which result failed.
+   * Read the chain's columns: the things at each place among its first results
+   * (lib/trailcolumns.ts). A newer chain stops this one's reading.
    */
-  showResult(index: number): Promise<void> {
-    const shown = this.#showResult(index);
-    this.#latestShow = shown;
-    return shown;
-  }
-
-  async #showResult(index: number): Promise<void> {
+  async #readColumns(): Promise<void> {
     const results = this.#results;
-    const file = this.file;
     const chain = this.chain;
-    if (results === null || file === null || chain === null) return;
+    if (results === null || chain === null) return;
     this.#showStop?.abort();
     const stop = new AbortController();
     this.#showStop = stop;
     const mine = ++this.#showing;
-    const want = Number.isNaN(index) || index < 0 ? 0 : Math.min(Math.trunc(index), Number.MAX_SAFE_INTEGER);
-    this.#wanted = want;
     try {
-      const table = this.chainTable;
-      let found: { at: number; result: Result } | null;
-      let arranged: { matching: number; total: number } | null = null;
-      if (table !== null && table.arranged) {
-        // The table's rows as sorted and filtered: the place is a position among them.
-        const rows = await table.arrangedRows();
-        // Only a filter changes how many there are: a sort alone says "Result i of N".
-        if (table.filtered) arranged = { matching: rows.length, total: table.read ?? rows.length };
-        const at = Math.min(want, rows.length - 1);
-        const [result] = at < 0 ? [] : await results.page(rows[at]!.index, 1, stop.signal);
-        found = result === undefined ? null : { at, result };
-      } else {
-        found = await this.#lastUpTo(results, want, stop.signal);
-      }
-      const row = found === null ? null : await resultCards(file, chain, found.result, this.shape);
+      const read = await results.page(0, COLUMN_RESULTS + 1, stop.signal);
       if (mine !== this.#showing) return;
-      this.chainIndex = found?.at ?? 0;
-      // The table's place follows the cards: a later sort or filter starts from this result.
-      if (found !== null && table !== null && table === this.chainTable && this.chainShow === "cards") table.current = found.at;
-      this.chainRow = row;
-      this.chainArranged = arranged;
+      this.chainColumns = columnsOf(chain, read.slice(0, COLUMN_RESULTS), read.length > COLUMN_RESULTS);
       this.chainFailure = null;
     } catch (e) {
       if (mine !== this.#showing) return;
-      this.chainRow = null;
-      this.chainFailure = `Result ${want + 1} could not be shown: ${e instanceof Error ? e.message : String(e)}`;
+      this.chainColumns = null;
+      this.chainFailure = `The trail's things could not be read: ${e instanceof Error ? e.message : String(e)}`;
     }
-  }
-
-  /**
-   * Result `want`, or when the chain has fewer, the last it has: found by halving between the
-   * last result known to be there (the count so far) and `want`, never by one walk per step.
-   */
-  async #lastUpTo(results: ChainResults, want: number, signal: AbortSignal): Promise<{ at: number; result: Result } | null> {
-    const [result] = await results.page(want, 1, signal);
-    if (result !== undefined) return { at: want, result };
-    // The count, done or not, has found this many: there are at least as many results; once it
-    // is done and exact, there are no more.
-    const count = this.chainCount;
-    let there = Math.min(count?.total ?? 0, want) - 1;
-    let missing = count?.done === true && count.exact ? Math.min(count.total, want) : want;
-    while (missing - there > 1) {
-      const mid = there + Math.floor((missing - there) / 2);
-      if ((await results.page(mid, 1, signal))[0] !== undefined) there = mid;
-      else missing = mid;
-    }
-    if (there < 0) return null;
-    const [last] = await results.page(there, 1, signal);
-    return last === undefined ? null : { at: there, result: last };
   }
 
   /**
@@ -295,7 +228,7 @@ export class Viewer {
     if (this.file !== null) this.shape = new Shape(view, this.file);
     this.#checkChains();
     if (this.chainTable !== null) this.#newTable();
-    await Promise.all([this.#cardFacts(this.#pages), this.#redrawRow()]);
+    await this.#cardFacts(this.#pages);
     await this.setMode(view.search);
     if (this.tableRoute !== null) await this.showTable(this.tableRoute);
   }
@@ -319,19 +252,19 @@ export class Viewer {
     this.view = view;
     if (this.file !== null) this.shape = new Shape(view, this.file);
     if (this.chainTable !== null) this.#newTable();
-    await Promise.all([this.#cardFacts(this.#pages), this.#redrawRow()]);
+    await this.#cardFacts(this.#pages);
   }
 
   /**
-   * The link to the chain shown (V-17): the chain, its pins, the view, the place in the
-   * results (the cards' result, or the table's current row) and the table's sort and filters;
+   * The link to the chain shown (V-17): the chain, its pins, the view, the table's current
+   * row and the table's sort and filters;
    * null without a chain.
    */
   chainLink(): ChainLinkRoute | null {
     const chain = this.chain;
     const table = this.chainTable;
     if (chain === null || table === null) return null;
-    const place = this.chainShow === "table" ? table.current : this.chainIndex;
+    const place = this.chainShow === "table" ? table.current : 0;
     return linkOf(chain, this.chainShow, place, table.table.columns, { sort: table.sort, filters: table.filters });
   }
 
@@ -372,17 +305,24 @@ export class Viewer {
         this.linkNotices = notices;
         return;
       }
-      this.chainShow = "cards";
+      this.chainShow = "columns";
       this.setChain(chain);
       const table = this.chainTable!;
       const chosen = tableChoices(link, table.table.columns);
       table.restore(chosen.choices);
-      // The place is found as the cards find it, kept to the results there are; then the table.
-      await (this.shown = this.showResult(link.at - 1));
+      await this.shown;
       if (!live()) return;
       if (link.show === "table") {
         this.chainShow = "table";
-        await table.showAt(this.chainIndex);
+        // A row beyond the last opens the last one there is.
+        let at = link.at - 1;
+        if (at > 0) {
+          const rows = table.arranged ? (await table.arrangedRows()).length : (await this.counted, this.chainCount?.total ?? at + 1);
+          if (!live()) return;
+          at = Math.max(0, Math.min(at, rows - 1));
+        }
+        await table.showAt(at);
+        if (!live()) return;
       }
       this.linkNotices = [...notices, ...chosen.notices];
     } finally {
@@ -390,56 +330,19 @@ export class Viewer {
     }
   }
 
-  /** Said beside the result when the table's last change dropped it and the place moved. */
-  get chainNotice(): string | null {
-    return this.chainTable?.moved === true ? "The result you were on no longer matches." : null;
-  }
-
-  /** Move to result `index` from the cards' buttons: the place is the person's again. */
-  moveResult(index: number): Promise<void> {
-    if (this.chainTable !== null) this.chainTable.moved = false;
-    return (this.shown = this.showResult(index));
-  }
-
-  /** Clear the table's filters (the empty state's action); the cards show again. */
+  /** Clear the table's filters (the empty state's action). */
   async clearChainFilters(): Promise<void> {
-    const table = this.chainTable;
-    if (table === null) return;
-    await table.clearFilters();
-    if (this.chainTable === table && this.chainShow === "cards") await (this.shown = this.showResult(table.current));
+    await this.chainTable?.clearFilters();
   }
 
   /**
-   * Show the chain's results as cards or as one table, keeping the chain, the place in the
-   * results and the table's sort and filters (V-12): the table opens on the page that holds
-   * the result the cards show; the cards show the table's current result, among the rows its
-   * filters keep, in its order.
+   * Show the chain as columns or as one table, keeping the chain and the table's sort and
+   * filters (V-12).
    */
-  async showChainAs(show: "cards" | "table"): Promise<void> {
-    const was = this.chainShow;
+  async showChainAs(show: "columns" | "table"): Promise<void> {
     this.chainShow = show;
     const table = this.chainTable;
-    if (table === null || show === was) {
-      if (show === "table" && table !== null && table.rows === null) await table.show(table.page);
-      return;
-    }
-    if (show === "table") {
-      this.#tablePlaced = false;
-      // A result asked for just before the switch is the place (V-12): wait until the last one
-      // asked for has shown, then open the table on it.
-      let waited: Promise<void> | null = null;
-      while (waited !== this.#latestShow) {
-        waited = this.#latestShow;
-        await waited;
-      }
-      if (this.chainTable !== table || this.chainShow !== "table") return;
-      this.#tablePlaced = true;
-      await table.showAt(this.chainIndex);
-    } else {
-      // Back before the table opened on the place: the cards keep the result asked for last.
-      const place = this.#tablePlaced ? table.current : this.#wanted;
-      await (this.shown = this.showResult(place));
-    }
+    if (show === "table" && table !== null && table.rows === null) await table.show(table.page);
   }
 
   /** A new table of the chain's results, with the cards as they are now; shown at once in table mode. */
@@ -453,19 +356,7 @@ export class Viewer {
       return;
     }
     this.chainTable = new ChainTable(new ResultTable(file, chain, results, this.shape));
-    if (this.chainShow === "table") {
-      this.#tablePlaced = true;
-      void this.chainTable.show(0);
-    }
-  }
-
-  /**
-   * The result asked for last (shown, or still on its way), drawn again with the cards as they
-   * are now (V-7: one card per type).
-   */
-  #redrawRow(): Promise<void> {
-    if (this.chain === null || this.#results === null) return Promise.resolve();
-    return (this.shown = this.showResult(this.#wanted));
+    if (this.chainShow === "table") void this.chainTable.show(0);
   }
 
   /** Search in `mode`; an open mosaic is opened again, and its search and pages asked again. */

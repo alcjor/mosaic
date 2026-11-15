@@ -12,6 +12,8 @@
    * map is laid out in a fixed box and scaled to fit, so every window draws the same picture
    * (G-7). Below 960px the map gives way to the same contents as a list (G-11).
    */
+  import Button from "./ui/Button.svelte";
+  import EmptyState from "./ui/EmptyState.svelte";
   import type { SealedFile } from "@mosaic/kit";
   import { onMount } from "svelte";
   import { mapData, mostLinkedByEdge, mostLinkedOfType, mostLinkedWalk, type MapEdge, type MostLinked } from "../lib/graph/map.js";
@@ -276,7 +278,7 @@
 
   <aside class="panel" aria-label="Selection" aria-live="polite">
     {#if selected === null}
-      <p class="empty body-screen">Select a type or an edge type to see its description, its counts and where to start.</p>
+      <EmptyState message="Select a type or an edge type to see its description, its counts and where to start." />
     {:else if selected.kind === "type"}
       {@const t = typeByName.get(selected.name)!}
       {@const most = mostLinkedOfType(tallies, t.name)}
@@ -285,7 +287,7 @@
       {#if t.label !== t.name}<p class="code muted">{t.name}</p>{/if}
       {#if t.describe}<p class="body-screen">{t.describe}</p>{/if}
       <p class="stat"><span class="figure big">{number(t.count)}</span> <span class="caption">{noun(t.count, "thing", "things")}</span></p>
-      <a class="button step-title" href={tableHref(typeTable(t.name))}>Open as table</a>
+      <Button variant="primary" href={tableHref(typeTable(t.name))}>Open as table</Button>
       <h3 class="section-label heading">Most linked</h3>
       <p class="caption muted">Good places to start: the {t.label} things with the most links, both ways.</p>
       {@render things(most, t.label)}
@@ -306,7 +308,7 @@
       {/if}
       {#if e.links.partial}<p class="caption muted">Counts marked … are partial: the links are still being counted.</p>{/if}
       {#if table}
-        <a class="button step-title" href={tableHref(table)}>Open as table</a>
+        <Button variant="primary" href={tableHref(table)}>Open as table</Button>
         <p class="caption muted">Opens the table of {typeLabel(e.from)}, the type this edge type leaves; each thing's page lists its links.</p>
       {/if}
       <h3 class="section-label heading">Most linked</h3>
@@ -507,8 +509,7 @@
   }
 
   .pick:focus-visible,
-  .row:focus-visible,
-  .button:focus-visible {
+  .row:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
@@ -545,25 +546,6 @@
 
   .stat {
     margin: var(--space-2) 0;
-  }
-
-  .button {
-    display: inline-block;
-    margin-block: var(--space-2);
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-md);
-    background: var(--accent);
-    color: var(--surface);
-    text-decoration: none;
-  }
-
-  .button:hover {
-    background: var(--shard-3);
-  }
-
-  .empty {
-    margin: var(--space-4) 0;
-    color: var(--ink-muted);
   }
 
   .banner {

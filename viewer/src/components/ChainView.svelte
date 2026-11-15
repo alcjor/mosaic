@@ -15,6 +15,7 @@
    * so the chain built is given below as the view file's `chains` text, under a label the person
    * can change, to copy into it (lib/viewchains.ts).
    */
+  import Button from "./ui/Button.svelte";
   import { change, extend, offers, pin, remove, restart, typeAt, type Chain, type ChainSchema, type Offer } from "../lib/chain.js";
   import { PlaceSearches, slotOf, slotsFrom, type Answer } from "../lib/placesearch.svelte.js";
   import type { ChainSettings, Shape } from "../lib/view.js";
@@ -145,7 +146,7 @@
       <form class="find" onsubmit={(e) => (e.preventDefault(), void search(place, type))}>
         <label class="hidden" for="{id}-find-{place}">Pin to one {typeName(type)}</label>
         <input class="field body-screen" id="{id}-find-{place}" type="search" placeholder="Pin to one {typeName(type)}…" bind:value={searches.queries[at]} />
-        <button class="secondary step-title" type="submit">Find</button>
+        <Button type="submit">Find</Button>
       </form>
       {@const answer = searches.found[at]}
       {#if answer !== undefined && "error" in answer}
@@ -161,7 +162,7 @@
       {/if}
     {:else}
       <p class="pinned"><span class="caption">Pinned to</span> <span class="code">{pinned}</span></p>
-      <button class="ghost step-title" type="button" aria-label="Unpin: any {typeName(type)}" onclick={() => pinTo(place, null)}>Any {typeName(type)}</button>
+      <Button variant="ghost" label="Unpin: any {typeName(type)}" onclick={() => pinTo(place, null)}>Any {typeName(type)}</Button>
     {/if}
   </div>
 {/snippet}
@@ -172,7 +173,7 @@
       <p class="section-label">Saved in the view file</p>
       <ul class="saved-list">
         {#each saved as s (s.name)}
-          <li><button class="secondary step-title" type="button" onclick={() => open(s)}>{s.name}</button></li>
+          <li><Button onclick={() => open(s)}>{s.name}</Button></li>
         {/each}
       </ul>
     </nav>
@@ -202,7 +203,7 @@
           {/each}
         </select>
         {@render pinning(i, s.type, s.pin)}
-        <button class="ghost step-title" type="button" onclick={() => removeStep(i)}>Remove step {i + 1}</button>
+        <Button variant="ghost" onclick={() => removeStep(i)}>Remove step {i + 1}</Button>
       </div>
     {/each}
 
@@ -230,9 +231,9 @@
 
   {#if chain !== null}
     <section class="save" aria-label="Keep the chain in the view file">
-      <button class="secondary step-title" type="button" aria-expanded={keeping} aria-controls="{id}-keep" onclick={() => (keeping = !keeping)}>
+      <Button aria-expanded={keeping} aria-controls="{id}-keep" onclick={() => (keeping = !keeping)}>
         Keep the chain in the view file
-      </button>
+      </Button>
       <div class="place keep" id="{id}-keep" hidden={!keeping}>
         <label class="section-label" for="{id}-label">Label</label>
         <input class="field body-screen" id="{id}-label" type="text" value={named} oninput={(e) => (label = e.currentTarget.value)} aria-describedby="{id}-label-note" />
@@ -241,7 +242,7 @@
         <p class="none caption">The page cannot change the view file: copy the text below into it, in place of its chains section, to keep the chain.</p>
         <textarea class="text code" id="{id}-text" readonly wrap="off" rows={text.split("\n").length} value={text} bind:this={area}></textarea>
         <div class="actions">
-          <button class="secondary step-title" type="button" onclick={copy}>Copy the text</button>
+          <Button onclick={copy}>Copy the text</Button>
           <p class="said caption" role="status">{copied}</p>
         </div>
       </div>
@@ -283,10 +284,6 @@
     display: none;
   }
 
-  .secondary[aria-expanded="true"] {
-    background: var(--surface-tint);
-  }
-
   .actions {
     display: flex;
     flex-wrap: wrap;
@@ -298,14 +295,24 @@
     color: var(--ink-muted);
   }
 
+  /* The places side by side, as the columns under them; the rest takes a line each. */
   .builder {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
     gap: var(--space-3);
-    max-inline-size: 48rem;
+  }
+
+  .builder > :not(.place) {
+    flex: 1 1 100%;
   }
 
   .place {
     display: grid;
+    flex: 1 1 220px;
+    box-sizing: border-box;
+    max-inline-size: 360px;
+    justify-items: start;
     gap: var(--space-2);
     padding: var(--space-3);
     border: 1px solid var(--border);
@@ -329,6 +336,18 @@
     color: var(--ink);
   }
 
+  .choice,
+  .pin,
+  .find {
+    box-sizing: border-box;
+    inline-size: 100%;
+  }
+
+  .keep {
+    max-inline-size: 48rem;
+    justify-items: stretch;
+  }
+
   .find {
     display: flex;
     flex-wrap: wrap;
@@ -340,30 +359,6 @@
     min-inline-size: 0;
   }
 
-  .secondary,
-  .ghost {
-    justify-self: start;
-    min-block-size: var(--space-6);
-    padding: 0 var(--space-3);
-    border-radius: var(--radius-md);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .secondary {
-    border: 1px solid var(--accent);
-    background: var(--surface);
-    color: var(--accent);
-  }
-
-  .ghost {
-    border: none;
-    background: none;
-    color: var(--ink);
-  }
-
-  .secondary:hover,
-  .ghost:hover,
   .thing:hover {
     background: var(--surface-tint);
   }
@@ -371,8 +366,6 @@
   .choice:focus-visible,
   .field:focus-visible,
   .text:focus-visible,
-  .secondary:focus-visible,
-  .ghost:focus-visible,
   .thing:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;

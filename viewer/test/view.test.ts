@@ -335,6 +335,7 @@ describe("a view file naming what the mosaic does not have", () => {
     expect(viewer.status).toBe("ready");
     await viewer.showTable(route("Item"));
     expect((viewer.table as Table).columns).toEqual(["id", "label", "size"]);
+    viewer.place = "tables";
     const { body } = render(App, { props: { viewer } });
     expect(body).toContain('aria-label="View file notices"');
     expect(body).toContain("the mosaic has no node type Nothing");

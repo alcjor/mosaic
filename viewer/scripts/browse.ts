@@ -74,7 +74,7 @@ async function walk(page: Page, started: number = performance.now()) {
   await box.waitFor({ state: "visible" });
   await page.waitForFunction(() => !(document.querySelector('input[type="search"]') as HTMLInputElement).disabled, null, { timeout: 120_000 });
   lap("ready");
-  const header = (await page.locator("header").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
+  const header = (await page.locator("header.band").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
   await box.fill(query!);
   await box.press("Enter");
   const rows = page.locator('nav[aria-label="Results"] a[data-id]');
@@ -107,9 +107,16 @@ async function walk(page: Page, started: number = performance.now()) {
   return { header, results, card: cardText, links, sources, opened, hash: new URL(page.url()).hash, banners, seal, ms };
 }
 
+/** Go to Tables, the place that lists the types. */
+async function toTables(page: Page) {
+  await page.locator('nav[aria-label="Places"] a[data-place-link="tables"]').click();
+  await page.locator('main[data-place="tables"]').waitFor();
+}
+
 /** The first page of the table of `type`: its column headers, row ids, pager, and time to fill. */
 async function glance(page: Page, type: string) {
   const started = performance.now();
+  await toTables(page);
   await page.locator(`a[data-type="${type}"]`).click();
   const table = page.locator(`section[aria-label="Table ${type}"]`);
   await table.locator("tbody a[data-id]").first().waitFor();
@@ -123,6 +130,7 @@ async function glance(page: Page, type: string) {
 /** The tables: open a type's table, sort it both ways, filter it, then open a row's node page. */
 async function tables(page: Page, type: string) {
   const ids = (p: Page) => p.locator('section[aria-label^="Table"] tbody a[data-id]').evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
+  await toTables(page);
   const listed = await page.locator("a[data-type]").evaluateAll((as) => as.map((a) => a.getAttribute("data-type")));
   await page.locator(`a[data-type="${type}"]`).click();
   const table = page.locator(`section[aria-label="Table ${type}"]`);
@@ -131,11 +139,11 @@ async function tables(page: Page, type: string) {
   const rows = await ids(page);
   // The filter form shows the column it will use: the first one, before any choice.
   const firstColumn = await table.getByLabel("Column", { exact: true }).inputValue();
-  const column = (await table.locator("thead a[data-column]").last().getAttribute("data-column"))!;
-  await table.locator(`thead a[data-column="${column}"]`).click();
-  await table.locator('th[aria-sort="ascending"] a[data-column]').waitFor();
+  const column = (await table.locator("thead button[data-column]").last().getAttribute("data-column"))!;
+  await table.locator(`thead button[data-column="${column}"]`).click();
+  await table.locator('th[aria-sort="ascending"] button[data-column]').waitFor();
   const ascending = await ids(page);
-  await table.locator(`thead a[data-column="${column}"]`).click();
+  await table.locator(`thead button[data-column="${column}"]`).click();
   await table.locator('th[aria-sort="descending"]').waitFor();
   const descending = await ids(page);
   await table.getByLabel("Column", { exact: true }).selectOption(column);
@@ -152,6 +160,7 @@ async function tables(page: Page, type: string) {
   await page.locator(`article[aria-label="${first}"]`).waitFor();
   const hash = new URL(page.url()).hash;
   // A column picked in one table never carries over to another type's table.
+  await toTables(page);
   await page.locator(`a[data-type="${type}"]`).click();
   await table.locator("tbody a[data-id]").first().waitFor();
   await table.getByLabel("Column", { exact: true }).selectOption(column);

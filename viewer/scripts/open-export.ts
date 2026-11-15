@@ -43,7 +43,7 @@ try {
     { timeout: 120_000 },
   );
   const readyMs = Math.round(performance.now() - started);
-  const header = (await page.locator("header").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
+  const header = (await page.locator("header.band").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
   const alerts = await banner.allInnerTexts();
   if (alerts.length > 0) {
     console.log(JSON.stringify({ header, alerts, readyMs, blocked, errors }));
@@ -63,7 +63,8 @@ try {
   const cardText = await card.innerText();
   const links = await page.locator('aside[aria-label="Links and sources"] a[data-id]').evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
   const textResults = textQuery ? await search(textQuery) : [];
-  await page.locator(`nav[aria-label="Results"] a[data-type="${type}"]`).click();
+  await page.locator('nav[aria-label="Places"] a[data-place-link="tables"]').click();
+  await page.locator(`nav[aria-label="Types"] a[data-type="${type}"]`).click();
   const table = page.locator(`section[aria-label="Table ${type}"]`);
   await table.locator("tbody a[data-id]").first().waitFor();
   const rows = await table.locator("tbody a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));

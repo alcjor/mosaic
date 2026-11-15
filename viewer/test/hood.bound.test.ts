@@ -32,7 +32,7 @@ function spec(): MosaicSpec {
 const tag = (i: number) => `Tag:t${pad(i)}`;
 const hrefFor = (id: string) => routeHash({ query: "", node: id });
 const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
 const open = (): Promise<SealedFile> => openMosaic(buildMosaic(spec()), "hub.mosaic");
 
 /** `n` things expanded, one after another, from the first. */
@@ -185,7 +185,7 @@ describe("hood bound: further cases", () => {
 
   const enc = encodeURIComponent;
   const hand = (centre: string, parts: { x?: readonly string[]; h?: readonly string[]; e?: readonly string[]; l?: string }) =>
-    `#node=${enc(centre)}&v=neighbourhood` +
+    `#node=${enc(centre)}&v=explore` +
     (parts.x ?? []).map((v) => `&x=${enc(v)}`).join("") +
     (parts.h ?? []).map((v) => `&h=${enc(v)}`).join("") +
     (parts.e ?? []).map((v) => `&e=${enc(v)}`).join("") +
@@ -529,11 +529,11 @@ describe("hood bound: further cases", () => {
   describe("at the bound, in the view (G-8, G-11)", () => {
     const hrefFor = (id: string) => routeHash({ query: "", node: id });
     const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-    const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+    const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
     const text = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
     const button = (html: string, action: string) => html.match(new RegExp(`<button[^>]*data-action="${action}"[^>]*>`))?.[0] ?? "";
     const isDisabled = (b: string) => /\sdisabled(=""|\s|>)/.test(b);
-    const NOTE_EXPANDED = "At most 50 expanded: collapse one to expand another.";
+    const NOTE_EXPANDED = "At most 50 unfolded: fold one to unfold another.";
     const NOTE_HIDDEN = "At most 50 hidden: show one again to hide another.";
 
     async function draw(file: SealedFile, state: HoodState, selected: string | null, unapplied: readonly string[] = []) {
@@ -597,11 +597,10 @@ describe("hood bound: further cases", () => {
       expect(text(panel)).not.toContain("At most 50 expanded");
     });
 
-    it("keeps the other ways of reaching a thing enabled at both bounds: Re-centre and Open its page", async () => {
+    it("keeps re-centring on a thing enabled at both bounds", async () => {
       const file = await open();
       const panel = panelOf(await draw(file, atBoth(), tag(0)));
-      expect(panel).toMatch(/<a[^>]*href="#node=Tag%3At000&amp;v=neighbourhood"[^>]*>Re-centre here</);
-      expect(panel).toMatch(/<a[^>]*href="#node=Tag%3At000"[^>]*>Open its page</);
+      expect(panel).toMatch(/<a[^>]*href="#node=Tag%3At000&amp;v=explore"[^>]*>(?:<!--[^>]*-->)*Re-centre here</);
     });
 
     it("keeps the things hidden listed, each shown again by a button that is not disabled, at the bound", async () => {

@@ -22,10 +22,12 @@
    * (lib/graph/sources.ts).
    */
   import type { SealedFile } from "@mosaic/kit";
-  import { tick, untrack } from "svelte";
+  import { tick, untrack, type Snippet } from "svelte";
   import BundleList from "./BundleList.svelte";
   import CitationChip from "./CitationChip.svelte";
   import EntityCard from "./EntityCard.svelte";
+  import Button from "./ui/Button.svelte";
+  import EmptyState from "./ui/EmptyState.svelte";
   import {
     collapse,
     DEFAULT_LIMIT,
@@ -56,6 +58,7 @@
   import { shardPoints, svgPoints } from "../lib/graph/shard.js";
   import { applyAddress, hoodRoute } from "../lib/graph/hood-address.js";
   import { routeHash, type HoodChoices, type TableRoute } from "../lib/route.js";
+  import type { NodeView } from "../lib/mosaic.js";
   import type { Shape } from "../lib/view.js";
 
   let {
@@ -64,7 +67,7 @@
     centre,
     hrefFor,
     tableHref,
-    hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" }),
+    hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" }),
     initial,
     selected: first,
     selectedLink: firstLink,
@@ -72,6 +75,8 @@
     address = null,
     unapplied: firstUnapplied = [],
     onchoices,
+    only = null,
+    extra,
   }: {
     file: SealedFile;
     shape: Shape;
@@ -95,6 +100,13 @@
     unapplied?: readonly string[];
     /** Told each state the person's choices make, so the page's address can hold it. */
     onchoices?: (state: HoodState) => void;
+    /** Show only the graph or only the selection's card (a narrow page shows one at a time). */
+    only?: "graph" | "card" | null;
+    /**
+     * Shown under the selected thing's card, given its page: the shell's card picker and the
+     * thing's links and sources, in place of the plain list of sources.
+     */
+    extra?: Snippet<[NodeView]>;
   } = $props();
 
   /** Shard sizes: the thing at the centre, a neighbour, a bundle. */
@@ -127,7 +139,7 @@
         void applyAddress(file, c, asked).then((applied) => {
           if (!current || centre !== c) return;
           if (choices?.centre !== c) {
-            selected = null;
+            selected = { kind: "thing", id: c };
             opened = null;
           }
           choices = applied.state;
@@ -139,7 +151,7 @@
       if (choices === null) choices = hoodOf(c);
       else if (choices.centre !== c) {
         choices = recentre(choices, c);
-        selected = null;
+        selected = { kind: "thing", id: c };
         opened = null;
         unapplied = [];
       }
@@ -337,7 +349,12 @@
     | { kind: "bundle"; owner: string; edge: string; direction: "out" | "in" }
     | ({ kind: "link" } & LinkRef);
   let selected = $state<Selection | null>(
-    untrack(() => (firstLink !== undefined ? { kind: "link", ...firstLink } : first === undefined ? null : { kind: "thing", id: first })),
+    untrack(() => {
+      if (firstLink !== undefined) return { kind: "link", ...firstLink };
+      // The thing at the centre is selected from the start, so its card shows beside the graph.
+      const id = first ?? centre;
+      return id === null ? null : { kind: "thing", id };
+    }),
   );
 
   /** Where things and links come from (G-6): cards and rows read once, kept for the session. */
@@ -383,7 +400,8 @@
   function linkText(l: LinkRef): string {
     const from = at.get(l.from);
     const to = at.get(l.to);
-    return `${from ? nameOf(from) : l.from} ${edgeName(from?.type ?? null, l.edge)} ${to ? nameOf(to) : l.to}`;
+    const edge = (from?.type ? shape.edgeLabel(from.type, l.edge) : null) ?? (to?.type ? shape.edgeLabel(to.type, l.edge) : null) ?? l.edge;
+    return `${from ? nameOf(from) : l.from} ${edge} ${to ? nameOf(to) : l.to}`;
   }
   /** The links drawn to or from thing `id`, in the picture's order. */
   const linksOf = (id: string) => lines.filter((l) => l.from === id || l.to === id);
@@ -513,15 +531,15 @@
 </script>
 
 <div class="hood">
-  <div class="canvas">
+  <div class="canvas" hidden={only === "card"}>
     {#if centre === null}
-      <p class="empty body-screen">Open a thing first: search for it, or pick a row of a table.</p>
+      <EmptyState message="Search for a thing to explore it and what it links to." />
     {:else}
       <div class="controls">
         <span class="caption">Per group, show</span>
         <div class="limits" role="group" aria-label="Neighbours shown per group">
           {#each LIMITS as n (n)}
-            <button type="button" class="limit body-screen" class:on={n === limit} data-limit={n} aria-pressed={n === limit} onclick={() => choose(n)}>{n}</button>
+            <Button data-limit={n} pressed={n === limit} onclick={() => choose(n)}>{n}</Button>
           {/each}
         </div>
         {#if shown !== null && choices !== null}
@@ -551,14 +569,14 @@
           Hidden: {number(choices.hidden.length)}
           {#each choices.hidden as id (id)}
             {@const t = known.get(id)}
-            <button type="button" class="unhide body-screen" data-unhide={id} aria-label="Show {t ? nameOf(t) : id} again" onclick={() => unhideThing(id)}>{t ? nameOf(t) : id}</button>
+            <Button variant="ghost" data-unhide={id} label="Show {t ? nameOf(t) : id} again" onclick={() => unhideThing(id)}>{t ? nameOf(t) : id}</Button>
           {/each}
         </p>
       {/if}
       {#if failed !== null}
         <p class="banner body-screen" role="alert">Could not load the neighbourhood: {failed}</p>
       {:else if shown === null || layout === null || box === null}
-        <p class="empty body-screen" role="status">Loading the neighbourhood…</p>
+        <p class="note caption" role="status">Loading the neighbourhood…</p>
       {:else}
         {@const c = shown.centre}
         <p class="intro caption">{summary(c)}</p>
@@ -691,7 +709,7 @@
                 {#each things as t (t.id)}
                   <li class="item">
                     <a class="row body-screen" href={hrefFor(t.id)}>{nameOf(t)}</a>
-                    <button type="button" class="more-for caption" aria-label="More for {nameOf(t)}: expand, hide, re-centre" onclick={() => select({ kind: "thing", id: t.id })}>More</button>
+                    <Button variant="ghost" label="More for {nameOf(t)}: unfold, hide, re-centre" onclick={() => select({ kind: "thing", id: t.id })}>More</Button>
                   </li>
                 {/each}
                 {#if g.bundle}
@@ -710,7 +728,7 @@
   </div>
 
   {#if centre !== null}
-    <aside class="panel" aria-label="Selection" aria-live="polite">
+    <aside class="panel" aria-label="Selection" aria-live="polite" hidden={only === "graph"}>
       {#if selectedThing}
         <h3 class="section-label heading">{selectedThing.parent === null ? "At the centre" : "Selected thing"}</h3>
         <p class="panel-title name">{nameOf(selectedThing)}</p>
@@ -720,44 +738,39 @@
           {@const fullExpanded = !isExpanded(id) && (choices?.expanded.length ?? 0) >= MOST_EXPANDED}
           {@const fullHidden = (choices?.hidden.length ?? 0) >= MOST_HIDDEN}
           <div class="actions" bind:this={actions}>
-            <!-- One button that turns from Expand to Collapse, so the keyboard's focus stays on it. -->
-            <button
-              type="button"
-              class="action body-screen"
+            <!-- One button that turns from Unfold to Fold, so the keyboard's focus stays on it. -->
+            <Button
+              variant="primary"
               data-action={isExpanded(id) ? "collapse" : "expand"}
               disabled={fullExpanded}
               aria-describedby={fullExpanded ? "hood-most-expanded" : undefined}
-              onclick={() => act((s) => (isExpanded(id) ? collapse(s, id) : expand(s, id)))}>{isExpanded(id) ? "Collapse" : "Expand"}</button
+              onclick={() => act((s) => (isExpanded(id) ? collapse(s, id) : expand(s, id)))}>{isExpanded(id) ? "Fold" : "Unfold"}</Button
             >
-            <button
-              type="button"
-              class="action body-screen"
-              data-action="hide"
-              disabled={fullHidden}
-              aria-describedby={fullHidden ? "hood-most-hidden" : undefined}
-              onclick={() => hideThing(id)}>Hide</button
-            >
+            <Button data-action="hide" disabled={fullHidden} aria-describedby={fullHidden ? "hood-most-hidden" : undefined} onclick={() => hideThing(id)}>Hide</Button>
+            <Button href={hoodHref(id)} data-action="recentre">Re-centre here</Button>
           </div>
           <!-- At the bound, the control that would go past it says why it is off. -->
           {#if fullExpanded}
             <!-- One neighbourhood view is on the page at a time, so these ids are its own. -->
-            <p class="caption muted" id="hood-most-expanded">At most {MOST_EXPANDED} expanded: collapse one to expand another.</p>
+            <p class="caption muted" id="hood-most-expanded">At most {MOST_EXPANDED} unfolded: fold one to unfold another.</p>
           {/if}
           {#if fullHidden}
             <p class="caption muted" id="hood-most-hidden">At most {MOST_HIDDEN} hidden: show one again to hide another.</p>
           {/if}
-          <a class="button step-title" href={hoodHref(id)}>Re-centre here</a>
         {/if}
-        <a class="button step-title" href={hrefFor(selectedThing.id)}>Open its page</a>
         <div class="sources">
           {#if selectedCard === null}
-            <p class="empty body-screen" role="status">Reading its card…</p>
+            <p class="caption muted" role="status">Reading its card…</p>
           {:else if "message" in selectedCard}
             <p class="banner body-screen" role="alert">Could not read its card: {selectedCard.message}</p>
           {:else}
             <EntityCard node={selectedCard.page.node} {shape} facts={selectedCard.facts} {hrefFor} />
-            <h3 class="section-label heading">Where it comes from</h3>
-            <CitationChip sections={[{ title: null, evidence: { rows: selectedCard.page.sources, total: selectedCard.page.sourcesTotal } }]} />
+            {#if extra}
+              {@render extra(selectedCard.page)}
+            {:else}
+              <h3 class="section-label heading">Where it comes from</h3>
+              <CitationChip sections={[{ title: null, evidence: { rows: selectedCard.page.sources, total: selectedCard.page.sourcesTotal } }]} />
+            {/if}
           {/if}
           {#if linksOf(selectedThing.id).length > 0}
             <h3 class="section-label heading">Its links in the picture</h3>
@@ -780,7 +793,7 @@
         </p>
         <h3 class="section-label heading">Where it comes from</h3>
         {#if selectedRows === null}
-          <p class="empty body-screen" role="status">Reading its source…</p>
+          <p class="caption muted" role="status">Reading its source…</p>
         {:else}
           <CitationChip sections={[{ title: null, evidence: selectedRows }]} />
         {/if}
@@ -796,13 +809,10 @@
             {tableHref}
           />
         {:else}
-          <p class="empty body-screen" role="status">Opening the bundle…</p>
+          <p class="caption muted" role="status">Opening the bundle…</p>
         {/if}
       {:else}
-        <p class="empty body-screen">
-          Select a thing or a bundle to see more. Each group is one edge type in one direction, with how many links it has. Select a
-          link's line to see where it comes from.
-        </p>
+        <EmptyState message="Select a thing to see its card, a link's line to see where it comes from, or a bundle to list what it holds." />
       {/if}
     </aside>
   {/if}
@@ -832,43 +842,7 @@
 
   .limits {
     display: inline-flex;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-  }
-
-  .limit {
-    min-inline-size: var(--space-6);
-    padding: var(--space-1) var(--space-2);
-    border: none;
-    background: none;
-    color: var(--ink);
-    font-family: var(--font-mono);
-    cursor: pointer;
-  }
-
-  .limit + .limit {
-    border-inline-start: 1px solid var(--border);
-  }
-
-  .limit.on {
-    background: var(--accent);
-    color: var(--surface);
-  }
-
-  .limit:first-child {
-    border-start-start-radius: var(--radius-md);
-    border-end-start-radius: var(--radius-md);
-  }
-
-  .limit:last-child {
-    border-start-end-radius: var(--radius-md);
-    border-end-end-radius: var(--radius-md);
-  }
-
-  .limit:focus-visible {
-    position: relative;
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+    gap: var(--space-1);
   }
 
   .edges summary {
@@ -877,22 +851,9 @@
   }
 
   .edges summary:focus-visible,
-  .edge-choice input:focus-visible,
-  .unhide:focus-visible,
-  .action:focus-visible,
-  .more-for:focus-visible {
+  .edge-choice input:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-  }
-
-  /* At the bound: the control is off, at the brand book's disabled look (§6, States). */
-  .action:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .action:disabled:hover {
-    background: var(--surface);
   }
 
   .edge-list {
@@ -921,27 +882,9 @@
     color: var(--ink-muted);
   }
 
-  .unhide,
-  .action,
-  .more-for {
-    min-block-size: var(--space-6);
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-md);
-    background: var(--surface);
-    color: var(--accent);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .unhide:hover,
-  .action:hover,
-  .more-for:hover {
-    background: var(--surface-tint);
-  }
-
   .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
     margin: var(--space-2) 0;
   }
@@ -1139,8 +1082,7 @@
   }
 
   .pick:focus-visible,
-  .row:focus-visible,
-  .button:focus-visible {
+  .row:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
@@ -1190,25 +1132,6 @@
     font-family: var(--font-mono);
   }
 
-  .button {
-    display: inline-block;
-    margin-block: var(--space-2);
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-md);
-    background: var(--accent);
-    color: var(--surface);
-    text-decoration: none;
-  }
-
-  .button:hover {
-    background: var(--shard-3);
-  }
-
-  .empty {
-    margin: var(--space-4) 0;
-    color: var(--ink-muted);
-  }
-
   .banner {
     padding: var(--space-2) var(--space-3);
     background: var(--majolica-tint);
@@ -1218,7 +1141,7 @@
   /* From 960px: the picture, with the selection beside it. */
   @media (width >= 960px) {
     .hood {
-      grid-template-columns: minmax(0, 1fr) 320px;
+      grid-template-columns: minmax(0, 1fr) 360px;
     }
 
     .picture,

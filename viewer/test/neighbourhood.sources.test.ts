@@ -37,7 +37,7 @@ function spec(): MosaicSpec {
 
 const hrefFor = (id: string) => routeHash({ query: "", node: id });
 const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
 const T0: LinkRef = { from: "Hub:h", edge: "carries", to: "Tag:t0" };
 
 function viewWith(json: Record<string, unknown>): ViewSettings {
@@ -130,7 +130,7 @@ describe("selecting a link (G-6)", () => {
   it("ignores a link that is not drawn", async () => {
     const { panel } = await drawn({ link: { from: "Hub:h", edge: "carries", to: "Tag:nowhere" } });
     expect(text(panel)).not.toContain("Link");
-    expect(text(panel)).toContain("Select a thing or a bundle to see more.");
+    expect(text(panel)).toContain("Select a thing to see its card");
   });
 });
 
@@ -193,7 +193,7 @@ describe("a source the kit could not give (G-6, G-10)", () => {
 describe("neighbourhood sources: further cases", () => {
   const hrefFor = (id: string) => routeHash({ query: "", node: id });
   const tableHref = (table: TableRoute) => routeHash({ query: "", node: null, table });
-  const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" });
+  const hoodHref = (id: string) => routeHash({ query: "", node: id, view: "explore" });
   const text = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
   const attr = (html: string, name: string) => [...html.matchAll(new RegExp(`${name}="([^"]*)"`, "g"))].map((m) => m[1]!);
 
@@ -367,7 +367,7 @@ describe("neighbourhood sources: further cases", () => {
 
     it("claims nothing for a thing that is not drawn", async () => {
       const { panel } = await drawn(base(), { selected: "Tag:nowhere" });
-      expect(text(panel)).toContain("Select a thing or a bundle to see more.");
+      expect(text(panel)).toContain("Select a thing to see its card");
       expect(panel).not.toContain("<article");
     });
 

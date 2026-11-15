@@ -9,7 +9,6 @@
 import type { SealedFile } from "@mosaic/kit";
 import type { Shape } from "../view.js";
 import { HoodLoader } from "./hood.js";
-import type { OverviewData } from "./overview.js";
 import { Sources } from "./sources.js";
 import { Tallies, yieldToPage, type Tally } from "./tally.js";
 
@@ -35,18 +34,6 @@ export function hoodLoaderFor(file: SealedFile): HoodLoader {
     loaders.set(file, loader);
   }
   return loader;
-}
-
-const overviews = new WeakMap<SealedFile, OverviewData>();
-
-/** The overview of `file` read so far this session, if any (G-10: read once, kept). */
-export function keptOverview(file: SealedFile): OverviewData | undefined {
-  return overviews.get(file);
-}
-
-/** Keep the overview of `file` read, for as long as the page has it open. */
-export function keepOverview(file: SealedFile, data: OverviewData): void {
-  overviews.set(file, data);
 }
 
 const sources = new WeakMap<SealedFile, Sources>();

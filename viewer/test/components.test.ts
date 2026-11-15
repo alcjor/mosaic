@@ -94,18 +94,17 @@ describe("App", () => {
     expect(body).toMatch(/type="search"[^>]*disabled/);
   });
 
-  it("with a mosaic open, names it with its short hash, and shows the results and the node page", async () => {
+  it("with a mosaic open, names it with its short hash, and Explore shows the results", async () => {
     const viewer = new Viewer();
     await viewer.open(reading("mosaic.mosaic"), "mosaic.mosaic");
     await viewer.search("Item");
     await viewer.show("Item:a");
+    viewer.place = "explore";
     const { body } = render(App, { props: { viewer } });
     const hash = viewer.file!.header.knowledge_hash;
     expect(body).toContain(">mosaic.mosaic<");
     expect(body).toContain(`>${hash.slice(0, 12)}<`);
     expect(body).toMatch(/type="search"(?![^>]*disabled)/);
     expect(body).toContain('aria-label="Results"');
-    expect(body).toContain('aria-label="Item:a"');
-    expect(body).toContain('aria-label="Links and sources"');
   });
 });
