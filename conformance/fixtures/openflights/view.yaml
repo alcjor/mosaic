@@ -1,0 +1,31 @@
+# View file for the OpenFlights fixture (docs/design.md, Implementation plan, "View file").
+# Schema: views/view.schema.json.
+# mosaic view default.mosaic --view view.yaml
+search: text
+types:
+  Airport:
+    label: Airport
+    describe: An airport, station or port
+    columns: [city, iata, icao, tz]
+  Airline:
+    label: Airline
+    describe: An airline
+    columns: [iata, icao, callsign, active]
+  Route:
+    label: Route
+    describe: A flight an airline operates from one airport to another
+    columns: [airline, source, destination, stops, equipment]
+  Country:
+    label: Country
+    describe: A country an airport is in or an airline is based in
+edges:
+  departs_from:
+    describe: A route departs from an airport
+  arrives_at:
+    describe: A route arrives at an airport
+  operated_by:
+    describe: A route is operated by an airline
+  located_in:
+    describe: An airport is in a country
+  based_in:
+    describe: An airline is based in a country

@@ -40,6 +40,11 @@ RULES: Mapping[str, tuple[str, str]] = {
     "from-type": ("5.6", "every `from` names a node type that piece declares"),
     "map-piece": ("5.6", "every `map` entry names a listed piece"),
     "map-type": ("5.6", "every `map` entry names an edge type that piece declares"),
+    "key-field": (
+        "5.6",
+        "only an identifier of the type's `key` takes several fields or a `strip`, and `label` "
+        "and `summary` are not identifiers",
+    ),
     "edge-type": ("5.6", "edge `from` and `to` name declared types"),
     "target-type": ("5.6", "target `types` name declared types"),
     "proposal-node-type": ("5.6", "a proposal's node ids have a node type declared in the pattern"),
@@ -225,6 +230,25 @@ def _check_pattern(
 
     types = pattern["types"]
     for type_name, definition in types.items():
+        key = definition["key"]
+        keys = [key] if isinstance(key, str) else key
+        for column in ("label", "summary"):
+            if column in keys:
+                f.add(
+                    ("types", type_name, "key"),
+                    "key-field",
+                    f"type {type_name!r}: {column!r} is a node's text, not an identifier",
+                )
+        for reference, field_map in definition["from"].items():
+            strip = field_map.get("strip")
+            stripped = list(strip) if isinstance(strip, Mapping) else []
+            joined = [p for p, v in field_map.items() if p != "strip" and isinstance(v, list)]
+            for prop in [p for p in (*stripped, *joined) if p not in keys]:
+                f.add(
+                    ("types", type_name, "from", reference, "strip" if prop in stripped else prop),
+                    "key-field",
+                    f"{reference!r}: {prop!r} is not an identifier of type {type_name!r}'s key",
+                )
         for reference in definition["from"]:
             where = ("types", type_name, "from", reference)
             piece, piece_type = _split(reference)

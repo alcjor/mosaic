@@ -31,6 +31,7 @@ knowledge hash of the sealed file. `tests/cases.py` seals the files and fills th
 | `from-type` | 5.6 | A `from` naming a node type the piece does not declare |
 | `map-piece` | 5.6 | A `map` entry naming a piece that is not listed |
 | `map-type` | 5.6 | A `map` entry naming an edge type the piece does not declare |
+| `key-field` | 5.6 | A property that is no identifier of the type's key, given two fields |
 | `edge-type` | 5.6 | An edge ending at an undeclared type |
 | `target-type` | 5.6 | A target listing an undeclared type |
 | `proposal-node-type` | 5.6 | An identity proposal for a node of an undeclared type |

@@ -1,0 +1,66 @@
+# Pattern for the OpenFlights fixture (docs/spec-0.1.md section 11): three files of one source.
+# The pieces are the tesserae that the three settings files make from the pinned airports.dat,
+# airlines.dat and routes.dat. The routes file names airports and airlines by the ids the other
+# two files give them, so each is one node. A route has no id of its own: its key is its row.
+format: "0.1"
+pieces:
+  - airports@b26bc09e3af5ecc072771f71826927c8a22ceb116c2a5728076a4c2b8dc538eb
+  - airlines@913f5912f2b4b3f3128c6c32e4de72b52b4f469e1a489852ced720b8692e730d
+  - routes@2726cc049a020f996f87d737d6bd2ffad77a35949bdabe3174888fb967d6d80c
+
+types:
+  Airport:
+    key: id
+    describe: An airport, station or port
+    from:
+      airports.Airport:
+        id: key
+        city: city
+        iata: iata
+        icao: icao
+        latitude: latitude
+        longitude: longitude
+        altitude: altitude
+        tz: tz
+      routes.SourceAirport: {id: key}
+      routes.DestinationAirport: {id: key}
+  Airline:
+    key: id
+    describe: An airline
+    from:
+      airlines.Airline:
+        id: key
+        alias: alias
+        iata: iata
+        icao: icao
+        callsign: callsign
+        active: active
+      routes.Operator: {id: key}
+  Country:
+    key: name
+    describe: A country an airport is in or an airline is based in
+    from:
+      airports.Country: {name: key, label: key}
+      airlines.Country: {name: key, label: key}
+  Route:
+    key: row
+    describe: A flight an airline operates from one airport to another
+    from:
+      routes.Route:
+        airline: airline
+        source: source
+        destination: destination
+        codeshare: codeshare
+        stops: stops
+        equipment: equipment
+
+edges:
+  departs_from: {from: Route, to: Airport, map: [routes.departs_from]}
+  arrives_at: {from: Route, to: Airport, map: [routes.arrives_at]}
+  operated_by: {from: Route, to: Airline, map: [routes.operated_by]}
+  located_in: {from: Airport, to: Country, map: [airports.located_in]}
+  based_in: {from: Airline, to: Country, map: [airlines.based_in]}
+
+mosaics:
+  default:
+    vectors: false

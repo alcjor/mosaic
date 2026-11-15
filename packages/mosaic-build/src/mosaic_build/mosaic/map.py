@@ -6,21 +6,33 @@ type ``T`` by the entry's field map (section 5.2):
 - A field map value names a field of the piece node: one of ``key``, ``label``, ``summary``
   (its columns), or else a key of its ``props``. A field that is NULL, JSON ``null`` or not
   there gives no value.
-- The entry for the type's key property gives the key; without one, the piece node's ``key``
-  does. A number becomes text in its canonical JSON form (``2020`` → ``"2020"``); a missing,
-  NULL or boolean key, a JSON array or object, or one that is empty after ``strip`` and
-  normalisation fails the build with ``invalid_input``. The key is never a property.
-- ``strip`` removes its prefix from the key, then the normalisation steps run in order. The
-  key as written, before ``strip``, is kept as an alias (``origin = source``) when it differs
-  from the normalised key.
+- A type's ``key`` names one identifier, or several in order of trust. The entry for an
+  identifier names the field that gives it, or several fields, whose values are joined with
+  ``", "`` (a field without a value is left out; without the first, the identifier has no
+  value); an identifier without an entry has no value, except that an entry naming none of
+  the type's identifiers takes the first from the piece node's ``key``. A number becomes text
+  in its canonical JSON form (``2020`` → ``"2020"``); a boolean, a JSON array or a JSON
+  object fails the build with ``invalid_input``.
+- ``strip`` removes a prefix from an identifier (as text, from the first; as a mapping, from
+  the identifiers it names), then the normalisation steps run in order. An identifier that is
+  missing, NULL or empty after that has no value.
+- The node's key is the first identifier that has a value: as it is for the first of the
+  type's ``key``, as ``<identifier>=<value>`` for a later one, so two identifiers never give
+  the same key. A node with no identifier fails the build with ``invalid_input``. An
+  identifier is never a property.
+- The key's value as written, before ``strip``, is kept as an alias (``origin = source``) when
+  it differs from the normalised value. Every later identifier that has a value is kept as an
+  alias ``<identifier>=<value>`` (``origin = pattern``), so the node is found by it and keeps
+  that name if an earlier identifier is filled in later.
 - An entry whose canonical property is ``label`` or ``summary`` fills that column; without
   one, the node takes the piece node's ``label`` and ``summary``. These columns hold text, so
   a non-text value for them fails the build with ``invalid_input`` (no decision covers it).
 - Every other entry fills a property in ``props``.
 - A node of a mosaic piece is mapped the same way; its old id becomes an alias with
   ``origin = pattern`` (in step 3).
-- A piece node is **weak-keyed** when its key comes from the piece node's ``key`` (an entry
-  for the key property naming ``key``, or no entry) and its piece type's ``key_prop`` is NULL:
+- A piece node is **weak-keyed** when its key comes from the piece node's ``key`` alone (an
+  entry for the identifier naming ``key``, or no entry) and its piece type's ``key_prop`` is
+  NULL:
   the key came from position, not a natural key (section 7.2; ADR-002).
 
 Entries are taken in pattern order and, within an entry, the piece's nodes in ``nid`` order;
@@ -48,6 +60,25 @@ STRIP = "strip"
 """The reserved field map option (section 5.2)."""
 
 
+JOIN = ", "
+"""What joins the values of an identifier made of several fields (section 5.2)."""
+
+
+@dataclass(frozen=True)
+class Identifier:
+    """One identifier of a type as one ``from`` entry gives it."""
+
+    prop: str
+    rank: int
+    """Its place in the type's ``key``, from 0."""
+    fields: tuple[str, ...]
+    strip: str | None
+
+    def key(self, value: str) -> str:
+        """The node key this identifier's ``value`` gives."""
+        return value if self.rank == 0 else f"{self.prop}={value}"
+
+
 @dataclass(frozen=True)
 class Entry:
     """One ``types.<T>.from`` entry: the canonical type and the piece type it maps."""
@@ -58,8 +89,11 @@ class Entry:
     piece: str
     piece_type: str
     fields: Mapping[str, str]
-    """Canonical property → piece field, without ``strip``."""
-    strip: str | None
+    """Canonical property → piece field, without ``strip`` and the identifiers."""
+    identifiers: tuple[Identifier, ...] = ()
+    """The type's identifiers this entry gives, in the order of the type's ``key``."""
+    mapped: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    """Every canonical property and identifier with the piece fields that fill it, as written."""
 
     @property
     def reference(self) -> str:
@@ -71,10 +105,9 @@ class Entry:
         Evidence about a field is renamed to these properties (step 3).
         """
         filled: dict[str, list[str]] = {}
-        for prop, field in self.fields.items():
-            filled.setdefault(field, []).append(prop)
-        if self.key_prop not in self.fields:
-            filled.setdefault("key", []).append(self.key_prop)
+        for prop, fields in self.mapped:
+            for field in fields:
+                filled.setdefault(field, []).append(prop)
         for column in TEXT_COLUMNS:
             if column not in self.fields:
                 filled.setdefault(column, []).append(column)
@@ -93,12 +126,14 @@ class Mapped:
     """The piece node's id."""
     key: str
     written: str
-    """The key as written in the source: the field's value as text, before ``strip``."""
+    """The key's value as written in the source, before ``strip``; the key when they are equal."""
     label: str | None
     summary: str | None
     props: Mapping[str, Any]
     weak: bool = False
     """Whether the key came from position rather than a natural key (section 7.2)."""
+    also: tuple[str, ...] = ()
+    """The later identifiers that have a value, each as the key it would give."""
 
     @property
     def type(self) -> str:
@@ -114,21 +149,44 @@ def entries(pattern: Mapping[str, Any]) -> list[Entry]:
     found: list[Entry] = []
     for type_name, definition in pattern["types"].items():
         steps = tuple(definition.get("normalise", DEFAULT_STEPS))
+        keys = key_props(definition)
         for reference, field_map in definition["from"].items():
             piece, _, piece_type = reference.rpartition(".")
-            fields = {p: f for p, f in field_map.items() if p != STRIP}
+            strip = field_map.get(STRIP)
+            strips = strip if isinstance(strip, Mapping) else {keys[0]: strip}
+            identifiers = []
+            unnamed = not any(prop in field_map for prop in keys)
+            for rank, prop in enumerate(keys):
+                given = field_map.get(prop, "key" if rank == 0 and unnamed else None)
+                if given is not None:
+                    names = (given,) if isinstance(given, str) else tuple(given)
+                    identifiers.append(Identifier(prop, rank, names, strips.get(prop)))
+            mapped = [
+                (p, (f,) if isinstance(f, str) else tuple(f))
+                for p, f in field_map.items()
+                if p != STRIP
+            ]
+            if unnamed:
+                mapped.append((keys[0], ("key",)))
             found.append(
                 Entry(
                     type=type_name,
-                    key_prop=definition["key"],
+                    key_prop=keys[0],
                     steps=steps,
                     piece=piece,
                     piece_type=piece_type,
-                    fields=fields,
-                    strip=field_map.get(STRIP),
+                    fields={p: f for p, f in field_map.items() if p != STRIP and p not in keys},
+                    identifiers=tuple(identifiers),
+                    mapped=tuple(mapped),
                 )
             )
     return found
+
+
+def key_props(definition: Mapping[str, Any]) -> tuple[str, ...]:
+    """A type's identifiers, in order of trust: its ``key``, one name or a list (section 5.2)."""
+    key = definition["key"]
+    return (key,) if isinstance(key, str) else tuple(key)
 
 
 _ABSENT = object()
@@ -145,11 +203,7 @@ def _where(entry: Entry, old_id: str) -> str:
 
 
 def _key_text(entry: Entry, old_id: str, field: str, value: Any) -> str:
-    """The key's value as text, or the build fails."""
-    if value is _ABSENT:
-        raise BuildError(
-            "invalid_input", f"{_where(entry, old_id)}: key field {field!r} has no value"
-        )
+    """An identifier field's value as text, or the build fails."""
     if isinstance(value, str):
         return value
     if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -159,6 +213,25 @@ def _key_text(entry: Entry, old_id: str, field: str, value: Any) -> str:
         "invalid_input",
         f"{_where(entry, old_id)}: key field {field!r} is {what}, not text or a number",
     )
+
+
+def _identified(
+    entry: Entry, old_id: str, identifier: Identifier, columns: Mapping[str, Any], props: Any
+) -> tuple[str, str] | None:
+    """An identifier's value as written and after ``strip`` and normalisation, if it has one."""
+    parts = []
+    for i, field in enumerate(identifier.fields):
+        value = _field(columns, props, field)
+        if value is not _ABSENT:
+            parts.append(_key_text(entry, old_id, field, value))
+        elif i == 0:
+            return None
+    written = JOIN.join(parts)
+    stripped = written
+    if identifier.strip is not None and stripped.startswith(identifier.strip):
+        stripped = stripped[len(identifier.strip) :]
+    value = normalise(stripped, entry.steps)
+    return None if value == "" else (written, value)
 
 
 def _column(entry: Entry, old_id: str, column: str, field: str, value: Any) -> str | None:
@@ -204,17 +277,19 @@ def map_node(entry: Entry, piece: Piece, row: Sequence[Any], *, positional: bool
     props = _props(entry, old_id, props_text)
     columns = {"key": key, "label": label, "summary": summary}
 
-    key_field = entry.fields.get(entry.key_prop, "key")
-    written = _key_text(entry, old_id, key_field, _field(columns, props, key_field))
-    stripped = written
-    if entry.strip is not None and stripped.startswith(entry.strip):
-        stripped = stripped[len(entry.strip) :]
-    canonical = normalise(stripped, entry.steps)
-    if canonical == "":
+    found = [
+        (identifier, *named)
+        for identifier in entry.identifiers
+        if (named := _identified(entry, old_id, identifier, columns, props)) is not None
+    ]
+    if not found:
+        fields = ", ".join(repr(f) for i in entry.identifiers for f in i.fields)
         raise BuildError(
             "invalid_input",
-            f"{_where(entry, old_id)}: key {written!r} is empty after strip and normalisation",
+            f"{_where(entry, old_id)}: no key: {fields} has no value, or none after strip and "
+            "normalisation",
         )
+    chosen, written, value = found[0]
 
     texts: dict[str, str | None] = {}
     for column in TEXT_COLUMNS:
@@ -222,22 +297,23 @@ def map_node(entry: Entry, piece: Piece, row: Sequence[Any], *, positional: bool
         texts[column] = _column(entry, old_id, column, field, _field(columns, props, field))
     mapped: dict[str, Any] = {}
     for prop, field in entry.fields.items():
-        if prop == entry.key_prop or prop in TEXT_COLUMNS:
+        if prop in TEXT_COLUMNS:
             continue
-        value = _field(columns, props, field)
-        if value is not _ABSENT:
-            mapped[prop] = value
+        given = _field(columns, props, field)
+        if given is not _ABSENT:
+            mapped[prop] = given
     return Mapped(
         entry=entry,
         piece=piece,
         nid=nid,
         old_id=old_id,
-        key=canonical,
-        written=written,
+        key=chosen.key(value),
+        written=chosen.key(value) if written == value else written,
         label=texts["label"],
         summary=texts["summary"],
         props=mapped,
-        weak=positional and key_field == "key",
+        weak=positional and chosen.fields == ("key",),
+        also=tuple(i.key(v) for i, _, v in found[1:]),
     )
 
 

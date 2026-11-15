@@ -28,5 +28,47 @@
   "text": "props: [a]\nconvert: {b: {kind: integer}}\n",
   "line": null,
   "named": "'b'"
+ },
+ {
+  "name": "rows-not-a-mapping",
+  "text": "type: Item\nrows: [a]\n",
+  "line": 2,
+  "named": "rows"
+ },
+ {
+  "name": "rows-number",
+  "text": "rows:\n  a: x\n  b: 5\n",
+  "line": 3,
+  "named": "rows.b"
+ },
+ {
+  "name": "rows-no-text",
+  "text": "rows: {a: []}\n",
+  "line": null,
+  "named": "rows.a"
+ },
+ {
+  "name": "columns-not-a-list",
+  "text": "type: Item\ncolumns: a\n",
+  "line": 2,
+  "named": "columns"
+ },
+ {
+  "name": "columns-twice",
+  "text": "columns: [a, b, a]\n",
+  "line": null,
+  "named": "'a'"
+ },
+ {
+  "name": "columns-empty",
+  "text": "columns: []\n",
+  "line": null,
+  "named": "columns"
+ },
+ {
+  "name": "nulls-not-text",
+  "text": "type: Item\nnulls: [5]\n",
+  "line": 2,
+  "named": "nulls"
  }
 ]

@@ -1,0 +1,15 @@
+# CSV import settings for the OpenFlights fixture, routes (docs/spec-0.1.md section 11).
+# mosaic import csv routes.dat --settings settings-routes.yaml -o routes.tessera
+# A route has no id of its own, so no key is named and a route is keyed by its row number (a
+# weak id). Airports and airlines are named by their OpenFlights ids, as the other two files do.
+columns: [airline, airline_id, source, source_id, destination, destination_id, codeshare, stops, equipment]
+type: Route
+props: [airline, source, destination, codeshare, stops, equipment]
+convert:
+  stops: {kind: integer}
+nulls: ['\N']
+notice: "OpenFlights Routes Database, made available under the Open Database License (ODbL) 1.0; its contents under the Database Contents License (DbCL) 1.0. https://openflights.org/data"
+links:
+  source_id: {type: SourceAirport, edge: departs_from}
+  destination_id: {type: DestinationAirport, edge: arrives_at}
+  airline_id: {type: Operator, edge: operated_by}

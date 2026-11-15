@@ -1,0 +1,65 @@
+[
+ {
+  "name": "the first identifier joins two pieces and the later ones become aliases",
+  "key": ["code", "number"],
+  "from": {"first.Row": {"code": "Code", "number": "No"}, "second.Row": {"code": "Code", "unit": "Unit"}},
+  "pieces": {"first": [{"Code": "C1", "No": 7}], "second": [{"Code": "C1", "Unit": "V"}]},
+  "nodes": {"Gem:C1": {"unit": "V"}},
+  "aliases": [["number=7", "Gem:C1", "pattern"]]
+ },
+ {
+  "name": "without the first, the next identifier gives the key and still joins",
+  "key": ["code", "number"],
+  "from": {"first.Row": {"code": "Code", "number": "No"}, "second.Row": {"number": "No"}},
+  "pieces": {"first": [{"No": "7"}], "second": [{"No": 7}]},
+  "nodes": {"Gem:number=7": {}},
+  "aliases": []
+ },
+ {
+  "name": "an identifier only one piece gives never joins another piece",
+  "key": ["code", "ours", "theirs"],
+  "from": {"first.Row": {"code": "Code", "ours": "Id"}, "second.Row": {"code": "Code", "theirs": "Id"}},
+  "pieces": {"first": [{"Id": "1"}], "second": [{"Id": "1"}]},
+  "nodes": {"Gem:ours=1": {}, "Gem:theirs=1": {}},
+  "aliases": []
+ },
+ {
+  "name": "a node keyed by an earlier identifier does not join one that has only a later one",
+  "key": ["code", "number"],
+  "from": {"first.Row": {"code": "Code", "number": "No"}, "second.Row": {"code": "Code", "number": "No"}},
+  "pieces": {"first": [{"Code": "C1", "No": "7"}], "second": [{"No": "7"}]},
+  "nodes": {"Gem:C1": {}, "Gem:number=7": {}},
+  "aliases": [["number=7", "Gem:C1", "pattern"]]
+ },
+ {
+  "name": "several fields give one identifier, joined, without those that have no value",
+  "key": ["code", "named"],
+  "from": {"first.Row": {"code": "Code", "named": ["Name", "Year", "Place"]}},
+  "pieces": {"first": [{"Name": "Ann", "Year": 1900, "Place": "Rome"}, {"Name": "Bo", "Place": "Oslo"}, {"Name": "Ann", "Year": 1900, "Place": "Rome"}]},
+  "nodes": {"Gem:named=Ann, 1900, Rome": {}, "Gem:named=Bo, Oslo": {}},
+  "aliases": []
+ },
+ {
+  "name": "strip as a mapping removes a prefix from each identifier it names",
+  "key": ["code", "number"],
+  "from": {"first.Row": {"code": "Code", "number": "No", "strip": {"code": "http://c/", "number": "http://n/"}}},
+  "pieces": {"first": [{"Code": "http://c/C1", "No": "http://n/7"}, {"No": "http://n/8"}]},
+  "nodes": {"Gem:C1": {}, "Gem:number=8": {}},
+  "aliases": [["http://c/C1", "Gem:C1", "source"], ["number=7", "Gem:C1", "pattern"], ["http://n/8", "Gem:number=8", "source"]]
+ },
+ {
+  "name": "an identifier that is empty after normalisation has no value",
+  "key": ["code", "number"],
+  "from": {"first.Row": {"code": "Code", "number": "No"}},
+  "pieces": {"first": [{"Code": "  ", "No": "7"}]},
+  "nodes": {"Gem:number=7": {}},
+  "aliases": []
+ },
+ {
+  "name": "a node with no identifier fails the build",
+  "key": ["code", "number"],
+  "from": {"first.Row": {"code": "Code", "number": ["No", "Year"]}},
+  "pieces": {"first": [{"Code": "C1"}, {"Year": 1900}]},
+  "error": "piece 'first', node 'Row:2'"
+ }
+]
