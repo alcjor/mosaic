@@ -83,6 +83,8 @@ has its own `--help`.
 - [`docs/adr/`](docs/adr/): the architecture decisions.
 - [`conformance/`](conformance/README.md): the fixtures and cases that the Python builders and
   the TypeScript kit are both tested against.
+- [`examples/embed/`](examples/embed/): the kit without the viewer, in a Node script and in a
+  plain web page of about 50 lines; each answers a question from a mosaic with its sources.
 
 ## Built with Mosaic?
 

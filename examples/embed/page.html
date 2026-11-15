@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  Answer a question from a mosaic in a plain web page with the kit alone: no viewer, no bundler.
+
+      bun install && bun run build        (once, from the repository root)
+      python3 -m http.server 8000         (any static server, from the repository root)
+
+  Then open http://localhost:8000/examples/embed/page.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A mosaic in a plain page</title>
+    <script type="importmap">
+      { "imports": { "@sqlite.org/sqlite-wasm": "../../kit/node_modules/@sqlite.org/sqlite-wasm/dist/index.mjs" } }
+    </script>
+  </head>
+  <body>
+    <h1>What is linked to <input id="words" value="Group x" />?</h1>
+    <ul id="answer"></ul>
+    <script type="module">
+      import { openFile } from "../../kit/dist/index.js";
+
+      const bytes = await (await fetch("../../conformance/reading/mosaic.mosaic")).arrayBuffer();
+      const mosaic = await openFile(new Uint8Array(bytes), "mosaic");
+      const words = document.querySelector("#words");
+      const answer = document.querySelector("#answer");
+
+      async function ask() {
+        const lines = [];
+        const found = await mosaic.find({ query: words.value, limit: 1 });
+        const thing = found.data?.results[0];
+        const links = thing ? (await mosaic.neighbors({ id: thing.id })).data.edges : [];
+        for (const link of links) {
+          const [from, to] = link.direction === "in" ? [link, thing] : [thing, link];
+          const cited = await mosaic.cite({ from: from.id, type: link.edge, to: to.id });
+          const sources = cited.data.evidence.map((e) => `${e.source}, ${e.locator}`).join("; ");
+          lines.push(`${from.label} ${link.edge} ${to.label} (${sources})`);
+        }
+        answer.replaceChildren(...lines.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
+        answer.dataset.ready = words.value;
+      }
+
+      words.addEventListener("change", ask);
+      await ask();
+    </script>
+  </body>
+</html>
