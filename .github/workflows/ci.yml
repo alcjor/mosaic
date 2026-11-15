@@ -2,10 +2,25 @@ name: CI
 
 # The fast gate, once per pull request update and on main. The slow tests (fixtures, hashes,
 # vectors) run on main only; the fixture downloads are cached by the manifest's hash.
+# A change to the files below alone cannot change a result, so it starts nothing.
 on:
   pull_request:
+    paths-ignore:
+      - README.md
+      - CONTRIBUTING.md
+      - CLAUDE.md
+      - NOTICE
+      - docs/design.md
+      - docs/adr/**
   push:
     branches: [main]
+    paths-ignore:
+      - README.md
+      - CONTRIBUTING.md
+      - CLAUDE.md
+      - NOTICE
+      - docs/design.md
+      - docs/adr/**
   workflow_dispatch:
 
 concurrency:

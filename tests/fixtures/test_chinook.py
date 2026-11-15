@@ -486,3 +486,38 @@ def test_a_contains_edge_keeps_the_two_keys_of_its_row_in_the_locator(built: Bui
     for src, dst, locator in rows:
         track = str(dst).split(":", 1)[1]
         assert str(locator).endswith(f"row=1/{track}"), (src, dst, locator)
+
+
+# --- Budgets (sections 5.4, 7.1 step 8 and 7.3) -------------------------------------------------
+
+
+def test_a_budget_below_the_file_size_fails_and_leaves_no_mosaic(
+    built: Built, tmp_path: Path
+) -> None:
+    # Over budget fails and no mosaic is written; the report gives the removed file's hashes and
+    # size, with counts filled. The same target with room to spare says what those are.
+    text = (FIXTURE / "pattern.yaml").read_text(encoding="utf-8")
+    assert "\nmosaics:" not in text
+    reports = {}
+    for budget in ("1 GB", "1 MB"):
+        directory = tmp_path / budget.replace(" ", "")
+        directory.mkdir()
+        pattern = directory / "pattern.yaml"
+        pattern.write_text(
+            text + f"\nmosaics:\n  small: {{budget: {budget}, vectors: false}}\n", encoding="utf-8"
+        )
+        out = directory / "out"
+        done = _mosaic("build", pattern, "--pieces", built.pieces, "-o", out, cwd=directory)
+        report = json.loads((out / "build-report.json").read_text(encoding="utf-8"))
+        Draft202012Validator(
+            json.loads((SPEC / "build-report.schema.json").read_text(encoding="utf-8"))
+        ).validate(report)
+        reports[budget] = (done.returncode, sorted(p.name for p in out.glob("*.mosaic")), report)
+    code, files, roomy = reports["1 GB"]
+    assert (code, files, roomy["outcome"]) == (0, ["small.mosaic"], "built")
+    code, files, report = reports["1 MB"]
+    assert code != 0 and files == []
+    assert (report["outcome"], report["reason"]) == ("failed", "over_budget")
+    assert report["knowledge_hash"] == roomy["knowledge_hash"] == built.report["knowledge_hash"]
+    assert report["file_size"] == roomy["file_size"] > 1_000_000
+    assert report["counts"] == roomy["counts"] == built.report["counts"]

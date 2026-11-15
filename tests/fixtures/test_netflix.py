@@ -258,24 +258,11 @@ def test_the_build_with_vectors_takes_under_15_minutes(runs: tuple[Run, Run]) ->
 
 
 def test_the_knowledge_hash_is_that_of_the_same_target_with_vectors_off(
-    runs: tuple[Run, Run], tmp_path: Path
+    runs: tuple[Run, Run], plain: Plain
 ) -> None:
-    name, _ = _pinned_piece()
-    pieces = tmp_path / "pieces"
-    pieces.mkdir()
-    built = runs[0]
-    text = (FIXTURE / "pattern.yaml").read_text(encoding="utf-8")
-    assert "\nmosaics:" not in text  # the one target is `default`, with every default
-    pattern = tmp_path / "pattern.yaml"
-    pattern.write_text(text + "\nmosaics:\n  default: {vectors: false}\n", encoding="utf-8")
-    # The tessera of the first run, imported again here (same source, same settings).
-    shutil.copyfile(SOURCE, tmp_path / SOURCE.name)
-    tessera = pieces / f"{name}.tessera"
-    settings = FIXTURE / "settings.yaml"
-    _mosaic("import", "csv", SOURCE.name, "--settings", settings, "-o", tessera, cwd=tmp_path)
-    _mosaic("build", pattern, "--pieces", pieces, "-o", tmp_path / "out", cwd=tmp_path)
-    with open_sealed(tmp_path / "out" / "default.mosaic") as m:
-        assert m.knowledge_hash == built.mosaic_hash
+    # Section 3.6: the knowledge hash does not cover vectors.
+    with open_sealed(plain.mosaic) as m:
+        assert m.knowledge_hash == runs[0].mosaic_hash
         assert m.query("SELECT vector_hash, embed_model FROM header") == [(None, None)]
 
 
@@ -387,23 +374,26 @@ def fetched() -> None:
 
 
 @pytest.fixture(scope="module")
-def flow(fetched: None, tmp_path_factory: pytest.TempPathFactory) -> Flow:
+def flow(netflix_builds: NetflixBuilds, tmp_path_factory: pytest.TempPathFactory) -> Flow:
+    """The first clean build of the session, with its tessera imported again beside it."""
     directory = tmp_path_factory.mktemp("netflix-edges")
     name, _ = _pin()
     pieces, out = directory / "pieces", directory / "out"
     pieces.mkdir()
+    out.mkdir()
     tessera = pieces / f"{name}.tessera"
     shutil.copyfile(SOURCE, directory / SOURCE.name)
     _ok(
         "import", "csv", SOURCE.name, "--settings", FIXTURE / "settings.yaml", "-o", tessera,
         cwd=directory,
     )  # fmt: skip
-    _ok("build", FIXTURE / "pattern.yaml", "--pieces", pieces, "-o", out, cwd=directory)
+    first = netflix_builds.first
+    assert _knowledge_hash(tessera) == first.tessera_hash
     mosaic = out / "default.mosaic"
-    report = json.loads((out / "build-report.json").read_text(encoding="utf-8"))
+    shutil.copyfile(netflix_builds.mosaic, mosaic)
     return Flow(
-        directory, pieces, out, tessera, mosaic, _knowledge_hash(tessera),
-        _knowledge_hash(mosaic), report,
+        directory, pieces, out, tessera, mosaic, first.tessera_hash, first.mosaic_hash,
+        first.report,
     )  # fmt: skip
 
 
@@ -608,23 +598,3 @@ def test_an_edges_locator_points_at_its_titles_row_and_the_edges_column(flow: Fl
 
 
 # --- Targets: strict and budget (sections 5.4, 7.1 step 8, 7.3) ---
-
-
-def test_a_budget_below_the_file_size_fails_and_leaves_no_mosaic(
-    flow: Flow, plain: Plain, tmp_path: Path
-) -> None:
-    # Sections 5.4 and 7.1 step 8: over budget fails, no mosaic is written; 7.3: the report gives
-    # the removed file's hashes and size, with counts filled.
-    pattern = _pattern_with(
-        tmp_path, mosaics="\nmosaics:\n  small: {budget: 1 MB, vectors: false}\n"
-    )
-    out = tmp_path / "out"
-    done = _cli("build", pattern, "--pieces", flow.pieces, "-o", out, cwd=tmp_path)
-    assert done.returncode != 0
-    assert not list(out.glob("*.mosaic"))
-    report = json.loads((out / "build-report.json").read_text(encoding="utf-8"))
-    _schema().validate(report)
-    assert (report["outcome"], report["reason"]) == ("failed", "over_budget")
-    assert report["knowledge_hash"] == flow.mosaic_hash
-    assert report["file_size"] == plain.report["file_size"]
-    assert report["counts"] == plain.report["counts"] == flow.report["counts"]
