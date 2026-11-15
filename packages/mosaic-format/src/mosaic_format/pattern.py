@@ -42,8 +42,8 @@ RULES: Mapping[str, tuple[str, str]] = {
     "map-type": ("5.6", "every `map` entry names an edge type that piece declares"),
     "key-field": (
         "5.6",
-        "only an identifier of the type's `key` takes several fields or a `strip`, and `label` "
-        "and `summary` are not identifiers",
+        "only an identifier of the type's `key` takes several fields, `strip` names only "
+        "identifiers its entry gives, and `label` and `summary` are not identifiers",
     ),
     "edge-type": ("5.6", "edge `from` and `to` name declared types"),
     "target-type": ("5.6", "target `types` name declared types"),
@@ -248,6 +248,15 @@ def _check_pattern(
                     ("types", type_name, "from", reference, "strip" if prop in stripped else prop),
                     "key-field",
                     f"{reference!r}: {prop!r} is not an identifier of type {type_name!r}'s key",
+                )
+            given = [k for k in keys if k in field_map]
+            if isinstance(strip, str) and given and keys[0] not in given:
+                stripped = [keys[0]]
+            for prop in [p for p in stripped if p in keys and p not in given]:
+                f.add(
+                    ("types", type_name, "from", reference, "strip"),
+                    "key-field",
+                    f"{reference!r}: strip names {prop!r}, which this entry does not give",
                 )
         for reference in definition["from"]:
             where = ("types", type_name, "from", reference)

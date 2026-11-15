@@ -17,22 +17,24 @@ type ``T`` by the entry's field map (section 5.2):
   the identifiers it names), then the normalisation steps run in order. An identifier that is
   missing, NULL or empty after that has no value.
 - The node's key is the first identifier that has a value: as it is for the first of the
-  type's ``key``, as ``<identifier>=<value>`` for a later one, so two identifiers never give
-  the same key. A node with no identifier fails the build with ``invalid_input``. An
+  type's ``key``, as ``<identifier>=<value>`` for a later one. So that two identifiers never
+  give the same key, a value of the first that starts with a later identifier's name and
+  ``=`` fails the build with ``invalid_input``, as does a node with no identifier. An
   identifier is never a property.
-- The key's value as written, before ``strip``, is kept as an alias (``origin = source``) when
-  it differs from the normalised value. Every later identifier that has a value is kept as an
-  alias ``<identifier>=<value>`` (``origin = pattern``), so the node is found by it and keeps
-  that name if an earlier identifier is filled in later.
+- When the first identifier gives the key, its value as written, before ``strip``, is kept as
+  an alias (``origin = source``) when it differs from the normalised value. Every later
+  identifier that has a value is kept as an alias ``<identifier>=<value>``
+  (``origin = pattern``), the name the node would have without the earlier ones; an
+  identifier taken from a positional piece ``key`` is not, since it changes when rows move.
 - An entry whose canonical property is ``label`` or ``summary`` fills that column; without
   one, the node takes the piece node's ``label`` and ``summary``. These columns hold text, so
   a non-text value for them fails the build with ``invalid_input`` (no decision covers it).
 - Every other entry fills a property in ``props``.
 - A node of a mosaic piece is mapped the same way; its old id becomes an alias with
   ``origin = pattern`` (in step 3).
-- A piece node is **weak-keyed** when its key comes from the piece node's ``key`` alone (an
-  entry for the identifier naming ``key``, or no entry) and its piece type's ``key_prop`` is
-  NULL:
+- A piece node is **weak-keyed** when its key comes from the piece node's ``key`` (an entry
+  for the identifier naming ``key``, alone or among several fields, or no entry) and its
+  piece type's ``key_prop`` is NULL:
   the key came from position, not a natural key (section 7.2; ADR-002).
 
 Entries are taken in pattern order and, within an entry, the piece's nodes in ``nid`` order;
@@ -92,6 +94,8 @@ class Entry:
     """Canonical property → piece field, without ``strip`` and the identifiers."""
     identifiers: tuple[Identifier, ...] = ()
     """The type's identifiers this entry gives, in the order of the type's ``key``."""
+    later: tuple[str, ...] = ()
+    """The type's identifiers after the first."""
     mapped: tuple[tuple[str, tuple[str, ...]], ...] = ()
     """Every canonical property and identifier with the piece fields that fill it, as written."""
 
@@ -126,7 +130,7 @@ class Mapped:
     """The piece node's id."""
     key: str
     written: str
-    """The key's value as written in the source, before ``strip``; the key when they are equal."""
+    """The first identifier's value as written, before ``strip``; else the key itself."""
     label: str | None
     summary: str | None
     props: Mapping[str, Any]
@@ -177,6 +181,7 @@ def entries(pattern: Mapping[str, Any]) -> list[Entry]:
                     piece_type=piece_type,
                     fields={p: f for p, f in field_map.items() if p != STRIP and p not in keys},
                     identifiers=tuple(identifiers),
+                    later=keys[1:],
                     mapped=tuple(mapped),
                 )
             )
@@ -290,6 +295,13 @@ def map_node(entry: Entry, piece: Piece, row: Sequence[Any], *, positional: bool
             "normalisation",
         )
     chosen, written, value = found[0]
+    if chosen.rank == 0 and any(value.startswith(f"{prop}=") for prop in entry.later):
+        raise BuildError(
+            "invalid_input",
+            f"{_where(entry, old_id)}: key {value!r} reads as another identifier of {entry.type}",
+        )
+    if positional:
+        found = [f for f in found if f is found[0] or "key" not in f[0].fields]
 
     texts: dict[str, str | None] = {}
     for column in TEXT_COLUMNS:
@@ -308,11 +320,11 @@ def map_node(entry: Entry, piece: Piece, row: Sequence[Any], *, positional: bool
         nid=nid,
         old_id=old_id,
         key=chosen.key(value),
-        written=chosen.key(value) if written == value else written,
+        written=written if chosen.rank == 0 else chosen.key(value),
         label=texts["label"],
         summary=texts["summary"],
         props=mapped,
-        weak=positional and chosen.fields == ("key",),
+        weak=positional and "key" in chosen.fields,
         also=tuple(i.key(v) for i, _, v in found[1:]),
     )
 
