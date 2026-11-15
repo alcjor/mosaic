@@ -247,7 +247,8 @@ The Mosaic viewer (Svelte, running the kit in the page), the single-file HTML ex
 
 ### Shell
 - **Header band:** 48px, `slab`, with the dark mark, the mosaic's name in `mono` (`netflix.mosaic`) and its knowledge hash, short, in `shard-4`. One search field in the middle. Nothing else on navy.
-- **Body:** `surface`. Three columns at 1280px and up: results (320px), the entity card (flexible), and a context column (320px) for neighbours, sources and proposals. Below 960px the side columns become tabs.
+- **Places:** under the band, one row of four links: Home, Explore, Trails, Tables. The current one carries a 2px `accent` underline.
+- **Body:** `surface`. Home: saved trails, then the map of types. Explore: three columns at 1280px and up: results (320px), the graph (flexible), and the selected thing's card with its links and sources. Trails: the chain's steps, then one column per step. Tables: the types (320px) and the table. Below 960px the side columns become tabs.
 - **Status bar** (optional, 28px, `surface-tint`): trust level, build date, row counts, in `caption`.
 - **Exported HTML** looks the same; a `caption` in the header says "Read-only export".
 

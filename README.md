@@ -22,7 +22,7 @@ may change until it is frozen. The table says what works today and which milesto
 | Format and checker | One SQLite file format with two profiles, tessera and mosaic; knowledge and vector hashes; `mosaic check` for files and patterns | The hardening planned for the freeze, and the frozen 0.1 (M11) |
 | Builders | Tessera builders for CSV files and SQLite databases; the mosaic builder with its build report, strict mode and vectors | Several pieces proved on a fixture (M7); tessera builders for documents and code, and links from mentions (M8); the AI step and proposals (M10) |
 | Kit | TypeScript, running in the browser, with five tools: `find`, `get`, `neighbors`, `table`, `cite` | Counting the results of a chain (M6); `path`, the generated card and a Node build (M9); a Python wrapper (M11) |
-| Viewer | `mosaic view` and a single-file `mosaic export`, both shaped by a view file: search, tables, node pages with their sources, graph views, chains and cards | A rework into four places: Home, Explore, Trails and Tables (M5); "count by" (M6); a path between two things (M9) |
+| Viewer | `mosaic view` and a single-file `mosaic export`, both shaped by a view file: four places, Home (the map of types and saved trails), Explore (a graph you can drag and unfold, with the selected thing's card and sources), Trails (a chain as columns) and Tables, with search above them | "count by" (M6); a path between two things (M9) |
 | Agent interface | Nothing yet | An MCP server, the card, and a benchmark with small local models (M9) |
 
 The two examples that work end to end today are the conformance fixtures: Netflix titles (one
