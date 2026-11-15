@@ -110,7 +110,18 @@ def test_the_utf_16_file_holds_the_conforming_mosaic_stored_as_utf_16() -> None:
 
 
 def test_the_files_are_exactly_what_the_script_writes(tmp_path: Path) -> None:
+    import sqlite3
+
     assert sorted(p.name for p in FILES.iterdir()) == sorted(mrf.outputs())
+    # Bytes differ between SQLite versions (ADR-001); the file header names its writer's.
+    wrote = int.from_bytes((FILES / "mosaic.mosaic").read_bytes()[96:100])
+    if (
+        wrote
+        != sqlite3.sqlite_version_info[0] * 1_000_000
+        + sqlite3.sqlite_version_info[1] * 1_000
+        + sqlite3.sqlite_version_info[2]
+    ):
+        pytest.skip("the files were written by another SQLite version")
     mrf.write(tmp_path)
     for name in mrf.outputs():
         assert (tmp_path / name).read_bytes() == (FILES / name).read_bytes(), name

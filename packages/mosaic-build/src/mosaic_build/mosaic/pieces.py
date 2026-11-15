@@ -27,7 +27,7 @@ from typing import Any, Self
 from mosaic_format.pattern import check_pattern
 from mosaic_format.reader import FileRefusedError, Limits, SealedFile
 from mosaic_format.reader import open as open_sealed
-from mosaic_format.yaml_core import load
+from mosaic_format.yaml_read import load
 
 from mosaic_build.mosaic.errors import BuildError
 

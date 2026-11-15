@@ -45,6 +45,8 @@ jobs:
       - run: uv run ty check
       - run: uv run lint-imports
       - run: uv run pytest -m "not slow" -n auto
+      # The lowest supported Python.
+      - run: uv run --locked --isolated --python 3.12 pytest -q -m "not slow" -n auto
 
   js:
     runs-on: ubuntu-latest

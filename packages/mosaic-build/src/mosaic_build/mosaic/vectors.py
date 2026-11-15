@@ -19,6 +19,8 @@ The builder reads the model files from a directory and never fetches them (it us
 ``scripts/fetch_model.py`` fills that directory.
 """
 
+from __future__ import annotations
+
 import functools
 import hashlib
 import math

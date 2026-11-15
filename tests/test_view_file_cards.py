@@ -221,7 +221,7 @@ def test_adding_cards_changes_no_other_setting(tmp_path: Path) -> None:
     assert plain["cards"] is None
 
 
-# YAML 1.2 core schema: only true/false are booleans, only null/~/empty are null.
+# YAML 1.2: only true/false are booleans, only null/~/empty are null.
 
 
 @pytest.mark.parametrize(

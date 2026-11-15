@@ -2,7 +2,7 @@
 name = "mosaic-format"
 version = "0.0.0"
 description = "Mosaic file format: schema, hashes and the conformance checker (mosaic check)."
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     "jsonschema>=4.23",

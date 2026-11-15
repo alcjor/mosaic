@@ -34,7 +34,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from mosaic_format.yaml_core import load
+from mosaic_format.yaml_read import load
 
 FILE = "expected-hashes.json"
 VECTORS_FILE = "expected-vectors.json"

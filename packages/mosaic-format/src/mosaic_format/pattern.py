@@ -25,10 +25,10 @@ from jsonschema.protocols import Validator
 from mosaic_format import schema
 from mosaic_format.reader import FileRefusedError, SealedFile
 from mosaic_format.reader import open as open_sealed
-from mosaic_format.yaml_core import Document, YamlError, load
+from mosaic_format.yaml_read import Document, YamlError, load
 
 RULES: Mapping[str, tuple[str, str]] = {
-    "yaml": ("5", "the file is read as YAML 1.2 core schema"),
+    "yaml": ("5", "the file is read as YAML 1.2 that holds JSON data"),
     "duplicate-key": ("5", "a reader MUST reject duplicate keys"),
     "schema": ("5", "the file is valid against pattern.schema.json or proposals.schema.json"),
     "piece-unmatched": ("5.1", "a piece's hash matches no available file"),

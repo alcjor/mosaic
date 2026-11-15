@@ -95,7 +95,8 @@ loosen a test to make it pass.
 
 ## Style
 
-Python 3.14, typed, ruff-formatted, line length 100. TypeScript strict. Small modules and
+Python 3.14 to work in and 3.12 the lowest supported (no syntax or library newer than
+3.12), typed, ruff-formatted, line length 100. TypeScript strict. Small modules and
 plain names from the glossary (tessera, mosaic, piece, pattern, target, evidence, mention,
 kit). Errors name what failed and where. All example data is invented or openly licensed.
 Supported platforms are Linux and macOS, with UTF-8 input; builds are byte-identical there.
