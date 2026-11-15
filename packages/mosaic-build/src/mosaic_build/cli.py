@@ -171,7 +171,8 @@ def make_parser() -> argparse.ArgumentParser:
     builder.add_argument(
         "--model",
         type=Path,
-        help="directory of the embedding model files (section 6); needed for vectors",
+        help="directory of the embedding model files (section 6); needed for vectors. "
+        "Vectors are kept in ~/.cache/mosaic (MOSAIC_CACHE_DIR; empty turns the cache off)",
     )
     builder.add_argument(
         "-o",

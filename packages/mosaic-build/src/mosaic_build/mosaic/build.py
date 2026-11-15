@@ -46,6 +46,7 @@ from mosaic_build.mosaic.merge import Assembly, merge
 from mosaic_build.mosaic.pieces import check
 from mosaic_build.mosaic.select import select
 from mosaic_build.mosaic.target import target as find_target
+from mosaic_build.mosaic.vector_cache import CachedEmbeds, cache_dir, model_key
 from mosaic_build.mosaic.vectors import EMBED_MODEL, Embedder, Embeds, ModelFileError, node_vectors
 
 type ModelSource = str | os.PathLike[str] | Embeds
@@ -247,7 +248,7 @@ def _model(target: str, model: ModelSource | None) -> Embeds:
     if not isinstance(model, (str, os.PathLike)):
         return model
     try:
-        return Embedder(Path(model))
+        return CachedEmbeds(Embedder(Path(model)), model_key(), cache_dir())
     except ModelFileError as e:
         raise BuildError("invalid_input", f"target {target!r} has vectors on (5.4): {e}") from None
 

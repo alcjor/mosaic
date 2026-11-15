@@ -19,6 +19,7 @@ The builder reads the model files from a directory and never fetches them (it us
 ``scripts/fetch_model.py`` fills that directory.
 """
 
+import functools
 import hashlib
 import math
 from collections.abc import Iterable, Sequence
@@ -186,23 +187,30 @@ class Embedder:
 
     Each text is embedded on its own, with no padding, so its vector does not depend on which
     other texts are embedded with it. The model runs on the CPU in one thread (ADR-005, option
-    A), so the same machine gives the same vectors.
+    A), so the same machine gives the same vectors. The files are checked at once; the model
+    is loaded at the first text, so a build whose vectors are all cached never loads it.
     """
 
     def __init__(self, model_dir: Path) -> None:
+        self._model_file = check_file(model_dir / MODEL.model_file.path, MODEL.model_file)
+        self._tokenizer_file = check_file(model_dir / MODEL.tokenizer.path, MODEL.tokenizer)
+
+    @functools.cached_property
+    def tokenizer(self) -> Tokenizer:
+        return load_tokenizer(self._tokenizer_file)
+
+    @functools.cached_property
+    def _session(self) -> Any:
         import onnxruntime
 
-        model_file = check_file(model_dir / MODEL.model_file.path, MODEL.model_file)
-        tokenizer_file = check_file(model_dir / MODEL.tokenizer.path, MODEL.tokenizer)
-        self.tokenizer = load_tokenizer(tokenizer_file)
         options = onnxruntime.SessionOptions()
         options.log_severity_level = 3
         # ADR-005, option A: CPU only, one thread, the runtime version pinned by uv.lock.
         options.intra_op_num_threads = 1
         options.inter_op_num_threads = 1
         options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
-        self._session: Any = onnxruntime.InferenceSession(
-            str(model_file), options, providers=["CPUExecutionProvider"]
+        return onnxruntime.InferenceSession(
+            str(self._model_file), options, providers=["CPUExecutionProvider"]
         )
 
     def embed(self, text: str) -> list[float]:

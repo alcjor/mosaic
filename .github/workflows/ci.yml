@@ -64,6 +64,12 @@ jobs:
         with:
           path: .cache/model
           key: model-${{ hashFiles('scripts/fetch_model.py') }}
+      # Vectors of texts already embedded (the builder's cache), refreshed by each run.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/mosaic
+          key: vectors-${{ hashFiles('uv.lock') }}-${{ github.run_id }}
+          restore-keys: vectors-${{ hashFiles('uv.lock') }}-
       - run: uv python install 3.14
       - run: uv sync --locked
       - run: bun install --frozen-lockfile

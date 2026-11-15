@@ -270,7 +270,7 @@ No dates: each milestone starts when the one before passes. M0 to M4 are built: 
 
 **Next small steps, before M5 is finished.**
 
-- **Vector cache:** the builder keeps vectors by text hash and model hash, so a repeated build skips embedding.
+- **Vector cache (done):** the builder keeps vectors by text hash and model hash in `~/.cache/mosaic` (`MOSAIC_CACHE_DIR` moves it; empty turns it off), so a repeated build skips embedding and does not load the model.
 - **Slow tests in CI:** the slow suite runs on `main`, not in every working session.
 - **Lighter checks on open:** opening a file checks its structure only. The hashes are checked by `mosaic build` and `mosaic check`, in the viewer in the background with a "verified" or "not verified" mark, and by an agent host once per file.
 - **Fewer rules of our own:** a standard YAML loader with a duplicate-key check replaces the strict reader; Python 3.12 is the lowest supported version; a maintained library is preferred to about 100 lines of our own, except in the kit, which ships inside every export.
