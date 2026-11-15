@@ -147,6 +147,20 @@ describe("the page writes its chain into the address, and the address opens the 
     expect(await seen(w)).toEqual(await seen(v));
   });
 
+  it("one result at a time, with the result shown; another chain starts from the first again", async () => {
+    const v = await withChain({ ...CHAIN, steps: [CHAIN.steps[0]!] });
+    await v.showChainAs("one");
+    v.chainAt = 2;
+    const link = v.chainLink()!;
+    expect(link).toMatchObject({ show: "one", at: 3 });
+    const hash = routeHash({ query: "", node: null, view: "trails", chain: link });
+    expect(parseRoute(hash).chain).toEqual(link);
+    const w = await follow(hash);
+    expect([w.chainShow, w.chainAt]).toEqual(["one", 2]);
+    w.setChain(CHAIN);
+    expect(w.chainAt).toBe(0);
+  });
+
   it("a place beyond the last result opens the last one", async () => {
     const t = await follow("#v=trails&c=Hub&p0=Hub:h&k=has&at=999&show=table");
     expect(t.chainTable!.page).toBe(2);

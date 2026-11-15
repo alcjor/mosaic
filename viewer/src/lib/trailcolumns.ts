@@ -5,10 +5,14 @@
  * narrower chain, whose columns list only what goes with that thing.
  *
  * The columns are read from the chain's first {@link COLUMN_RESULTS} results; `partial` says
- * when the chain has more, so the page can say the lists are not complete.
+ * when the chain has more, so the page can say the lists are not complete. The results read are
+ * kept: they say which cards a line joins ({@link joinsOf}), what a picked card lights up
+ * ({@link connected}), and they are the results shown one at a time.
  */
+import type { GetData } from "@mosaic/kit";
 import type { Chain } from "./chain.js";
 import type { Result } from "./results.js";
+import { inPageOrder, type Shape } from "./view.js";
 
 /** How many of a chain's results the columns are read from. */
 export const COLUMN_RESULTS = 200;
@@ -32,6 +36,8 @@ export interface TrailColumn {
 
 export interface TrailColumns {
   readonly columns: readonly TrailColumn[];
+  /** The results the columns were read from, in the chain's order. */
+  readonly results: readonly Result[];
   /** How many results the columns were read from. */
   readonly read: number;
   /** True when the chain has more results than were read. */
@@ -55,5 +61,63 @@ export function columnsOf(chain: Chain, results: readonly Result[], partial: boo
     }
     return { ...place, things: [...seen.values()] };
   });
-  return { columns, read: results.length, partial };
+  return { columns, results, read: results.length, partial };
+}
+
+/** A line between two cards of neighbouring columns: the things joined, the left one at `place`. */
+export interface Join {
+  readonly place: number;
+  readonly from: string;
+  readonly to: string;
+}
+
+/** A join's name, to tell whether it is lit. */
+export const joinKey = (j: Join): string => JSON.stringify([j.place, j.from, j.to]);
+
+/** The lines between the columns: one per pair of things some result holds side by side. */
+export function joinsOf(results: readonly Result[]): Join[] {
+  const seen = new Map<string, Join>();
+  for (const r of results) {
+    for (let place = 0; place + 1 < r.things.length; place++) {
+      const join = { place, from: r.things[place]!.id, to: r.things[place + 1]!.id };
+      seen.set(joinKey(join), join);
+    }
+  }
+  return [...seen.values()];
+}
+
+/** What a picked card lights up: per place the things, and the joins, of the results that hold it. */
+export interface Lit {
+  readonly things: readonly ReadonlySet<string>[];
+  readonly joins: ReadonlySet<string>;
+}
+
+/** Everything connected to the thing `id` at `place`: what the results that pass through it hold. */
+export function connected(results: readonly Result[], place: number, id: string): Lit {
+  const through = results.filter((r) => r.things[place]?.id === id);
+  const places = Math.max(0, ...results.map((r) => r.things.length));
+  return {
+    things: Array.from({ length: places }, (_, at) => new Set(through.flatMap((r) => (r.things[at] ? [r.things[at].id] : [])))),
+    joins: new Set(joinsOf(through).map(joinKey)),
+  };
+}
+
+/** A property value as a card's line shows it. */
+const shown = (value: unknown): string => (typeof value === "string" ? value : JSON.stringify(value));
+
+/**
+ * A small card's one line: the first `count` properties of the thing, those its type's card
+ * shows when the view file sets one, else in the order of its page; "" when it has none.
+ */
+export function cardLine(node: Pick<GetData, "type" | "props">, shape: Shape | null, count = 3): string {
+  const props = node.props ?? {};
+  const card = shape?.card(node.type) ?? null;
+  const names =
+    card !== null
+      ? card.show.filter((name) => name !== "summary" && Object.hasOwn(props, name))
+      : inPageOrder(Object.keys(props), shape?.page(node.type) ?? null, (name) => name);
+  return names
+    .slice(0, count)
+    .map((name) => shown(props[name]))
+    .join(" · ");
 }

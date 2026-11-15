@@ -20,8 +20,9 @@
  * Trails (`v=trails`, need V-17) adds the chain shown: its start type as
  * `c=<type>`, each step's link as `k=<link>` spelled as in the view file (an edge type alone is
  * followed out; `<edge> in` is followed in), and the thing each place is pinned to as
- * `p<place>=<id>`, the start being place 0. Then, beside the defaults, the view as `show=table`,
- * the table's page as `at=<n>`, its first row from 1, the table's sort as `co=<place> <column>` with
+ * `p<place>=<id>`, the start being place 0. Then, beside the defaults, the view as `show=table`
+ * or `show=one` (one result at a time), the table's page as `at=<n>`, its first row from 1 (one at
+ * a time: the result shown), the table's sort as `co=<place> <column>` with
  * `cd=1` for descending, and its filters as `cf=<JSON list of [place, column, text]>`, places from
  * 1 as the table numbers them. lib/chainlink.ts applies them to a mosaic.
  *
@@ -65,7 +66,7 @@ export interface ChainLinkRoute {
   readonly pin: string | null;
   /** Each step: its link as the view file spells it, and the thing it is pinned to. */
   readonly steps: readonly { readonly link: string; readonly pin: string | null }[];
-  readonly show: "columns" | "table";
+  readonly show: "columns" | "one" | "table";
   /** The table's page, as its first row, from 1. */
   readonly at: number;
   /** The table's sort: a column by its place (from 1) and its key. */
@@ -123,7 +124,7 @@ function chainLink(params: URLSearchParams): ChainLinkRoute | null {
     start,
     pin: pinOf(0),
     steps,
-    show: params.get("show") === "table" ? "table" : "columns",
+    show: params.get("show") === "table" ? "table" : params.get("show") === "one" ? "one" : "columns",
     at: at !== null && COUNT.test(at) ? Number(at) : 1,
     sort: order === null ? null : { place: Number(order[1]), column: order[2]!, desc: params.get("cd") === "1" },
     filters: chainFilters(params.get("cf")),
@@ -210,7 +211,7 @@ export function routeHash(route: Route): string {
     if (chain.pin !== null) params.set("p0", chain.pin);
     for (const s of chain.steps) params.append("k", s.link);
     chain.steps.forEach((s, i) => s.pin !== null && params.set(`p${i + 1}`, s.pin));
-    if (chain.show === "table") params.set("show", "table");
+    if (chain.show !== "columns") params.set("show", chain.show);
     if (chain.at !== 1) params.set("at", String(chain.at));
     if (chain.sort) {
       params.set("co", `${chain.sort.place} ${chain.sort.column}`);

@@ -91,7 +91,7 @@
     <p class="problem caption" role="alert">The rows could not be read: {table.error}</p>
   {/if}
   <div class="scroll">
-    <table class="rows body-screen">
+    <table class="rows body-app">
       <thead>
         <tr>
           <th scope="col" rowspan="3" class="num caption">#</th>
@@ -154,10 +154,13 @@
 </section>
 
 <style>
+  /* The table takes the height it is given: its rows scroll inside their panel, the pager stays under it. */
   .result-table {
-    display: grid;
-    gap: var(--space-3);
-    margin-block-start: var(--space-4);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-block-size: 0;
     min-inline-size: 0;
   }
 
@@ -187,7 +190,12 @@
   }
 
   .scroll {
-    overflow-x: auto;
+    flex: 0 1 auto;
+    min-block-size: 0;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
   }
 
   .rows {
@@ -204,9 +212,12 @@
 
   .head {
     padding: var(--space-1) var(--space-3);
-    background: var(--surface-tint);
     text-align: start;
     white-space: nowrap;
+  }
+
+  .head .sort {
+    color: var(--ink-muted);
   }
 
   .start {
@@ -236,23 +247,35 @@
     box-sizing: border-box;
     inline-size: 100%;
     min-inline-size: 6rem;
-    block-size: 2rem;
+    block-size: 28px;
     padding-inline: var(--space-2);
-    border: 1px solid var(--ink-muted);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface);
     color: var(--ink);
   }
 
   td {
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border-block-end: 1px solid var(--border);
     vertical-align: top;
-    overflow-wrap: anywhere;
+  }
+
+  tbody tr:last-child td {
+    border-block-end: 0;
+  }
+
+  tbody tr:hover {
+    background: var(--selection);
   }
 
   td a {
     color: var(--accent);
+    text-decoration: none;
+  }
+
+  td a:hover {
+    text-decoration: underline;
   }
 
   .mono {

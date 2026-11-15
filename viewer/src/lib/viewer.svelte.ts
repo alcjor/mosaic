@@ -100,8 +100,10 @@ export class Viewer {
   chainColumns = $state.raw<TrailColumns | null>(null);
   /** Why the columns could not be read; null when they were. */
   chainFailure = $state<string | null>(null);
-  /** How the chain's results show: as columns, one per place, or all of them as one table. */
-  chainShow = $state<"columns" | "table">("columns");
+  /** How the chain's results show: as columns of cards, one result at a time, or as one table. */
+  chainShow = $state<ChainLinkRoute["show"]>("columns");
+  /** One at a time: which result shows, from 0 (the page shows the last one read when it is beyond). */
+  chainAt = $state(0);
   /** The chain's results as one table, or null with no chain. */
   chainTable = $state.raw<ChainTable | null>(null);
   /** Settles when the columns of the latest chain are read; for tests and the page. */
@@ -139,6 +141,8 @@ export class Viewer {
     this.#counting = null;
     // Columns of a chain with other places are not this chain's: only its pins may differ.
     if (chain === null || this.chain === null || linksOf(chain) !== linksOf(this.chain)) this.chainColumns = null;
+    // Another chain or another pin has other results: one at a time starts from the first.
+    if (JSON.stringify(chain) !== JSON.stringify(this.chain)) this.chainAt = 0;
     this.chain = chain;
     const file = this.file;
     if (chain === null || file === null) {
@@ -269,7 +273,7 @@ export class Viewer {
     const chain = this.chain;
     const table = this.chainTable;
     if (chain === null || table === null) return null;
-    const place = this.chainShow === "table" ? table.page * TABLE_ROWS : 0;
+    const place = this.chainShow === "table" ? table.page * TABLE_ROWS : this.chainShow === "one" ? this.chainAt : 0;
     return linkOf(chain, this.chainShow, place, table.table.columns, { sort: table.sort, filters: table.filters });
   }
 
@@ -317,6 +321,10 @@ export class Viewer {
       table.restore(chosen.choices);
       await this.shown;
       if (!live()) return;
+      if (link.show === "one") {
+        this.chainShow = "one";
+        this.chainAt = Math.max(0, Math.min(link.at - 1, (this.chainColumns?.read ?? 1) - 1));
+      }
       if (link.show === "table") {
         this.chainShow = "table";
         // A row beyond the last opens the last page there is (a sorted or filtered table finds it itself).
@@ -339,7 +347,7 @@ export class Viewer {
    * Show the chain as columns or as one table, keeping the chain and the table's sort and
    * filters (V-12).
    */
-  async showChainAs(show: "columns" | "table"): Promise<void> {
+  async showChainAs(show: ChainLinkRoute["show"]): Promise<void> {
     this.chainShow = show;
     const table = this.chainTable;
     if (show === "table" && table !== null && table.rows === null) await table.show(table.page);

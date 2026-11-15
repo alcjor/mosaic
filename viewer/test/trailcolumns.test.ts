@@ -2,8 +2,32 @@
 import { expect, it } from "vitest";
 import { buildMosaic } from "../../kit/test/build-mosaic.js";
 import type { Chain } from "../src/lib/chain.js";
-import { COLUMN_RESULTS } from "../src/lib/trailcolumns.js";
+import type { Result } from "../src/lib/results.js";
+import { COLUMN_RESULTS, cardLine, connected, joinKey, joinsOf } from "../src/lib/trailcolumns.js";
 import { Viewer } from "../src/lib/viewer.svelte.js";
+
+/** Walks through things named by one letter each: "abx" is a → b → x. */
+const walks = (...paths: string[]): Result[] => paths.map((p) => ({ things: [...p].map((id) => ({ id, label: null })), links: [] }));
+
+it("a line joins each pair of things some result holds side by side, once", () => {
+  const joins = joinsOf(walks("abx", "aby", "cbx"));
+  expect(joins.map((j) => [j.place, j.from, j.to])).toEqual([[0, "a", "b"], [1, "b", "x"], [1, "b", "y"], [0, "c", "b"]]);
+});
+
+it("a picked thing lights up what the results through it hold, at its own place only", () => {
+  // "b" is at place 1 in three results and at place 2 in one: picking it at place 1 leaves that one out.
+  const results = walks("abx", "aby", "cbx", "dzb");
+  const lit = connected(results, 1, "b");
+  expect(lit.things.map((s) => [...s].sort())).toEqual([["a", "c"], ["b"], ["x", "y"]]);
+  expect(lit.joins.has(joinKey({ place: 0, from: "a", to: "b" }))).toBe(true);
+  expect(lit.joins.has(joinKey({ place: 0, from: "d", to: "z" }))).toBe(false);
+  expect(connected(results, 0, "d").things.map((s) => [...s])).toEqual([["d"], ["z"], ["b"]]);
+});
+
+it("a card's line holds the thing's first properties, as text", () => {
+  expect(cardLine({ type: "Title", props: { rating: "R", released: 1995, seen: true, tags: ["x"] } }, null)).toBe("R · 1995 · true");
+  expect(cardLine({ type: "Title", props: null }, null)).toBe("");
+});
 
 const N = COLUMN_RESULTS + 5;
 const leaf = (i: number) => `l${String(i).padStart(3, "0")}`;

@@ -25,7 +25,7 @@ export interface TableChoices {
 }
 
 /** The link to `chain` shown as `show`, at `place` (from 0), with the table's `choices`. */
-export function linkOf(chain: Chain, show: "columns" | "table", place: number, columns: readonly Column[], choices: TableChoices): ChainLinkRoute {
+export function linkOf(chain: Chain, show: ChainLinkRoute["show"], place: number, columns: readonly Column[], choices: TableChoices): ChainLinkRoute {
   const name = (i: number) => ({ place: columns[i]!.place + 1, column: columns[i]!.key });
   const sort = choices.sort === null || columns[choices.sort.column] === undefined ? null : { ...name(choices.sort.column), desc: choices.sort.descending };
   return {
