@@ -38,8 +38,10 @@
   let asked = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  let rows = $derived(found !== null && found.view !== null && !("message" in found.view) ? found.view.groups.flatMap((g) => g.results) : []);
-  let shown = $derived(open && found !== null && found.view !== null && draft.trim() !== "");
+  /** The answer for the text in the field now, in this mode; an earlier text's answer is never shown. */
+  let current = $derived(found !== null && found.query === draft && found.mode === mode ? found : null);
+  let rows = $derived(current !== null && current.view !== null && !("message" in current.view) ? current.view.groups.flatMap((g) => g.results) : []);
+  let shown = $derived(open && current !== null && current.view !== null && draft.trim() !== "");
 
   /** Search for what is typed now; resolves once its answer shows, or a later search took over. */
   async function ask(): Promise<void> {
@@ -67,7 +69,8 @@
   async function submit(event: Event): Promise<void> {
     event.preventDefault();
     const query = draft;
-    await ask();
+    // Each ask answers the latest text or gives way to a later one: wait for this text's answer.
+    while (query === draft && current === null) await ask();
     if (query !== draft) return;
     close();
     onopen(rows[active]?.id ?? null, query);
@@ -109,13 +112,13 @@
     onkeydown={key}
   />
   <div class="found body-app" id="{id}-found" role="listbox" aria-label="Results as you type" hidden={!shown}>
-    {#if shown && found !== null && found.view !== null}
-      {#if "message" in found.view}
-        <p class="none" role="alert">{found.view.message}</p>
+    {#if shown && current !== null && current.view !== null}
+      {#if "message" in current.view}
+        <p class="none" role="alert">{current.view.message}</p>
       {:else if rows.length === 0}
-        <p class="none">No results for “{found.query}”.</p>
+        <p class="none">No results for “{current.query}”.</p>
       {:else}
-        {#each found.view.groups as group (group.match)}
+        {#each current.view.groups as group (group.match)}
           <div class="tier section-label" role="presentation">{TIER_NAMES[group.match]} · {group.results.length}</div>
           {#each group.results as result (result.id)}
             {@const at = rows.indexOf(result)}
@@ -132,7 +135,7 @@
               onpointermove={() => (active = at)}
               onclick={() => {
                 close();
-                onopen(result.id, found?.query ?? draft);
+                onopen(result.id, current?.query ?? draft);
               }}
             >
               <Shard type={result.type} />

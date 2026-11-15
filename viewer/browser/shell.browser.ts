@@ -199,3 +199,23 @@ test("search results drop down under the field; the keyboard moves through them 
   await options.filter({ hasText: "Ada" }).click();
   await page.locator('main[data-place="explore"] article[aria-label="Person:ada"]').waitFor();
 });
+
+test("the results listed always answer the text in the field, and Enter acts on that text", async () => {
+  const { page } = await viewer.open();
+  const box = page.getByRole("searchbox", { name: "Search the mosaic" });
+  const options = page.getByRole("listbox").getByRole("option");
+  const ids = () => options.evaluateAll((all) => all.map((o) => o.getAttribute("data-id")));
+  await box.fill("harbor");
+  await options.first().waitFor();
+  // Cleared and typed again: the first list read belongs to the new text, not to "harbor".
+  await box.fill("");
+  await box.fill("lighthouse keeper ada");
+  await box.fill("ada");
+  await options.first().waitFor();
+  expect(await ids()).toEqual(["Person:ada"]);
+  // Typed fast and entered at once: Enter opens what the final text finds.
+  await box.fill("bre");
+  await box.fill("bread");
+  await box.press("Enter");
+  await page.locator('main[data-place="explore"] article[aria-label="Person:ben"]').waitFor();
+});
