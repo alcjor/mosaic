@@ -21,7 +21,6 @@ import json
 import shutil
 import sqlite3
 import subprocess
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -33,7 +32,7 @@ from mosaic_format.reader import open as open_sealed
 from mosaic_format.yaml_core import load
 
 from tests.conftest import MODEL, REPO, SPEC
-from tests.fixtures.expected import differences, load_expected
+from tests.fixtures.expected import built_vectors, differences, load_expected
 from tests.fixtures.test_netflix import Run, _timed
 from tests.test_cli import entry_point
 
@@ -115,6 +114,7 @@ def _run(directory: Path) -> Run:
             "SELECT vector_hash, embed_model, (SELECT count(*) FROM vector), "
             "(SELECT count(*) FROM node) FROM header"
         )
+    bits = built_vectors(mosaic)
     # The source is only read (principle 8): byte-identical, nothing made beside it.
     assert (directory / SOURCE.name).read_bytes() == SOURCE.read_bytes()
     assert sorted(p.name for p in directory.iterdir()) == [SOURCE.name, "out", "pieces"]
@@ -126,6 +126,7 @@ def _run(directory: Path) -> Run:
         vector_hash=None if vector_hash is None else str(vector_hash),
         embed_model=None if embed_model is None else str(embed_model),
         vectors=int(str(vectors)),
+        vector_bits=bits,
         nodes=int(str(nodes)),
         mosaic_size=mosaic.stat().st_size,
         mosaic_bytes=mosaic.read_bytes(),
@@ -135,25 +136,8 @@ def _run(directory: Path) -> Run:
 
 
 @pytest.fixture(scope="module")
-def runs(tmp_path_factory: pytest.TempPathFactory) -> tuple[Run, Run]:
-    fetched = subprocess.run(
-        [sys.executable, "-I", str(REPO / "scripts" / "fetch_fixtures.py")],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    assert "ok   chinook" in fetched.stdout, fetched.stdout + fetched.stderr
-    model = subprocess.run(
-        [sys.executable, str(REPO / "scripts" / "fetch_model.py"), "--dest", str(MODEL)],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    assert model.returncode == 0, model.stdout + model.stderr
-    base = tmp_path_factory.mktemp("chinook")
-    first, second = _run(base / "first"), _run(base / "second")
+def runs(chinook_runs: tuple[Run, Run]) -> tuple[Run, Run]:
+    first, second = chinook_runs
     for label, run in (("first", first), ("second", second)):
         timings = ", ".join(f"{step} {s:.1f} s" for step, s in run.seconds.items())
         print(
@@ -179,6 +163,7 @@ def test_each_build_has_the_expected_hashes(runs: tuple[Run, Run]) -> None:
             TARGET,
             knowledge_hash=run.mosaic_hash,
             vector_hash=run.vector_hash,
+            vectors=run.vector_bits,
             embed_model=run.embed_model,
         )
         assert not found, "\n".join(found)

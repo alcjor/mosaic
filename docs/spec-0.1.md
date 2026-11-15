@@ -455,7 +455,7 @@ The suite is versioned with this specification and contains:
 | Item | Checks |
 | --- | --- |
 | Netflix titles: one CSV file of movies and TV shows, one tessera, a pattern, and the expected mosaic (licence to be confirmed before publishing) | The whole flow end to end on the simplest input: import, build, seal, open in the kit and the viewer |
-| Chinook: one tessera from the Chinook sample database (MIT), a pattern, and the expected mosaic | A tessera builder and a mosaic builder reproduce the expected knowledge hash and vector hash; the first case with several linked types |
+| Chinook: one tessera from the Chinook sample database (MIT), a pattern, and the expected mosaic | A tessera builder and a mosaic builder reproduce the expected knowledge hash, and vectors that agree with the expected ones on at least 98 % of their bits (another processor may differ in a few bits, ADR-005); the first case with several linked types |
 | OpenFlights: airports, airlines and routes as separate tesserae, a pattern, and the expected mosaic (ODbL notice carried) | Merging several pieces, edge qualifiers, weak ids, notices |
 | Marlin: a pinned release of the firmware source and its documentation, with its expected hashes | Mentions, text and realistic size |
 | Invalid files, one per invariant in section 3.9 | A checker rejects each, naming the invariant |

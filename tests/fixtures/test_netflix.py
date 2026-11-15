@@ -33,7 +33,7 @@ from mosaic_format.reader import open as open_sealed
 from mosaic_format.yaml_core import load
 
 from tests.conftest import MODEL, REPO, SPEC
-from tests.fixtures.expected import differences, load_expected
+from tests.fixtures.expected import built_vectors, differences, load_expected
 from tests.test_cli import entry_point
 
 if TYPE_CHECKING:
@@ -60,6 +60,7 @@ class Run:
     vector_hash: str | None
     embed_model: str | None
     vectors: int
+    vector_bits: dict[str, bytes]
     nodes: int
     mosaic_size: int
     mosaic_bytes: bytes
@@ -151,6 +152,7 @@ def _run(directory: Path) -> Run:
             "SELECT vector_hash, embed_model, (SELECT count(*) FROM vector), "
             "(SELECT count(*) FROM node) FROM header"
         )
+    bits = built_vectors(mosaic)
     report = json.loads((out / "build-report.json").read_text(encoding="utf-8"))
     return Run(
         tessera_hash=tessera_hash,
@@ -159,6 +161,7 @@ def _run(directory: Path) -> Run:
         vector_hash=None if vector_hash is None else str(vector_hash),
         embed_model=None if embed_model is None else str(embed_model),
         vectors=int(str(vectors)),
+        vector_bits=bits,
         nodes=int(str(nodes)),
         mosaic_size=mosaic.stat().st_size,
         mosaic_bytes=mosaic.read_bytes(),
@@ -197,6 +200,7 @@ def test_each_build_has_the_expected_hashes(runs: tuple[Run, Run]) -> None:
             TARGET,
             knowledge_hash=run.mosaic_hash,
             vector_hash=run.vector_hash,
+            vectors=run.vector_bits,
             embed_model=run.embed_model,
         )
         assert not found, "\n".join(found)

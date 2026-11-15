@@ -14,7 +14,8 @@ from typing import Any, cast
 import pytest
 
 from tests.conftest import MODEL, REPO
-from tests.fixtures import build_cache
+from tests.fixtures import build_cache, test_chinook
+from tests.fixtures.expected import built_vectors
 from tests.fixtures.test_netflix import FIXTURE, SOURCE, TARGET, Run, _run
 
 NETFLIX_INPUTS = [
@@ -67,6 +68,7 @@ def _record(directory: Path) -> tuple[dict[str, object], Path]:
     run = _run(directory)
     record = {f.name: getattr(run, f.name) for f in dataclasses.fields(Run)}
     del record["mosaic_bytes"]
+    del record["vector_bits"]
     return record, directory / "out" / f"{TARGET}.mosaic"
 
 
@@ -78,7 +80,11 @@ def netflix_builds(
         "netflix", NETFLIX_INPUTS, _record, tmp_path_factory.mktemp("netflix")
     )
     first, second = (
-        Run(**cast(dict[str, Any], record), mosaic_bytes=file.read_bytes())
+        Run(
+            **cast(dict[str, Any], record),
+            mosaic_bytes=file.read_bytes(),
+            vector_bits=built_vectors(file),
+        )
         for record, file in zip(builds.records, builds.files, strict=True)
     )
     how = (
@@ -95,3 +101,46 @@ def built(netflix_builds: NetflixBuilds) -> tuple[Path, Run]:
     """The Netflix mosaic built with vectors (the first clean build), and its run."""
     assert netflix_builds.first.vectors == netflix_builds.first.nodes > 0
     return netflix_builds.mosaic, netflix_builds.first
+
+
+CHINOOK_INPUTS = [
+    test_chinook.SOURCE,
+    test_chinook.FIXTURE / "settings.yaml",
+    test_chinook.FIXTURE / "pattern.yaml",
+    MODEL,
+    REPO / "uv.lock",
+    REPO / "packages",
+    REPO / "spec",
+    REPO / "tests" / "fixtures" / "test_chinook.py",
+    REPO / "tests" / "fixtures" / "test_netflix.py",
+    REPO / "tests" / "fixtures" / "build_cache.py",
+]
+"""Everything the Chinook build depends on, as for Netflix."""
+
+
+def _chinook_record(directory: Path) -> tuple[dict[str, object], Path]:
+    run = test_chinook._run(directory)
+    record = {f.name: getattr(run, f.name) for f in dataclasses.fields(Run)}
+    del record["mosaic_bytes"]
+    del record["vector_bits"]
+    return record, directory / "out" / f"{test_chinook.TARGET}.mosaic"
+
+
+@pytest.fixture(scope="session")
+def chinook_runs(
+    netflix_fetched: None, tmp_path_factory: pytest.TempPathFactory
+) -> tuple[Run, Run]:
+    """The Chinook mosaic built twice from clean directories, once for every test that needs it."""
+    assert test_chinook.SOURCE.exists(), "scripts/fetch_fixtures.py fetches the Chinook database"
+    builds = build_cache.twice(
+        "chinook", CHINOOK_INPUTS, _chinook_record, tmp_path_factory.mktemp("chinook")
+    )
+    first, second = (
+        Run(
+            **cast(dict[str, Any], record),
+            mosaic_bytes=file.read_bytes(),
+            vector_bits=built_vectors(file),
+        )
+        for record, file in zip(builds.records, builds.files, strict=True)
+    )
+    return first, second

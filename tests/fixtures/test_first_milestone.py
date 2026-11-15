@@ -25,7 +25,6 @@ import json
 import re
 import shutil
 import subprocess
-import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -109,16 +108,8 @@ def _words(text: str) -> set[str]:
 
 
 @pytest.fixture(scope="module")
-def chinook_run(tmp_path_factory: pytest.TempPathFactory) -> Run:
-    fetched = subprocess.run(
-        [sys.executable, "-I", str(REPO / "scripts" / "fetch_fixtures.py")],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    assert "ok   chinook" in fetched.stdout, fetched.stdout + fetched.stderr
-    return test_chinook._run(tmp_path_factory.mktemp("milestone-chinook") / "clean")
+def chinook_run(chinook_runs: tuple[Run, Run]) -> Run:
+    return chinook_runs[0]
 
 
 @pytest.fixture(scope="module")
@@ -215,6 +206,7 @@ def test_both_mosaics_build_from_clean_directories_with_their_expected_hashes(
                 TARGET,
                 knowledge_hash=run.mosaic_hash,
                 vector_hash=run.vector_hash,
+                vectors=run.vector_bits,
                 embed_model=run.embed_model,
             )
             assert not found, f"{mosaic.name}: " + "\n".join(found)

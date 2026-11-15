@@ -17,17 +17,30 @@ must give, and the ``embed_model`` the vector hash was made with (section 6). It
 
 The file is the contract: change it only with a reason. A slow fixture
 test compares each build with it through :func:`differences`.
+
+The knowledge hash and the model are compared exactly. The vector hash is the reference
+build's: another processor may give vectors that differ in a few bits (ADR-005), so a build's
+vectors are compared with ``expected-vectors.json`` instead, which holds the reference build's
+bits for a sample of nodes (``{"comment": ..., "mosaics": {"<target>": {"<node id>": "<96
+hex>"}}}``, written by ``scripts/make_expected_vectors.py``). At least :data:`AGREEMENT` of the
+sample's bits must be the same.
 """
 
+import hashlib
 import json
 import re
-from dataclasses import dataclass
+import sqlite3
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from mosaic_format.yaml_core import load
 
 FILE = "expected-hashes.json"
+VECTORS_FILE = "expected-vectors.json"
 FIELDS = ("knowledge_hash", "vector_hash", "embed_model")
+AGREEMENT = 0.98
+SAMPLE = 500
 _HASH = re.compile(r"[0-9a-f]{64}")
 _MODEL = re.compile(r"[^@\s]+@[0-9a-f]{64}")
 
@@ -39,6 +52,7 @@ class Expected:
     knowledge_hash: str
     vector_hash: str | None
     embed_model: str | None
+    vectors: Mapping[str, bytes] = field(default_factory=dict, compare=False)
 
 
 class ExpectedError(ValueError):
@@ -88,8 +102,44 @@ def load_expected(fixture: Path) -> dict[str, Expected]:
             raise ExpectedError(f"{where}.embed_model is not <name>@<64 lowercase hex>")
         if (vector is None) != (model is None):
             raise ExpectedError(f"{where}: vector_hash and embed_model are both set or both null")
-        expected[target] = Expected(knowledge, vector, model)
+        expected[target] = Expected(knowledge, vector, model, _vectors(fixture, target))
     return expected
+
+
+def _vectors(fixture: Path, target: str) -> dict[str, bytes]:
+    """The reference bits of ``target``'s sample, or nothing when the fixture records none."""
+    path = fixture / VECTORS_FILE
+    if not path.exists():
+        return {}
+    sample = json.loads(path.read_text(encoding="utf-8"))["mosaics"].get(target, {})
+    return {node: bytes.fromhex(bits) for node, bits in sample.items()}
+
+
+def built_vectors(mosaic: Path) -> dict[str, bytes]:
+    """Every vector of a built mosaic, by node id."""
+    con = sqlite3.connect(f"file:{mosaic}?mode=ro", uri=True)
+    try:
+        rows = con.execute("SELECT n.id, v.bits FROM vector v JOIN node n USING (nid)").fetchall()
+    finally:
+        con.close()
+    return {str(node): bytes(bits) for node, bits in rows}
+
+
+def sample(vectors: Mapping[str, bytes]) -> dict[str, bytes]:
+    """The nodes whose vectors a fixture records: the :data:`SAMPLE` first by the hash of the id."""
+    chosen = sorted(vectors, key=lambda node: hashlib.sha256(node.encode("utf-8")).digest())
+    return {node: vectors[node] for node in sorted(chosen[:SAMPLE])}
+
+
+def agreement(reference: Mapping[str, bytes], built: Mapping[str, bytes]) -> float:
+    """The share of the reference's bits that ``built`` has too; a missing node agrees on none."""
+    same = total = 0
+    for node, bits in reference.items():
+        total += 8 * len(bits)
+        other = built.get(node)
+        if other is not None and len(other) == len(bits):
+            same += sum(8 - (a ^ b).bit_count() for a, b in zip(bits, other, strict=True))
+    return same / total if total else 1.0
 
 
 def pattern_targets(pattern: Path) -> list[str]:
@@ -106,14 +156,30 @@ def differences(
     knowledge_hash: str,
     vector_hash: str | None,
     embed_model: str | None,
+    vectors: Mapping[str, bytes] | None = None,
 ) -> list[str]:
-    """Each way the build of ``target`` differs from what is expected; empty when it matches."""
+    """Each way the build of ``target`` differs from what is expected; empty when it matches.
+
+    ``vectors`` are the build's, by node id; they are compared when the fixture records a sample.
+    """
     want = expected.get(target)
     if want is None:
         return [f"{FILE} has no entry for target `{target}`"]
-    got = Expected(knowledge_hash, vector_hash, embed_model)
-    return [
-        f"{target}.{field}: expected {getattr(want, field)}, built {getattr(got, field)}"
-        for field in FIELDS
-        if getattr(want, field) != getattr(got, field)
+    found = [
+        f"{target}.{name}: expected {wanted}, built {built}"
+        for name, wanted, built in (
+            ("knowledge_hash", want.knowledge_hash, knowledge_hash),
+            ("embed_model", want.embed_model, embed_model),
+        )
+        if wanted != built
     ]
+    if (want.vector_hash is None) != (vector_hash is None):
+        found.append(f"{target}.vector_hash: expected {want.vector_hash}, built {vector_hash}")
+    if want.vectors:
+        share = agreement(want.vectors, vectors or {})
+        if share < AGREEMENT:
+            found.append(
+                f"{target}: {share:.2%} of the bits of {len(want.vectors)} vectors are those of "
+                f"{VECTORS_FILE}; at least {AGREEMENT:.0%} must be"
+            )
+    return found

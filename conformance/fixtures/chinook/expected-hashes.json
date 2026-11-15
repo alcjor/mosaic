@@ -1,5 +1,5 @@
 {
-  "comment": "The expected Chinook mosaic (docs/spec-0.1.md section 11): what a clean build of pattern.yaml from the tessera it pins gives, per target. knowledge_hash is section 3.6, vector_hash section 3.7, embed_model the model of section 6. Recorded from two clean local builds; these values are the contract, so a change to them needs a reason.",
+  "comment": "The expected Chinook mosaic (docs/spec-0.1.md section 11): what a clean build of pattern.yaml from the tessera it pins gives, per target. knowledge_hash is section 3.6, vector_hash section 3.7, embed_model the model of section 6. Recorded from two clean local builds; these values are the contract, so a change to them needs a reason. The knowledge hash and the model are exact. vector_hash is the reference build's: another processor may differ in a few bits (ADR-005), so a build's vectors are compared with expected-vectors.json.",
   "mosaics": {
     "default": {
       "knowledge_hash": "5281bee975865d5b5570b7ba991b22bff527bac0b773c0107c54a242650e7327",

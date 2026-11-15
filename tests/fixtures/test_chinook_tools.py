@@ -14,7 +14,6 @@ import json
 import shutil
 import sqlite3
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +24,7 @@ from mosaic_format.reader import open as open_sealed
 from tests.conftest import MODEL, REPO
 from tests.fixtures import test_chinook
 from tests.fixtures.expected import load_expected
+from tests.fixtures.test_netflix import Run
 from tests.fixtures.tool_cases import FILE, SCHEMA, differences, load
 
 pytestmark = pytest.mark.slow
@@ -34,25 +34,11 @@ NODE_IDS: set[str] = set()
 
 
 @pytest.fixture(scope="module")
-def answers(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
+def answers(
+    chinook_runs: tuple[Run, Run], tmp_path_factory: pytest.TempPathFactory
+) -> dict[str, Any]:
     """The kit's answer to every case, on the Chinook mosaic built in a new, empty directory."""
-    fetched = subprocess.run(
-        [sys.executable, "-I", str(REPO / "scripts" / "fetch_fixtures.py")],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    assert "ok   chinook" in fetched.stdout, fetched.stdout + fetched.stderr
-    model = subprocess.run(
-        [sys.executable, str(REPO / "scripts" / "fetch_model.py"), "--dest", str(MODEL)],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    assert model.returncode == 0, model.stdout + model.stderr
-    run = test_chinook._run(tmp_path_factory.mktemp("chinook-tools") / "build")
+    run = chinook_runs[0]
     expected = load_expected(test_chinook.FIXTURE)[test_chinook.TARGET]
     assert run.mosaic_hash == expected.knowledge_hash, "the mosaic expected-hashes.json names"
     mosaic = tmp_path_factory.mktemp("chinook-mosaic") / "chinook.mosaic"
@@ -170,26 +156,9 @@ class World:
 
 
 @pytest.fixture(scope="module")
-def world(tmp_path_factory: pytest.TempPathFactory) -> World:
-    fetched = subprocess.run(
-        [sys.executable, "-I", str(REPO / "scripts" / "fetch_fixtures.py")],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    assert "ok   chinook" in fetched.stdout, fetched.stdout + fetched.stderr
-    model = subprocess.run(
-        [sys.executable, str(REPO / "scripts" / "fetch_model.py"), "--dest", str(MODEL)],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    assert model.returncode == 0, model.stdout + model.stderr
+def world(chinook_runs: tuple[Run, Run], tmp_path_factory: pytest.TempPathFactory) -> World:
     root = tmp_path_factory.mktemp("chinook-tools-edges")
-    first = test_chinook._run(root / "build-1")
-    second = test_chinook._run(root / "build-2")
+    first, second = chinook_runs
     (root / "chinook.mosaic").write_bytes(first.mosaic_bytes)
     (root / "second.mosaic").write_bytes(second.mosaic_bytes)
     return World(root, root / "second.mosaic")
