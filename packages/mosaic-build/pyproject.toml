@@ -2,7 +2,7 @@
 name = "mosaic-build"
 version = "0.0.0"
 description = "Mosaic tessera builders, mosaic builder and the `mosaic` command line."
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = ["mosaic-format", "numpy>=2.3", "onnxruntime>=1.23", "tokenizers>=0.22"]
 

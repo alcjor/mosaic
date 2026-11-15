@@ -14,6 +14,8 @@ the hashes, file sizes and timings of both runs (run it with ``-s``). Each run's
 knowledge hash, vector hash and model are those ``expected-hashes.json`` records.
 """
 
+from __future__ import annotations
+
 import csv
 import json
 import re

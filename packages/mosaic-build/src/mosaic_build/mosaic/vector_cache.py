@@ -78,6 +78,6 @@ def _open(directory: Path, key: str) -> sqlite3.Connection | None:
             "CREATE TABLE IF NOT EXISTS vector "
             "(text_hash BLOB PRIMARY KEY, bits BLOB NOT NULL) WITHOUT ROWID"
         )
-    except OSError, sqlite3.Error:
+    except (OSError, sqlite3.Error):
         return None
     return db

@@ -143,7 +143,7 @@ def _view_answer(path: Path) -> tuple[int, bytes]:
     try:
         status, data = HTTPStatus.OK, checked_view(path)
     except ViewError as e:
-        status, data = HTTPStatus.UNPROCESSABLE_CONTENT, {"error": str(e)}
+        status, data = HTTPStatus.UNPROCESSABLE_ENTITY, {"error": str(e)}
     return status, json.dumps(data, ensure_ascii=False).encode("utf-8")
 
 
@@ -190,7 +190,7 @@ def _handler(
                 local = (dist / relative).resolve()
                 if not local.is_relative_to(dist) or not local.is_file():
                     return None
-            except OSError, ValueError:  # a name no file can have, such as one holding NUL
+            except (OSError, ValueError):  # a name no file can have, such as one holding NUL
                 return None
             kind = TYPES.get(local.suffix) or mimetypes.guess_type(local.name)[0]
             return local.read_bytes(), kind or "application/octet-stream"

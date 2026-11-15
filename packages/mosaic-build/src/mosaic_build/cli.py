@@ -291,7 +291,7 @@ def _pattern_data(pattern: Path) -> object:
     """The pattern's data, or None when it cannot be read (the check then says why)."""
     try:
         return load(pattern.read_bytes().decode("utf-8"), str(pattern)).data
-    except OSError, UnicodeDecodeError, YamlError:
+    except (OSError, UnicodeDecodeError, YamlError):
         return None
 
 

@@ -31,7 +31,7 @@ CSV file) and Chinook (one SQLite database).
 ## Quick start
 
 You need [uv](https://docs.astral.sh/uv/) and [Bun](https://bun.sh) 1.4 or later. uv installs
-Python 3.14 if you do not have it. Run everything from the repository root.
+Python 3.14 if you do not have it; Python 3.12 is the lowest version supported. Run everything from the repository root.
 
 ```sh
 uv sync && bun install

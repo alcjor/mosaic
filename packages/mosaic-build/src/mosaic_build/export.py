@@ -145,7 +145,7 @@ def _check_export_types(source: Path, view: Path | None, types: list[str]) -> No
     assert view is not None  # export.types is only ever set by a view file
     try:
         doc = load(view.read_text(encoding="utf-8"), str(view))
-    except OSError, ValueError:
+    except (OSError, ValueError):
         doc = None
 
     def at(*where: str | int) -> str:
