@@ -195,28 +195,12 @@ describe("a neighbourhood (G-3, G-4, G-5, G-7)", () => {
     expect(layoutHood(CENTRE)).toEqual(layoutHood(CENTRE));
   });
 
-  it("folds a group's neighbours past those shown into one bundle with their count", () => {
-    const hood = layoutHood(CENTRE);
-    const about = hood.groups.find((g) => g.edge === "about" && g.direction === "in")!;
-    expect(about).toMatchObject({ count: 7, shown: 3 });
-    expect(about.bundle!.count).toBe(4);
-    expect(Math.hypot(about.bundle!.x, about.bundle!.y)).toBeCloseTo(RING, 0);
-    expect(hood.groups.find((g) => g.edge === "tagged" && g.direction === "out")!.bundle).toBeNull();
-  });
-
   it("draws each thing once, and every link, as its edge points", () => {
     const hood = layoutHood(CENTRE);
     expect(hood.things.filter((t) => t.id === "Tag:a")).toHaveLength(1);
     expect(hood.links).toContainEqual({ from: "Item:c", to: "Tag:a", edge: "tagged" });
     expect(hood.links).toContainEqual({ from: "Tag:a", to: "Item:c", edge: "tagged" });
     expect(hood.links).toContainEqual({ from: "Note:1", to: "Item:c", edge: "about" });
-  });
-
-  it("leaves out hidden things and edge types not shown", () => {
-    const hood = layoutHood(CENTRE, [], { hidden: new Set(["Note:2"]), shows: (e) => e !== "tagged" });
-    expect(hood.things.map((t) => t.id).sort(byBytes)).toEqual(["Item:c", "Item:x", "Note:1", "Note:3"]);
-    expect(hood.groups.map((g) => g.edge)).toEqual(["about", "about"]);
-    expect(hood.links.some((l) => l.from === "Note:2" || l.to === "Note:2")).toBe(false);
   });
 
   it("opens an expanded neighbour's groups in a fan pointing away from the centre", () => {
@@ -233,54 +217,12 @@ describe("a neighbourhood (G-3, G-4, G-5, G-7)", () => {
     expect(hood.links.filter((l) => l.from === "Note:1" && l.to === "Item:c")).toHaveLength(1);
   });
 
-  it("draws every link between an expanded thing and where it hangs, once each", () => {
-    // Two links of different edge types between the centre and a neighbour: the expanded
-    // neighbour's group that mirrors the link it hangs by adds nothing; its other link is drawn.
-    const centre: HoodInput = { centre: thing("Item:c"), groups: [group("knows", "out", 1, ["Item:n"])] };
-    const n: HoodInput = {
-      centre: thing("Item:n"),
-      groups: [group("knows", "in", 1, ["Item:c"]), group("likes", "out", 1, ["Item:c"]), group("likes", "in", 1, ["Item:z"])],
-    };
-    const hood = layoutHood(centre, [n]);
-    expect(hood.links).toEqual([
-      { from: "Item:c", to: "Item:n", edge: "knows" },
-      { from: "Item:n", to: "Item:c", edge: "likes" },
-      { from: "Item:z", to: "Item:n", edge: "likes" },
-    ]);
-    expect(hood.things.filter((t) => t.id === "Item:c")).toHaveLength(1);
-    const knowsIn = hood.groups.find((g) => g.owner === "Item:n" && g.edge === "knows")!;
-    expect(knowsIn).toMatchObject({ count: 1, shown: 0, bundle: null });
-  });
-
-  it("draws two links of one edge type between one pair, which the kit lists as two rows of one group", () => {
-    // Two edges that differ only by qualifier (section 3.4) are two links, each with its evidence.
-    const centre: HoodInput = { centre: thing("Item:c"), groups: [group("knows", "out", 2, ["Item:n", "Item:n"])] };
-    const alone = layoutHood(centre);
-    expect(alone.links).toEqual([
-      { from: "Item:c", to: "Item:n", edge: "knows" },
-      { from: "Item:c", to: "Item:n", edge: "knows" },
-    ]);
-    expect(alone.groups[0]).toMatchObject({ count: 2, shown: 2, bundle: null });
-    // Expanded, the neighbour's group that mirrors both adds nothing.
-    const n: HoodInput = { centre: thing("Item:n"), groups: [group("knows", "in", 2, ["Item:c", "Item:c"])] };
-    const both = layoutHood(centre, [n]);
-    expect(both.links).toEqual(alone.links);
-  });
-
   it("opens expanded things given before the neighbour they hang from, and never twice", () => {
     const note: HoodInput = { centre: thing("Note:1"), groups: [group("by", "out", 1, ["Person:p"])] };
     const person: HoodInput = { centre: thing("Person:p"), groups: [group("knows", "out", 1, ["Person:z"])] };
     const inOrder = layoutHood(CENTRE, [note, person]);
     expect(layoutHood(CENTRE, [person, note, note])).toEqual(inOrder);
     expect(inOrder.things.find((t) => t.id === "Person:z")!.parent).toBe("Person:p");
-  });
-
-  it("leaves out an expanded thing that is hidden or not drawn", () => {
-    const stray: HoodInput = { centre: thing("Elsewhere:1"), groups: [group("by", "out", 1, ["Person:p"])] };
-    const note: HoodInput = { centre: thing("Note:1"), groups: [group("by", "out", 1, ["Person:p"])] };
-    expect(layoutHood(CENTRE, [stray])).toEqual(layoutHood(CENTRE));
-    const hidden = layoutHood(CENTRE, [note], { hidden: new Set(["Note:1"]) });
-    expect(hidden.things.some((t) => t.id === "Person:p")).toBe(false);
   });
 
   it("is a lone centre when the thing has no links", () => {
@@ -739,29 +681,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
       expect(numbers(hood).every(Number.isFinite)).toBe(true);
     });
 
-    it("shows only a bundle when the limit shows nothing but links remain", () => {
-      const hood = layoutHood({ centre: thing("Item:c"), groups: [group("a", "out", 12, [])] });
-      expect(hood.groups[0]!.shown).toBe(0);
-      expect(hood.groups[0]!.bundle!.count).toBe(12);
-      expect(numbers(hood).every(Number.isFinite)).toBe(true);
-    });
-
-    it("has no bundle when every link is shown, however many", () => {
-      const ids = Array.from({ length: 20 }, (_, i) => `N:${i}`);
-      const hood = layoutHood({ centre: thing("Item:c"), groups: [group("a", "out", 20, ids)] });
-      expect(hood.groups[0]).toMatchObject({ count: 20, shown: 20, bundle: null });
-    });
-
-    it("puts a bundle where no shard of its group is", () => {
-      const ids = ["N:1", "N:2", "N:3", "N:4", "N:5"];
-      const hood = layoutHood({ centre: thing("Item:c"), groups: [group("a", "out", 500, ids), group("b", "in", 2, ["M:1", "M:2"])] });
-      const a = hood.groups.find((g) => g.edge === "a")!;
-      for (const id of ids) {
-        const t = hood.things.find((x) => x.id === id)!;
-        expect(Math.hypot(t.x - a.bundle!.x, t.y - a.bundle!.y)).toBeGreaterThan(1);
-      }
-    });
-
     it("places a crowded group of sixty without two shards on one spot, the same twice", () => {
       const ids = Array.from({ length: 60 }, (_, i) => `N:${String(i).padStart(2, "0")}`);
       const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 61, ids)] };
@@ -818,22 +737,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
       for (const a of asked) expect(a[0]).toBe("a");
     });
 
-    it("leaves out every group but keeps nothing hanging when all its neighbours are hidden", () => {
-      const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 2, ["N:1", "N:2"])] };
-      const hood = layoutHood(input, [], { hidden: new Set(["N:1", "N:2"]) });
-      expect(hood.things.map((t) => t.id)).toEqual(["Item:c"]);
-      expect(hood.links).toEqual([]);
-      expect(numbers(hood).every(Number.isFinite)).toBe(true);
-    });
-
-    it("draws no link to a hidden thing, in either direction, nor to what hangs from it", () => {
-      const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 1, ["N:1"]), group("b", "in", 1, ["N:1"])] };
-      const n1: HoodInput = { centre: thing("N:1"), groups: [group("by", "out", 1, ["P:1"])] };
-      const hood = layoutHood(input, [n1], { hidden: new Set(["N:1"]) });
-      expect(hood.links).toEqual([]);
-      expect(hood.things.map((t) => t.id)).toEqual(["Item:c"]);
-    });
-
     it("ignores an expanded input for the centre itself and the same picture comes out", () => {
       const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 2, ["N:1", "N:2"])] };
       expect(layoutHood(input, [input])).toEqual(layoutHood(input));
@@ -870,13 +773,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
           expect(Math.hypot(p.x, p.y)).toBeGreaterThan(Math.hypot(at.x, at.y));
         }
       }
-    });
-
-    it("does not write to its input", () => {
-      const input = freeze<HoodInput>({ centre: thing("Item:c"), groups: [group("b", "in", 3, ["N:1"]), group("a", "out", 1, ["N:2"])] });
-      const expanded = freeze<HoodInput>({ centre: thing("N:1"), groups: [group("by", "out", 1, ["P:1"])] });
-      expect(() => layoutHood(input, freeze([expanded]), { hidden: freeze(new Set(["Z"])) })).not.toThrow();
-      expect(input.groups.map((g) => g.edge)).toEqual(["b", "a"]);
     });
 
     it("rounds every coordinate to hundredths", () => {
@@ -924,19 +820,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
     });
     return a / 2;
   }
-
-  describe("a neighbourhood of a busy thing stays responsive (G-10)", () => {
-    it("places twelve hundred shown neighbours in good time", () => {
-      const ids = Array.from({ length: 1200 }, (_, i) => `Title:${String(i).padStart(5, "0")}`);
-      const input: HoodInput = { centre: thing("Country:x"), groups: [group("made_in", "in", 5000, ids)] };
-      const started = performance.now();
-      const hood = layoutHood(input);
-      const took = performance.now() - started;
-      expect(hood.things).toHaveLength(1201);
-      expect(hood.groups[0]!.bundle!.count).toBe(3800);
-      expect(took).toBeLessThan(5000);
-    });
-  });
 
   describe("graph layout: further cases", () => {
     const TWO_PI = 2 * Math.PI;
@@ -1076,14 +959,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
         const n: HoodInput = { centre: thing("P:n"), groups: [group("knows", "in", 1, ["P:c"]), group("likes", "out", 1, ["P:c"]), group("hates", "out", 1, ["P:c"])] };
         const hood = layoutHood(centre, [n], { shows: (e) => e !== "likes" });
         expect(keys(hood.links)).toEqual(["P:c -knows-> P:n", "P:n -hates-> P:c"]);
-      });
-
-      it("draws no link to a hidden parent, and nothing of a thing that hangs from it", () => {
-        const centre: HoodInput = { centre: thing("P:c"), groups: [group("knows", "out", 1, ["P:n"])] };
-        const n: HoodInput = { centre: thing("P:n"), groups: [group("likes", "out", 1, ["P:c"])] };
-        const hood = layoutHood(centre, [n], { hidden: new Set(["P:n"]) });
-        expect(hood.things.map((t) => t.id)).toEqual(["P:c"]);
-        expect(hood.links).toEqual([]);
       });
 
       it("never repeats a link, over every mix of mirrored and extra groups on two expanded things", () => {

@@ -6,7 +6,8 @@
    * once. The page cannot write the view file, so the picker gives the view file's `cards` text
    * to copy into it.
    *
-   * A button opens the picker below the card (`aria-expanded`); each fact is a checkbox, so the
+   * A button opens the picker below the card (`aria-expanded`), or, with `button` off, the
+   * caller's own control does, through `open`; each fact is a checkbox, so the
    * picker works by keyboard (Tab, Space) as by pointer. Controls follow the brand book, section
    * 6: secondary buttons, the focus ring on every control.
    */
@@ -21,6 +22,8 @@
     chosen,
     text,
     shape = null,
+    button = true,
+    open = $bindable(false),
     onpick,
     onreset,
   }: {
@@ -34,12 +37,14 @@
     /** The view file's `cards` text for every card as it is now. */
     text: string;
     shape?: Shape | null;
+    /** Whether the picker has its own button; without it the caller opens it. */
+    button?: boolean;
+    open?: boolean;
     onpick: (part: Part, name: string, on: boolean) => void;
     onreset: () => void;
   } = $props();
 
   const id = $props.id();
-  let open = $state(false);
   let said = $state("");
   let area = $state<HTMLTextAreaElement | null>(null);
 
@@ -71,9 +76,11 @@
 </script>
 
 <section class="picker" aria-label="Choose what {typeName} cards show">
-  <Button aria-expanded={open} aria-controls="{id}-panel" onclick={() => (open = !open)}>
-    Choose what {typeName} cards show
-  </Button>
+  {#if button}
+    <Button aria-expanded={open} aria-controls="{id}-panel" onclick={() => (open = !open)}>
+      Choose what {typeName} cards show
+    </Button>
+  {/if}
   <div class="panel" id="{id}-panel" hidden={!open}>
     <p class="note caption">
       Every {typeName} card in the page shows what you pick, in the order picked. The page cannot change the view file: copy the text below into it to keep the card.
@@ -104,8 +111,8 @@
 </section>
 
 <style>
-  .picker {
-    margin-block-start: var(--space-4);
+  .picker:has(.panel:not([hidden])) {
+    margin-block-end: var(--space-4);
   }
 
   .option input:focus-visible,

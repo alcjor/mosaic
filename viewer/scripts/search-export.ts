@@ -49,18 +49,16 @@ try {
   const searches: { query: string; ms: number; results: { id: string | null; match: string | null; text: string }[]; alert: string | null }[] = [];
   if (alerts.length === 0) {
     const box = page.getByRole("searchbox", { name: "Search the mosaic" });
-    const nav = page.locator('nav[aria-label="Results"]');
-    const rows = nav.locator("a[data-id]");
+    // Results drop down under the field as it is typed in.
+    const nav = page.getByRole("listbox");
+    const rows = nav.locator('[role="option"][data-id]');
     const answered = rows.first().or(nav.getByText(/^No results for/)).or(nav.getByRole("alert"));
-    const idle = nav.getByText("Search for a name, an alias or words in the text.");
     for (const query of queries) {
       // Clear the previous answer first, so what is read below belongs to this query.
       await box.fill("");
-      await box.press("Enter");
-      await idle.waitFor({ timeout: 30_000 });
+      await nav.waitFor({ state: "hidden", timeout: 30_000 });
       const asked = performance.now();
       await box.fill(query);
-      await box.press("Enter");
       await answered.first().waitFor({ timeout: 120_000 });
       const ms = Math.round(performance.now() - asked);
       const results = await rows.evaluateAll((as) =>

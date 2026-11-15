@@ -211,7 +211,9 @@ describe("the card, drawn", () => {
       expect(chips.length, row).toBeGreaterThan(0);
       for (const chip of chips) expect(chip).toContain('aria-expanded="false"');
     }
-    expect(body).toContain(">doc:row=1 +1<");
+    // A property's chip says the row; the rows it opens name the source too.
+    expect(body).toContain(">row=1 +1<");
+    expect(body).toContain(">first/doc:row=1<");
     expect(body).toContain(">Group x<");
     file.close();
   });
@@ -228,7 +230,7 @@ describe("the card, drawn", () => {
     const page = (await nodePage(file, "Item:a")) as NodeView;
     const { body } = render(EntityCard, { props: { node: page.node, shape, facts: await cardFacts(file, page, shape) } });
     expect(body).toContain(">How big<");
-    expect(body).toContain(">Belongs to<");
+    expect(body).toMatch(/>Belongs to · \d+</);
     expect(body).toContain(">Thing<");
     file.close();
   });

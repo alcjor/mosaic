@@ -10,8 +10,11 @@
 
   let {
     sections,
+    short = false,
   }: {
     /** The rows behind the value; a title names the thing a group of rows is about. */
+    /** Say the row alone, without the source's name: the rows it opens name the source. */
+    short?: boolean;
     sections: readonly { readonly title: string | null; readonly evidence: Evidence }[];
   } = $props();
 
@@ -20,6 +23,13 @@
 
   let first = $derived(sections.find((s) => s.evidence.rows.length > 0)?.evidence ?? sections.find((s) => s.evidence.error !== undefined)?.evidence ?? sections[0]?.evidence ?? { rows: [], total: 0 });
   let hint = $derived(first.rows[0]?.snippet ?? undefined);
+  let label = $derived.by(() => {
+    const whole = chipLabel(first);
+    const row = first.rows[0];
+    if (!short || row === undefined) return whole;
+    const name = `${row.source.slice(row.source.lastIndexOf("/") + 1)}:`;
+    return whole.startsWith(name) && whole.length > name.length ? whole.slice(name.length) : whole;
+  });
 </script>
 
 <button
@@ -28,7 +38,7 @@
   aria-expanded={open}
   aria-controls="{id}-rows"
   title={hint}
-  onclick={() => (open = !open)}>{chipLabel(first)}</button
+  onclick={() => (open = !open)}>{label}</button
 >
 <div class="rows" id="{id}-rows" hidden={!open}>
   {#each sections as section, i (i)}

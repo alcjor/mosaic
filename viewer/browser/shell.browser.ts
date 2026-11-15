@@ -52,23 +52,12 @@ test("every style the page uses comes from a token it defines", async () => {
 
 test("below 960px a place's side panes are tabs", async () => {
   const { page, shot } = await viewer.open("#v=explore&q=harbor&node=Place%3Aharbor", { width: 420, height: 800 });
-  const tabs = page.getByRole("tablist", { name: "Explore" }).getByRole("tab");
-  expect(await tabs.allInnerTexts()).toEqual(["Results", "Graph", "Card"]);
+  // Explore has no tabs: the selected thing's card is under the graph.
+  await page.locator('svg.picture [data-thing="Person:ada"]').waitFor();
   await page.locator('aside[aria-label="Selection"] article[aria-label="Place:harbor"]').waitFor();
-  expect(await page.locator('nav[aria-label="Results"]').isVisible()).toBe(false);
-  await shot("narrow-card");
-  await tabs.filter({ hasText: "Graph" }).click();
-  await page.getByRole("link", { name: "Ada" }).waitFor();
-  expect(await page.locator('aside[aria-label="Selection"]').isVisible()).toBe(false);
-  await tabs.filter({ hasText: "Results" }).click();
-  await page.locator('nav[aria-label="Results"] a[data-id="Place:harbor"]').waitFor();
+  expect(await page.getByRole("tablist", { name: "Explore" }).count()).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await shot("narrow-results");
-  // A new search shows its results, though a thing's card is open.
-  await tabs.filter({ hasText: "Card" }).click();
-  await page.getByRole("searchbox").fill("fair");
-  await page.getByRole("searchbox").press("Enter");
-  await page.locator('nav[aria-label="Results"] a[data-id="Event:fair"]').waitFor();
+  await shot("narrow-explore");
   // The other places fit the width too.
   for (const [hash, ready] of [
     ["#", 'main[data-place="home"] .list'],

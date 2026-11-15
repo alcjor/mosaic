@@ -1,11 +1,11 @@
 /**
  * Where a neighbourhood's shards go (needs G-3, G-4, G-5, G-7): the thing at the centre, its
- * neighbours round it grouped by edge type and direction, each group's name and count beside it,
- * and the neighbours past the limit folded into one bundle per group.
+ * neighbours round it grouped by edge type and direction, each group's name beside it. The
+ * neighbours a group does not show are counted (`folded`), not drawn.
  *
  * Groups go round the centre in the kit's order, edge type by UTF-8 bytes and `out` before `in`,
  * whatever order they are given in, starting at the top and turning clockwise; each takes a share
- * of the circle that follows how many shards it shows, a bundle counting one and a half. A
+ * of the circle that follows how many shards it shows. A
  * crowded group staggers its shards on two rings. Each thing is drawn once, where it first
  * appears; a link to it from another group is drawn to that place. An expanded thing's groups
  * open in a fan pointing away from the thing it hangs from. Nothing depends on time or chance.
@@ -57,8 +57,8 @@ export interface PlacedGroup {
   readonly shown: number;
   /** Where the group's name and count go. */
   readonly labelAt: { readonly x: number; readonly y: number };
-  /** The bundle of the neighbours not drawn, if any. */
-  readonly bundle: { readonly x: number; readonly y: number; readonly count: number } | null;
+  /** How many of its neighbours the group does not show. */
+  readonly folded: number;
 }
 
 export interface PlacedLink {
@@ -77,15 +77,13 @@ export interface HoodLayout {
 export interface SettleOptions {
   /** Things the person dropped somewhere: they stay exactly there. */
   readonly pinned?: ReadonlyMap<string, Point>;
-  /** Where things and bundles were last drawn (`placesOf`): they stay near there. */
+  /** Where things were last drawn (`placesOf`): they stay near there. */
   readonly previous?: ReadonlyMap<string, Point>;
   /** How many ticks to run: fewer while a thing is dragged, so the picture keeps up. */
   readonly ticks?: number;
 }
 
 export interface HoodOptions {
-  /** Things not to draw. */
-  readonly hidden?: ReadonlySet<string>;
   /** Which edge types are shown; all by default. */
   readonly shows?: (edge: string) => boolean;
 }
@@ -96,8 +94,6 @@ export const RING = 220;
 export const STAGGER = 56;
 /** Shards in a group past which it uses two rings. */
 const CROWDED = 6;
-/** How much of a group's share a bundle takes, against one for a shard. */
-const BUNDLE_WEIGHT = 1.5;
 /** How far beyond its shards a group's name goes. */
 const LABEL_GAP = 64;
 /** How wide an expanded thing's fan opens. */
@@ -112,11 +108,10 @@ export function groupOrder(a: HoodGroup, b: HoodGroup): number {
 
 /**
  * Lay out `centre` with its groups round the origin, then each of `expanded`, in the order given,
- * with its groups in a fan pointing away from where it hangs. An expanded thing not drawn (hidden,
- * or not a neighbour of anything drawn) is left out.
+ * with its groups in a fan pointing away from where it hangs. An expanded thing not drawn (not a
+ * neighbour of anything drawn) is left out.
  */
 export function layoutHood(centre: HoodInput, expanded: readonly HoodInput[] = [], options: HoodOptions = {}): HoodLayout {
-  const hidden = options.hidden ?? new Set<string>();
   const shows = options.shows ?? (() => true);
   const things = new Map<string, PlacedThing>();
   const groups: PlacedGroup[] = [];
@@ -138,16 +133,15 @@ export function layoutHood(centre: HoodInput, expanded: readonly HoodInput[] = [
     // differ by qualifier, section 3.4), and both are drawn.
     const claimed = new Set(drawn);
     const slots = kept.map((g) => {
-      const visible = g.shown.filter((t) => !hidden.has(t.id) && !claimed.has(keyOf(linkOf(owner.centre.id, g, t.id))));
+      const visible = g.shown.filter((t) => !claimed.has(keyOf(linkOf(owner.centre.id, g, t.id))));
       for (const t of visible) claimed.add(keyOf(linkOf(owner.centre.id, g, t.id)));
-      const folded = Math.max(0, g.count - g.shown.length);
-      return { g, visible, folded, weight: Math.max(1, visible.length + (folded > 0 ? BUNDLE_WEIGHT : 0)) };
+      return { g, visible, folded: Math.max(0, g.count - g.shown.length), weight: Math.max(1, visible.length) };
     });
     const total = slots.reduce((s, x) => s + x.weight, 0);
     let at = from;
     for (const { g, visible, folded, weight } of slots) {
       const share = (span * weight) / Math.max(1, total);
-      const n = visible.length + (folded > 0 ? 1 : 0);
+      const n = visible.length;
       const step = share / Math.max(1, n);
       const crowded = n > CROWDED;
       const point = (i: number) => {
@@ -170,7 +164,7 @@ export function layoutHood(centre: HoodInput, expanded: readonly HoodInput[] = [
         count: g.count,
         shown: visible.length,
         labelAt: { x: round(cx + labelR * Math.cos(mid)), y: round(cy + labelR * Math.sin(mid)) },
-        bundle: folded > 0 ? { ...point(visible.length), count: folded } : null,
+        folded,
       });
       at += share;
     }
@@ -190,12 +184,10 @@ export function layoutHood(centre: HoodInput, expanded: readonly HoodInput[] = [
         still.push(e);
         continue;
       }
-      if (!hidden.has(e.centre.id)) {
-        const parent = things.get(p.parent)!;
-        const away = Math.atan2(p.y - parent.y, p.x - parent.x);
-        // Its fan opens away from where it hangs; the link it hangs by is drawn already.
-        fan(e, p.x, p.y, away - FAN / 2, FAN, RING * FAN_RING);
-      }
+      const parent = things.get(p.parent)!;
+      const away = Math.atan2(p.y - parent.y, p.x - parent.x);
+      // Its fan opens away from where it hangs; the link it hangs by is drawn already.
+      fan(e, p.x, p.y, away - FAN / 2, FAN, RING * FAN_RING);
       opened = true;
     }
     waiting = still;
@@ -206,24 +198,17 @@ export function layoutHood(centre: HoodInput, expanded: readonly HoodInput[] = [
 /** How far a shard keeps others from its middle, with room for its name. */
 const KEEP_THING = 34;
 const KEEP_CENTRE = 48;
-const KEEP_BUNDLE = 40;
 
-/** The name a bundle goes by among the places of things: no thing id starts with a NUL. */
-export function bundleId(g: Pick<PlacedGroup, "owner" | "edge" | "direction">): string {
-  return `\u0000${g.owner}\u0000${g.edge}\u0000${g.direction}`;
-}
-
-/** Where each thing and bundle of `layout` is, to give `settleHood` as `previous`. */
+/** Where each thing of `layout` is, to give `settleHood` as `previous`. */
 export function placesOf(layout: HoodLayout): Map<string, Point> {
   const out = new Map<string, Point>();
   for (const t of layout.things) out.set(t.id, { x: t.x, y: t.y });
-  for (const g of layout.groups) if (g.bundle) out.set(bundleId(g), { x: g.bundle.x, y: g.bundle.y });
   return out;
 }
 
 /**
  * Let forces settle `start` (from `layoutHood`). The centre stays at the origin unless pinned
- * elsewhere. A thing or bundle drawn before starts where it was and is pulled back there; a new
+ * elsewhere. A thing drawn before starts where it was and is pulled back there; a new
  * one starts where `start` puts it beside the thing it hangs from, wherever that thing now is.
  * Each group's name goes beyond the middle of its shards, away from its owner.
  */
@@ -234,7 +219,6 @@ export function settleHood(start: HoodLayout, options: SettleOptions = {}): Hood
   const centre = start.things.find((t) => t.parent === null)!.id;
   const hangs = new Map<string, string>();
   for (const t of start.things) if (t.parent !== null) hangs.set(t.id, t.parent);
-  for (const g of start.groups) if (g.bundle) hangs.set(bundleId(g), g.owner);
 
   // Where a node starts: where it was, else its place in `start` moved with what it hangs from.
   const begun = new Map<string, Point>();
@@ -258,11 +242,6 @@ export function settleHood(start: HoodLayout, options: SettleOptions = {}): Hood
   const length = (a: string, b: string) => (a === centre || b === centre ? RING : RING * FAN_RING);
   const nodes: ForceNode[] = start.things.map((t) => node(t.id, t.parent === null ? KEEP_CENTRE : KEEP_THING));
   const links: ForceLink[] = start.links.map((l) => ({ source: l.from, target: l.to, length: length(l.from, l.to) }));
-  for (const g of start.groups) {
-    if (!g.bundle) continue;
-    nodes.push(node(bundleId(g), KEEP_BUNDLE));
-    links.push({ source: g.owner, target: bundleId(g), length: length(g.owner, bundleId(g)) });
-  }
   // Known things start near rest: a cooler, shorter run moves them less.
   const known = previous.size > 0;
   const placed = settle(nodes, links, { heat: known ? 0.3 : 1, ticks: options.ticks ?? (known ? 150 : 300) });
@@ -273,8 +252,6 @@ export function settleHood(start: HoodLayout, options: SettleOptions = {}): Hood
     const members = start.links
       .filter((l) => l.edge === g.edge && (g.direction === "out" ? l.from === g.owner : l.to === g.owner))
       .map((l) => placed.get(g.direction === "out" ? l.to : l.from)!);
-    const bundle = g.bundle ? { ...placed.get(bundleId(g))!, count: g.bundle.count } : null;
-    if (bundle) members.push(bundle);
     if (members.length === 0) return g;
     const mid = { x: members.reduce((s, p) => s + p.x, 0) / members.length, y: members.reduce((s, p) => s + p.y, 0) / members.length };
     // Away from the owner; for shards that ring their owner evenly, the way `start` gave.
@@ -287,7 +264,7 @@ export function settleHood(start: HoodLayout, options: SettleOptions = {}): Hood
     }
     const d = Math.max(1e-9, Math.hypot(dx, dy));
     const labelAt = { x: round(mid.x + (dx / d) * LABEL_GAP), y: round(mid.y + (dy / d) * LABEL_GAP) };
-    return { ...g, labelAt, bundle };
+    return { ...g, labelAt };
   });
   return { things, groups, links: start.links };
 }

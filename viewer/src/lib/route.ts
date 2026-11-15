@@ -12,10 +12,9 @@
  * anything else the address does not name.
  *
  * Explore (`v=explore`) adds the choices made in it (G-8): each
- * thing expanded as `x=<id>`, in the order opened; each thing hidden as `h=<id>`; the edge types
- * shown as `e=<name>` when not every one is, one empty `e=` when none is; and the limit as
- * `l=<n>` when it is not the default. They are read as written; lib/graph/hood-address.ts applies
- * them to a mosaic.
+ * thing unfolded as `x=<id>`, in the order unfolded (named again when unfolded again, for more
+ * of its links); and the edge types shown as `e=<name>` when not every one is, one empty `e=`
+ * when none is. They are read as written; lib/graph/hood-address.ts applies them to a mosaic.
  *
  * Trails (`v=trails`, need V-17) adds the chain shown: its start type as
  * `c=<type>`, each step's link as `k=<link>` spelled as in the view file (an edge type alone is
@@ -51,13 +50,10 @@ export interface TableRoute {
 
 /** The choices made in a neighbourhood, as its address writes them. */
 export interface HoodChoices {
-  /** In the order opened. */
+  /** In the order unfolded; a thing named again is unfolded again. */
   readonly expanded: readonly string[];
-  readonly hidden: readonly string[];
   /** The edge types shown; null when every one is. */
   readonly edges: readonly string[] | null;
-  /** The limit as written, or null for the default. */
-  readonly limit: string | null;
 }
 
 /** The chain the chain view shows, and where in its results, as its address writes it (V-17). */
@@ -176,11 +172,9 @@ export function parseRoute(hash: string): Route {
     const edges = params.getAll("e");
     const hood: HoodChoices = {
       expanded: params.getAll("x").filter((x) => x !== ""),
-      hidden: params.getAll("h").filter((h) => h !== ""),
       edges: edges.length === 0 ? null : edges.filter((e) => e !== ""),
-      limit: params.get("l"),
     };
-    if (hood.expanded.length > 0 || hood.hidden.length > 0 || hood.edges !== null || hood.limit !== null) route = { ...route, hood };
+    if (hood.expanded.length > 0 || hood.edges !== null) route = { ...route, hood };
   }
   if (named?.id === "trails") {
     const chain = chainLink(params);
@@ -198,12 +192,10 @@ export function routeHash(route: Route): string {
   const hood = route.view === "explore" ? route.hood : null;
   if (hood) {
     for (const x of hood.expanded) params.append("x", x);
-    for (const h of hood.hidden) params.append("h", h);
     if (hood.edges !== null) {
       if (hood.edges.length === 0) params.append("e", "");
       for (const e of hood.edges) params.append("e", e);
     }
-    if (hood.limit !== null) params.set("l", hood.limit);
   }
   const chain = route.view === "trails" ? route.chain : null;
   if (chain) {

@@ -1,18 +1,15 @@
 /**
- * Where the things and links of the graph come from (needs G-6, V-7). Selecting a
- * thing shows its type's card, built as its page builds it (lib/cards.ts on the kit's `get`,
- * `neighbors` and `cite`), so a type's card looks the same everywhere; the thing's own rows are
- * where it comes from. Selecting a link shows the rows `cite` gives for it: a line drawn from one
- * thing to another by one edge type stands for every link of that type between them (two
- * qualifiers are one line), so it is cited by `from`, `type` and `to`, which gives the rows of
- * each (section 8.1).
+ * Where the things of the graph come from (needs G-6, V-7). Selecting a thing shows its type's
+ * card, built as its page builds it (lib/cards.ts on the kit's `get`, `neighbors` and `cite`),
+ * so a type's card looks the same everywhere; the thing's own rows are where it comes from, and
+ * the card's link chips open the rows behind its links.
  *
- * Each thing's card and each link's rows are read once per mosaic and view file, and kept: what is
- * read is given at once the next time, so a selection made again shows without waiting (G-10). A
- * read the kit could not give is shown but not kept: asking again tries again, as for a bundle.
+ * Each thing's card is read once per mosaic and view file, and kept: what is read is given at
+ * once the next time, so a selection made again shows without waiting (G-10). A read the kit
+ * could not give is shown but not kept: asking again tries again.
  */
 import type { SealedFile } from "@mosaic/kit";
-import { cardFacts, type Evidence, type Fact } from "../cards.js";
+import { cardFacts, type Fact } from "../cards.js";
 import { nodePage, type NodeView } from "../mosaic.js";
 import type { Shape } from "../view.js";
 
@@ -31,14 +28,12 @@ export function linkKey(link: LinkRef): string {
   return JSON.stringify([link.from, link.edge, link.to]);
 }
 
-/** The cards and link rows read for one mosaic and view file. */
+/** The cards read for one mosaic and view file. */
 export class Sources {
   readonly #file: SealedFile;
   readonly #shape: Shape;
   readonly #cards = new Map<string, Promise<ThingCard>>();
   readonly #cardsRead = new Map<string, ThingCard>();
-  readonly #links = new Map<string, Promise<Evidence>>();
-  readonly #linksRead = new Map<string, Evidence>();
 
   constructor(file: SealedFile, shape: Shape) {
     this.#file = file;
@@ -72,29 +67,5 @@ export class Sources {
   /** Thing `id`'s card if it has been read, else null. */
   cardNow(id: string): ThingCard | null {
     return this.#cardsRead.get(id) ?? null;
-  }
-
-  /** The rows behind `link`, read once. */
-  link(link: LinkRef): Promise<Evidence> {
-    const key = linkKey(link);
-    let found = this.#links.get(key);
-    if (found === undefined) {
-      this.#linksRead.delete(key);
-      found = this.#file
-        .cite({ from: link.from, type: link.edge, to: link.to })
-        .then((a): Evidence => ("error" in a ? { rows: [], total: 0, error: a.error.message } : { rows: a.data.evidence, total: a.data.total }))
-        .catch((e: unknown): Evidence => ({ rows: [], total: 0, error: e instanceof Error ? e.message : String(e) }));
-      found.then((rows) => {
-        this.#linksRead.set(key, rows);
-        if (rows.error !== undefined) this.#links.delete(key);
-      });
-      this.#links.set(key, found);
-    }
-    return found;
-  }
-
-  /** The rows behind `link` if they have been read, else null. */
-  linkNow(link: LinkRef): Evidence | null {
-    return this.#linksRead.get(linkKey(link)) ?? null;
   }
 }

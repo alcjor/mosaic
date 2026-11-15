@@ -75,27 +75,25 @@ async function walk(page: Page, started: number = performance.now()) {
   await page.waitForFunction(() => !(document.querySelector('input[type="search"]') as HTMLInputElement).disabled, null, { timeout: 120_000 });
   lap("ready");
   const header = (await page.locator("header.top").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
+  // Results drop down under the field as it is typed in.
   await box.fill(query!);
-  await box.press("Enter");
-  const rows = page.locator('nav[aria-label="Results"] a[data-id]');
+  const rows = page.getByRole("listbox").locator('[role="option"][data-id]');
   await rows.first().waitFor();
   lap("search");
   const results = await rows.evaluateAll((as) =>
     as.map((a) => ({ id: a.getAttribute("data-id"), match: a.getAttribute("data-match"), text: (a as HTMLElement).innerText })),
   );
-  await page.locator(`nav[aria-label="Results"] a[data-id="${nodeId}"]`).click();
+  await rows.and(page.locator(`[data-id="${nodeId}"]`)).click();
   const card = page.locator(`article[aria-label="${nodeId}"]`);
   await card.waitFor();
-  await page.locator('aside[aria-label="Links and sources"]').waitFor();
   lap("node");
   const cardText = await card.innerText();
-  const context = page.locator('aside[aria-label="Links and sources"]');
-  const links = await context.locator("a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
-  const sources = await context.locator(".cite").allInnerTexts();
+  const links = await card.locator('section[aria-label="Links"] a[data-id]').evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
+  const sources = await card.locator('section[aria-label="Sources"] .where').allInnerTexts();
   const first = links[0];
   let opened: string | null = null;
   if (first) {
-    await context.locator(`a[data-id="${first}"]`).first().click();
+    await card.locator(`section[aria-label="Links"] a[data-id="${first}"]`).first().click();
     await page.locator(`article[aria-label="${first}"]`).waitFor();
     opened = first;
   }

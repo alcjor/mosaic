@@ -52,16 +52,6 @@ describe("a neighbourhood laid out by forces", () => {
     for (const a of others) for (const b of others) if (a !== b) expect(apart(a, b)).toBeGreaterThan(30);
   });
 
-  it("keeps a dropped thing where it was dropped, and the rest settles round it", () => {
-    const before = first();
-    const pinned = new Map([["Tag:a", { x: 500, y: 400 }]]);
-    const after = settleHood(layoutHood(CENTRE), { pinned, previous: placesOf(before) });
-    expect(placeOf(after, "Tag:a")).toMatchObject({ x: 500, y: 400 });
-    expect(after.things).toHaveLength(before.things.length);
-    // The bundle and the group names follow too: nothing is lost.
-    expect(after.groups.find((g) => g.edge === "about")!.bundle).toMatchObject({ count: 6 });
-  });
-
   it("adds an expanded thing's neighbours round it and leaves the rest where it was", () => {
     const before = first();
     const pinned = new Map([["Tag:b", { x: -350, y: 120 }]]);

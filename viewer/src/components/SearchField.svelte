@@ -128,6 +128,7 @@
               tabindex="-1"
               aria-selected={at === active}
               data-id={result.id}
+              data-match={group.match}
               onpointermove={() => (active = at)}
               onclick={() => {
                 close();

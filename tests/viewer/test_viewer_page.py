@@ -52,13 +52,15 @@ def test_the_viewer_searches_and_opens_node_pages_and_tables_with_the_kit_in_the
         assert "Item:a" in ids and "Item:b" in ids
         for r in walk["results"]:
             assert r["match"] in {"exact", "text", "vector"}
-            assert r["id"] in r["text"] and "Item" in r["text"]
+            # A result in the dropdown shows its name and its type.
+            assert "Item" in r["text"]
         assert walk["card"].startswith("Item A")
         assert "Item:a" in walk["card"]
         assert walk["links"] == ["Group:x"]
         assert walk["sources"] and all(s.startswith("first/doc:") for s in walk["sources"])
+        # A link picked on the card selects that thing in the graph: its card shows, the centre stays.
         assert walk["opened"] == "Group:x"
-        assert walk["hash"] == "#q=Item&node=Group%3Ax&v=explore"
+        assert walk["hash"] == "#q=Item&node=Item%3Aa&v=explore"
     # Tables rebuilt from node types, every view a table call.
     tables = seen["tables"]
     assert tables["listed"] == ["Group", "Item"]
