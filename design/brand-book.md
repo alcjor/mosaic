@@ -74,7 +74,8 @@ Optional codename for the AI that proposes links: **Jujol**, after the craftsman
 ### Colour
 - **Blue leads, glaze colours support.** Mosaic's blues carry the brand. Five secondary and accent colours come from the glazes of Park Güell's trencadís: turquoise, terracotta, saffron, olive and majolica red, plus a warm ceramic white. Each has one job, so colour always means something.
 - **`brand-navy` is the identity colour.** It takes the big fields: header bands, hero grounds, the logo tile.
-- **Proportions:** blues about 75% of any screen or page, secondary colours up to 20%, accents under 5%. Tints (`*-tint`) for areas; the strong shade for borders, icons and chart series; `*-text` for words.
+- **In the app the grounds are neutral.** `page`, `surface` and `raised` are greys with no blue in them, in both themes, with `border` hairlines, `ink`, `ink-muted` and `heading` for text, and `selection` for the selected or hovered item. Only the header band (`slab`) is navy. Blue appears as `accent`; other colour on a screen is a type's.
+- **Proportions** (brand pieces, not app screens): blues about 75% of any screen or page, secondary colours up to 20%, accents under 5%. Tints (`*-tint`) for areas; the strong shade for borders, icons and chart series; `*-text` for words.
 
 | Colour | Role | Tokens |
 |---|---|---|
@@ -98,6 +99,7 @@ Optional codename for the AI that proposes links: **Jujol**, after the craftsman
   - `accent` on white;
   - on navy, white, `#E6EEF8` or `shard-4`.
 - **Shard colours carry meaning.** In data-driven art each `shard-*` token is one category, numbered 1 to 7; a pattern or view file says which category each one shows. Never shuffle them for decoration in a piece that claims to show data.
+- **Type colours.** In the app each type has one colour, from a palette of sixteen: eight hues (cobalt, turquoise, terracotta, plum, slate, rose, sky, umber; `type-1` to `type-8`) and a second step of each (`type-9` to `type-16`), darker on the light surface and lighter on the dark one. Types take them in the order the view file lists them, repeating after sixteen; a view file may name a type's colour (`colour: plum-2`). Every value has at least 3:1 against `surface` in its theme (`tests/test_design.py` computes it). No green, red or yellow: status colours keep their jobs. In the app turquoise and terracotta mean a type, never a kind of source: a citation says its kind in its label.
 - **Light and dark grounds:**
   - Light pieces (A4, documents, the README on a light theme) use white paper with navy accents.
   - Dark pieces (slides, covers, banners) use a navy ground of `ground-shard` tiles with `grout` gaps.
@@ -243,22 +245,22 @@ Static HTML patterns. Copy their markup and bind colours to the tokens.
 ## 6. App
 
 
-The Mosaic viewer (Svelte, running the kit in the page), the single-file HTML export and the building GUI share one app style. It is a working tool: calm, dense, blue. The brand shows in the header band and the mark, not in the content area.
+The Mosaic viewer (Svelte, running the kit in the page), the single-file HTML export and the building GUI share one app style. It is a working tool: calm, dense, neutral. The brand shows in the header band and the mark, not in the content area.
 
 ### Shell
-- **Header band:** 48px, `slab`, with the dark mark, the mosaic's name in `mono` (`netflix.mosaic`) and its knowledge hash, short, in `shard-4`. One search field in the middle. Nothing else on navy.
-- **Places:** under the band, one row of four links: Home, Explore, Trails, Tables. The current one carries a 2px `accent` underline.
-- **Body:** `surface`. Home: saved trails, then the map of types. Explore: three columns at 1280px and up: results (320px), the graph (flexible), and the selected thing's card with its links and sources. Trails: the chain's steps, then one column per step. Tables: the types (320px) and the table. Below 960px the side columns become tabs.
-- **Status bar** (optional, 28px, `surface-tint`): trust level, build date, row counts, in `caption`.
-- **Exported HTML** looks the same; a `caption` in the header says "Read-only export".
+- **The page fits the window** and never scrolls as a whole: the band and the row of places keep their height, the place takes the rest, and panes scroll on their own. What the page has to say (errors, notices, "not verified") sits under the row of places, at most a quarter of the window high, scrolling on its own.
+- **Header band:** 48px, `slab` (navy in both themes; the only navy surface), with the mosaic's name in `mono` (`netflix.mosaic`), its knowledge hash, short, in `shard-4`, the search field in the middle and one `caption` at the right ("Read in this page · nothing is sent anywhere", or "Read-only export").
+- **Places:** under the band, a 44px row on `surface` with four links: Home, Explore, Trails, Tables. The current one is `heading`, 600, with a 2px `accent` underline. At the right of the row: the "verified" mark, the *Semantic* / *Text* switch and a menu (open a mosaic, about).
+- **Body:** `page`, with panes, cards and tables on `surface`. A place has at most one right pane (**Pane**): on `surface` with a `border` hairline, 340px by default, resized by dragging its left edge (260 to 720px) and collapsed to a 40px rail; its width and collapsed state are remembered per place. Below 960px a place is one scrolling column: the pane sits under the main part and side columns become tabs.
+- **Exported HTML** looks the same; the band's caption says "Read-only export".
 
 ### Components
-- **SearchField:** 40px, `border` outline in `ink-muted` (3:1), `radius-md`. Placeholder in `ink-muted`. A mode switch at its right: *Semantic* / *Text*, from the view file's `search` setting.
+- **SearchField:** 34px, on the band: `band-field` ground, `band-field-line` outline (3:1), `radius-md`, placeholder in `band-muted`. Results drop down under it on `raised` as they are typed, grouped by tier, each with its type's shard; arrow keys move, Enter opens the marked result in Explore, Escape closes. The mode switch, *Semantic* / *Text*, from the view file's `search` setting, sits in the row of places.
 - **ResultRow:** label in `heading` (15px, 600), type and id in `mono` `caption`, and a tier tag on the right: **Exact**, **Text** or **Similar** (vector). Tiers group the list with a `section-label` per group; exact first.
-- **TypeChip:** type name with a 10px shard (irregular polygon, `radius-none`) in the type's `shard-*` colour. Colour by type only when the pattern assigns one.
+- **TypeChip:** type name with a 10px shard (irregular polygon, `radius-none`) in the type's colour (`type-1` to `type-16`, see Colour). The same shard element stands for the type wherever a thing is named.
 - **EntityCard:** the card template from the spec: label (`panel-title` at 22px), type chip, summary, then a properties table. Each value carries a **CitationChip**.
 - **PropertyTable:** two columns, key in `ink-muted`, value in `ink`; identifiers and numbers in `mono`. Row hairlines in `border`; no zebra striping.
-- **CitationChip:** `mono` 12px, tessera name and row (`titles.csv:412`) on `surface-tint`; hover shows the source row; click opens the source text. Documents use `terracotta-tint` / `terracotta-text`, external refs `turquoise-tint` / `turquoise-text`.
+- **CitationChip:** `mono` 12px, tessera name and row (`titles.csv:412`) on `page`, in `ink-muted`; hover shows the source row; click opens the source text. The kind of source (a document, an external reference) is said in the label, never by colour.
 - **NeighborList:** grouped by edge name (`section-label`), each item a compact ResultRow without the tier tag, with a count per group ("directed by · 2").
 - **PathView:** the steps of a `path` result as a horizontal chain of chips joined by edge labels in `caption`.
 - **TableView:** results of `table`: sticky header on `surface-tint`, `mono` for ids, sortable columns with a 2px `accent` underline on the sorted one.
@@ -279,4 +281,4 @@ The Mosaic viewer (Svelte, running the kit in the page), the single-file HTML ex
 16px line icons, 1.5px stroke, round caps, in `ink-muted` (or `accent` when active): search, close, check, cross, chevron, external link, copy, filter, sort. Drawn in-house on the same stroke as the check marks. State icons may head panels (the tessera icon on sources, the pattern icon on proposals), never as buttons.
 
 ### Theme
-The app follows the system's light or dark setting: *Paper* by default, *Navy ground* in dark mode, using the same tokens. Charts and diagrams in the app use `data-*` colours, not `shard-*`, unless one shard means one thing.
+The app follows the system's light or dark setting: *Paper* by default, *Charcoal* in dark mode, using the same tokens; both grounds are neutral and the band stays navy. Charts and diagrams in the app use `data-*` colours, not `shard-*`, unless one shard means one thing.

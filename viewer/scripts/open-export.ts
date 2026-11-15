@@ -43,7 +43,7 @@ try {
     { timeout: 120_000 },
   );
   const readyMs = Math.round(performance.now() - started);
-  const header = (await page.locator("header.band").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
+  const header = (await page.locator("header.top").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
   const alerts = await banner.allInnerTexts();
   if (alerts.length > 0) {
     console.log(JSON.stringify({ header, alerts, readyMs, blocked, errors }));

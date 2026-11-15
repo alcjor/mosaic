@@ -43,7 +43,7 @@ try {
     { timeout: 120_000 },
   );
   const readyMs = Math.round(performance.now() - started);
-  const header = (await page.locator("header.band").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
+  const header = (await page.locator("header.top").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
   const alerts = await page.locator('[role="alert"]').allInnerTexts();
   const mode = alerts.length > 0 ? null : await page.locator('[data-mode][aria-pressed="true"]').getAttribute("data-mode");
   const searches: { query: string; ms: number; results: { id: string | null; match: string | null; text: string }[]; alert: string | null }[] = [];

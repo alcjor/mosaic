@@ -80,7 +80,15 @@ def test_a_type_with_no_settings_keeps_every_default(tmp_path: Path) -> None:
     settings = read(_write(tmp_path, "types:\n  A: {}\n"))
     assert settings.types == (TypeView("A"),)
     assert settings.as_json()["types"] == [
-        {"name": "A", "label": None, "columns": None, "page": None, "names": {}, "describe": None}
+        {
+            "name": "A",
+            "label": None,
+            "columns": None,
+            "page": None,
+            "names": {},
+            "describe": None,
+            "colour": None,
+        }
     ]
 
 
@@ -137,6 +145,7 @@ types:
             "page": ["c", "linked_to", "a"],
             "names": {"a": "First", "linked_to": "Linked to"},
             "describe": None,
+            "colour": None,
         }
     ]
 
@@ -177,6 +186,7 @@ def test_the_settings_are_json_for_the_page() -> None:
                 "page": None,
                 "names": {"x": "Ex"},
                 "describe": None,
+                "colour": None,
             }
         ],
         "edges": None,

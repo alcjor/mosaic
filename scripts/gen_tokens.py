@@ -5,7 +5,8 @@
 
 Colours: the first theme is the default; the second ("dark") applies under
 `prefers-color-scheme: dark` unless the page sets data-theme="light", and always
-under data-theme="dark". Aliases "{name}" become var(--name).
+under data-theme="dark". Aliases "{name}" become var(--name). An element with
+data-type-colour="N" takes the type colour N as --type-colour.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ REPO = Path(__file__).resolve().parent.parent
 SOURCE = REPO / "design" / "tokens.json"
 TARGET = REPO / "viewer" / "src" / "design" / "tokens.css"
 ALIAS = re.compile(r"^\{([A-Za-z0-9][A-Za-z0-9_.-]*)\}$")
+TYPE_COLOUR = re.compile(r"^type-(\d+)$")
 KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 
 
@@ -73,6 +75,11 @@ def render(tokens: dict[str, Any]) -> str:
                 "}",
             ]
         out += ["", f':root[data-theme="{theme}"] {{', *lines, "}"]
+
+    for tok in tokens["color"]["tokens"]:
+        if m := TYPE_COLOUR.match(tok["name"]):
+            n, name = m.group(1), tok["name"]
+            out += ["", f'[data-type-colour="{n}"] {{', f"  --type-colour: var(--{name});", "}"]
 
     families = tokens["type"]["families"]
     for group in tokens["type"]["groups"]:

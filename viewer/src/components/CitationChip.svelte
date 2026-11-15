@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * CitationChip (brand book, section 6): the source and row behind a value, in `mono` on
-   * `surface-tint`. Hovering shows the first row's text; activating it opens the rows behind the
+   * `page`. The kind of source is said in its label, never by colour. Hovering shows the first row's text; activating it opens the rows behind the
    * value, each with its source, locator, method and passage (V-8: a person can open the passage
    * or row behind any value). A value backed by several links (a count, say) lists each link's
    * rows under the thing it leads to.
@@ -63,8 +63,8 @@
     padding: 0 var(--space-1);
     border: none;
     border-radius: var(--radius-sm);
-    background: var(--surface-tint);
-    color: var(--ink);
+    background: var(--page);
+    color: var(--ink-muted);
     cursor: pointer;
     overflow-wrap: anywhere;
     text-align: start;

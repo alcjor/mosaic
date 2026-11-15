@@ -1,141 +1,259 @@
 <script lang="ts">
   /**
-   * SearchField (brand book, section 6): one search box; submitting it asks `find`. A mode switch
-   * at its right, *Semantic* / *Text*, starts as the view file's `search` setting.
+   * SearchField (brand book, section 6): the one search box, on the header band. What is typed
+   * is searched as it is typed (`find`) and the results drop down under the field, grouped by
+   * how they matched. Arrow keys move through them, Enter opens the one marked (the first,
+   * until a key moves it) and Escape closes the list. `onopen` gets the thing to open, or
+   * null when the search found nothing, and the query as typed.
    */
-  import { MODE_NAMES, SEARCH_MODES, type SearchMode } from "../lib/view.js";
+  import { TIER_NAMES, type SearchView, type ToolFailure } from "../lib/mosaic.js";
+  import Shard from "./Shard.svelte";
 
   let {
     value = "",
     disabled = false,
-    mode = "semantic",
-    onsearch,
-    onmode = () => {},
+    mode = "",
+    find,
+    onopen,
+    typeLabel = (type) => type,
   }: {
     value?: string;
     disabled?: boolean;
-    mode?: SearchMode;
-    onsearch: (query: string) => void;
-    onmode?: (mode: SearchMode) => void;
+    /** The search mode: results found in another mode are searched again. */
+    mode?: string;
+    /** Search the open mosaic for what is typed. */
+    find: (query: string) => Promise<SearchView | ToolFailure | null>;
+    onopen: (id: string | null, query: string) => void;
+    typeLabel?: (type: string) => string;
   } = $props();
 
+  const id = $props.id();
+  /** How long typing rests before it is searched. */
+  const REST_MS = 150;
+
   let draft = $derived(value);
+  let open = $state(false);
+  let found = $state.raw<{ query: string; mode: string; view: SearchView | ToolFailure | null } | null>(null);
+  let active = $state(0);
+  let asked = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  let rows = $derived(found !== null && found.view !== null && !("message" in found.view) ? found.view.groups.flatMap((g) => g.results) : []);
+  let shown = $derived(open && found !== null && found.view !== null && draft.trim() !== "");
+
+  /** Search for what is typed now; resolves once its answer shows, or a later search took over. */
+  async function ask(): Promise<void> {
+    clearTimeout(timer);
+    const query = draft;
+    if (found?.query === query && found.mode === mode) return;
+    const mine = ++asked;
+    const view = query.trim() === "" ? null : await find(query);
+    if (mine !== asked) return;
+    found = { query, mode, view };
+    active = 0;
+  }
+
+  function typed(): void {
+    open = true;
+    clearTimeout(timer);
+    timer = setTimeout(() => void ask(), REST_MS);
+  }
+
+  function close(): void {
+    open = false;
+    clearTimeout(timer);
+  }
+
+  async function submit(event: Event): Promise<void> {
+    event.preventDefault();
+    const query = draft;
+    await ask();
+    if (query !== draft) return;
+    close();
+    onopen(rows[active]?.id ?? null, query);
+  }
+
+  function key(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      if (shown) event.preventDefault();
+      close();
+    } else if ((event.key === "ArrowDown" || event.key === "ArrowUp") && rows.length > 0) {
+      event.preventDefault();
+      if (!open) open = true;
+      else active = (active + (event.key === "ArrowDown" ? 1 : rows.length - 1)) % rows.length;
+    }
+  }
 </script>
 
 <form
   class="search"
   role="search"
-  onsubmit={(event) => {
-    event.preventDefault();
-    onsearch(draft);
+  onsubmit={submit}
+  onfocusout={(event) => {
+    if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) close();
   }}
 >
   <input
-    class="field body-screen"
+    class="field body-app"
     type="search"
     name="q"
     aria-label="Search the mosaic"
-    placeholder="Search names, text and aliases"
+    aria-autocomplete="list"
+    aria-controls="{id}-found"
+    aria-activedescendant={shown && rows[active] ? `${id}-${active}` : undefined}
+    placeholder="Search names, aliases, text…"
     autocomplete="off"
     {disabled}
     bind:value={draft}
+    oninput={typed}
+    onkeydown={key}
   />
-  <span class="modes" role="group" aria-label="Search mode">
-    {#each SEARCH_MODES as m (m)}
-      <button
-        class="mode caption"
-        class:active={m === mode}
-        type="button"
-        aria-pressed={m === mode}
-        data-mode={m}
-        {disabled}
-        onclick={() => onmode(m)}>{MODE_NAMES[m]}</button
-      >
-    {/each}
-  </span>
+  <div class="found body-app" id="{id}-found" role="listbox" aria-label="Results as you type" hidden={!shown}>
+    {#if shown && found !== null && found.view !== null}
+      {#if "message" in found.view}
+        <p class="none" role="alert">{found.view.message}</p>
+      {:else if rows.length === 0}
+        <p class="none">No results for “{found.query}”.</p>
+      {:else}
+        {#each found.view.groups as group (group.match)}
+          <div class="tier section-label" role="presentation">{TIER_NAMES[group.match]} · {group.results.length}</div>
+          {#each group.results as result (result.id)}
+            {@const at = rows.indexOf(result)}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div
+              class="row"
+              class:active={at === active}
+              id="{id}-{at}"
+              role="option"
+              tabindex="-1"
+              aria-selected={at === active}
+              data-id={result.id}
+              onpointermove={() => (active = at)}
+              onclick={() => {
+                close();
+                onopen(result.id, found?.query ?? draft);
+              }}
+            >
+              <Shard type={result.type} />
+              <span class="label label-app">{result.label ?? result.id}</span>
+              <span class="type caption">{typeLabel(result.type)}</span>
+              {#if at === active}<span class="hint caption">Enter to explore</span>{/if}
+            </div>
+          {/each}
+        {/each}
+        <p class="foot caption">Arrow keys to move · Enter opens in Explore</p>
+      {/if}
+    {/if}
+  </div>
 </form>
 
 <style>
   .search {
-    display: flex;
+    position: relative;
     flex: 1;
-    gap: var(--space-2);
-    align-items: center;
     min-inline-size: 0;
-    max-inline-size: 40rem;
+    max-inline-size: 560px;
   }
 
   .field {
     box-sizing: border-box;
-    flex: 1;
-    inline-size: 0;
-    min-inline-size: 0;
-    block-size: 2.5rem;
+    inline-size: 100%;
+    block-size: 34px;
     padding-inline: var(--space-3);
-    border: 1px solid var(--ink-muted);
+    border: 1px solid var(--band-field-line);
     border-radius: var(--radius-md);
-    background: var(--surface);
-    color: var(--ink);
+    background: var(--band-field);
+    color: var(--band-ink);
+  }
+
+  .field::-webkit-search-cancel-button {
+    display: none;
   }
 
   .field::placeholder {
-    color: var(--ink-muted);
+    color: var(--band-muted);
+    opacity: 1;
   }
 
   .field:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+    outline: 2px solid var(--band-ink);
+    outline-offset: 1px;
   }
 
   .field:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+    opacity: 0.6;
   }
 
-  /* No overflow clipping here: it would cut off a focused button's ring (brand book §6, Focus). */
-  .modes {
-    display: inline-flex;
-    border: 1px solid var(--ink-muted);
+  .found {
+    position: absolute;
+    z-index: 20;
+    inset-block-start: calc(100% + var(--space-2));
+    inset-inline: 0;
+    box-sizing: border-box;
+    max-block-size: min(70vh, 480px);
+    overflow: auto;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    background: var(--surface);
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: 0 var(--space-2) var(--space-5) var(--shadow);
   }
 
-  .mode:first-child {
-    border-start-start-radius: var(--radius-md);
-    border-end-start-radius: var(--radius-md);
+  .found[hidden] {
+    display: none;
   }
 
-  .mode:last-child {
-    border-start-end-radius: var(--radius-md);
-    border-end-end-radius: var(--radius-md);
-  }
-
-  .mode {
-    padding: var(--space-1) var(--space-2);
-    border: none;
-    background: transparent;
+  .tier {
+    padding: var(--space-2) var(--space-2) var(--space-1);
     color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
     cursor: pointer;
   }
 
-  .mode.active {
-    background: var(--accent);
-    color: var(--surface);
+  .row.active {
+    background: var(--selection);
   }
 
-  .mode:hover:not(.active, :disabled) {
-    background: var(--surface-tint);
+  .label {
+    overflow: hidden;
+    color: var(--heading);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .mode:focus-visible {
-    position: relative;
-    z-index: 1;
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+  .type,
+  .hint,
+  .foot,
+  .none {
+    color: var(--ink-muted);
   }
 
-  .mode:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  .type {
+    flex: none;
+  }
+
+  .hint {
+    flex: none;
+    margin-inline-start: auto;
+  }
+
+  .foot {
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) var(--space-2) var(--space-1);
+    border-block-start: 1px solid var(--border);
+  }
+
+  .none {
+    margin: 0;
+    padding: var(--space-2);
   }
 </style>

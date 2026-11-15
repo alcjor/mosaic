@@ -145,6 +145,10 @@
         "describe": {
           "description": "Its description on the graph explorer's map. Default: none, and the map shows no description.",
           "$ref": "#/$defs/label"
+        },
+        "colour": {
+          "description": "Its colour: one of eight hues, or a hue's second step. Default: the types take the palette's colours in the order written.",
+          "enum": ["cobalt", "turquoise", "terracotta", "plum", "slate", "rose", "sky", "umber", "cobalt-2", "turquoise-2", "terracotta-2", "plum-2", "slate-2", "rose-2", "sky-2", "umber-2"]
         }
       }
     },

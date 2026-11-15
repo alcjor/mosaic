@@ -1,14 +1,20 @@
 <script lang="ts">
   /**
-   * The viewer's shell (brand book, section 6): a header band with the mosaic's name, its short
-   * knowledge hash and the search field; under it the four places (lib/places.ts):
+   * The viewer's shell (brand book, section 6). The page fits the window and never scrolls as a
+   * whole. From the top: the navy band, with the mosaic's name, its short knowledge hash and
+   * the search field, whose results drop down under it (opening one lands in Explore); a row
+   * with the four places (lib/places.ts) and, at its right, the verified mark, the Semantic /
+   * Text switch and a menu; whatever the page has to say (errors, notices), which scrolls on
+   * its own when long; then the place, one component each in `places/`:
    *
-   * - Home: the map of types and the view file's saved trails. A type leads to its table, a
-   *   saved trail opens in Trails.
-   * - Explore: the graph round the thing the address names, beside the selected thing's card,
-   *   with the search results that led there. Opening a search result lands here.
+   * - Home: the map of types, and the view file's saved trails in the pane.
+   * - Explore: the graph round the thing the address names, the selected thing's card in the
+   *   pane, and the search results that led there.
    * - Trails: a chain, built step by step, shown as columns (one per place) or as one table.
    * - Tables: a type's table.
+   *
+   * The shell hands every place the same props (places/props.ts) and provides the type colours
+   * (lib/typecolour.context.ts); a place's right pane is components/Pane.svelte.
    *
    * The kit runs in this page: a mosaic is opened from a file the reader picks, or from the
    * address's `?mosaic=<url>`, and nothing is asked of a server but the file itself. When the
@@ -23,36 +29,28 @@
    * document: the page opens them, fetches nothing, watches nothing, and says it is a read-only
    * export.
    *
-   * Below 960px a place's side panes become tabs.
+   * Below 960px a place is one scrolling column and its side parts become tabs.
    */
   import { onMount } from "svelte";
-  import CardPicker from "./components/CardPicker.svelte";
-  import ChainView from "./components/ChainView.svelte";
-  import NodeContext from "./components/NodeContext.svelte";
-  import NeighbourhoodView from "./components/NeighbourhoodView.svelte";
+  import ModeSwitch from "./components/ModeSwitch.svelte";
   import PlaceBar from "./components/PlaceBar.svelte";
-  import ResultList from "./components/ResultList.svelte";
-  import ResultTableView from "./components/ResultTableView.svelte";
-  import SchemaView from "./components/SchemaView.svelte";
   import SearchField from "./components/SearchField.svelte";
-  import TableView from "./components/TableView.svelte";
-  import TrailColumns from "./components/TrailColumns.svelte";
-  import TypeList from "./components/TypeList.svelte";
   import Button from "./components/ui/Button.svelte";
   import EmptyState from "./components/ui/EmptyState.svelte";
-  import Panel from "./components/ui/Panel.svelte";
-  import Tabs from "./components/ui/Tabs.svelte";
-  import { pin } from "./lib/chain.js";
-  import { linkOf } from "./lib/chainlink.js";
-  import { fetchNamedModel, fetchNamedMosaic, loadModel, shortHash, type NodeView } from "./lib/mosaic.js";
+  import Menu from "./components/ui/Menu.svelte";
+  import Explore from "./places/Explore.svelte";
+  import Home from "./places/Home.svelte";
+  import type { PlaceLinks } from "./places/props.js";
+  import Tables from "./places/Tables.svelte";
+  import Trails from "./places/Trails.svelte";
+  import { fetchNamedModel, fetchNamedMosaic, loadModel, search, shortHash } from "./lib/mosaic.js";
   import { hoodRoute } from "./lib/graph/hood-address.js";
   import type { HoodState } from "./lib/graph/hood.js";
   import type { PlaceId } from "./lib/places.js";
-  import { parseRoute, routeHash, type ChainLinkRoute, type Condition, type HoodChoices, type TableRoute } from "./lib/route.js";
+  import { parseRoute, routeHash, type ChainLinkRoute, type HoodChoices, type TableRoute } from "./lib/route.js";
   import { useSqliteWasm } from "@mosaic/kit";
   import { cutFrom, readExport, runtimeOf } from "./lib/exported.js";
-  import { cardsText, pickOptions, startingCard, toggle } from "./lib/cardpick.js";
-  import { findThings, type Answer } from "./lib/placesearch.svelte.js";
+  import { provideTypeColours } from "./lib/typecolour.context.js";
   import { applyTheme, DEFAULT_VIEW, Shape, watchView } from "./lib/view.js";
   import { Viewer } from "./lib/viewer.svelte.js";
 
@@ -99,40 +97,12 @@
 
   let shape = $derived(viewer.shape ?? (viewer.file === null ? null : new Shape(DEFAULT_VIEW, viewer.file)));
 
-  /** Things of `type` named like `query`, for pinning a chain's place: the kit's `find`. */
-  function findIn(type: string, query: string): Promise<Answer> {
-    return viewer.file === null ? Promise.resolve([]) : findThings(viewer.file, type, query);
-  }
+  const links: PlaceLinks = { thing: hrefFor, table: tableHref, type: typeHref, trail: trailHref, place: placeHref };
+
+  provideTypeColours((type) => shape?.typeColour(type) ?? null);
 
   /** The tab a person picked since the address last changed, if any. */
   let pickedTab = $state<string | null>(null);
-
-  /** Explore's panes as tabs, below 960px. */
-  const exploreTabs = [
-    { value: "results", label: "Results" },
-    { value: "graph", label: "Graph" },
-    { value: "card", label: "Card" },
-  ];
-  /** Tables' panes as tabs, below 960px. */
-  const tableTabs = [
-    { value: "types", label: "Types" },
-    { value: "table", label: "Table" },
-  ];
-
-  /** The tab shown below 960px: the one picked, else what the address opened. */
-  let tab = $derived.by((): string => {
-    if (viewer.place === "explore") {
-      if (pickedTab !== null && exploreTabs.some((t) => t.value === pickedTab)) return pickedTab;
-      return viewer.nodeId !== null ? "card" : "results";
-    }
-    if (pickedTab !== null && tableTabs.some((t) => t.value === pickedTab)) return pickedTab;
-    return viewer.tableRoute !== null ? "table" : "types";
-  });
-
-  function filtered(condition: Condition): void {
-    const table = viewer.tableRoute;
-    if (table) location.hash = tableHref({ ...table, page: 1, where: [...table.where, condition] });
-  }
 
   /** The choices Explore's address holds (G-8), for the graph to open. */
   let hoodAddress = $state<HoodChoices | null>(null);
@@ -194,10 +164,21 @@
     }
   }
 
+  let fileInput: HTMLInputElement;
+  let about: HTMLDialogElement;
+
   async function picked(event: Event): Promise<void> {
     const input = event.currentTarget as HTMLInputElement;
     const chosen = input.files?.[0];
     if (chosen) await opened(new Uint8Array(await chosen.arrayBuffer()), chosen.name);
+  }
+
+  /** The search field's results as typed: the kit's `find`, in the mode the switch shows. */
+  const findTyped = (query: string) => (viewer.file === null ? Promise.resolve(null) : search(viewer.file, query));
+
+  /** Enter in the search field, or a result picked: Explore, on that thing when one was found. */
+  function explore(id: string | null, query: string): void {
+    location.hash = routeHash({ query, node: id ?? viewer.nodeId, view: "explore" });
   }
 
   /** Open the export the document holds; true when it holds one. */
@@ -275,224 +256,139 @@
   });
 </script>
 
-<header class="band">
-  <span class="mark" role="img" aria-label="Mosaic"></span>
-  {#if viewer.file}
-    <span class="name code">{viewer.file.name}</span>
-    <span class="hash code" title={viewer.file.header.knowledge_hash}>{shortHash(viewer.file.header.knowledge_hash)}</span>
-    {#if viewer.seal}
-      <span class="seal caption" data-seal={viewer.seal} role="status">
-        {viewer.seal === "checking" ? "checking…" : viewer.seal}
-      </span>
-    {/if}
-  {:else}
-    <span class="name code">Mosaic viewer</span>
-  {/if}
-  <div class="find">
-    <SearchField
-      value={viewer.query}
-      disabled={viewer.file === null}
-      mode={viewer.mode}
-      onsearch={(query) => (location.hash = routeHash({ query, node: viewer.nodeId, view: "explore" }))}
-      onmode={(mode) => void viewer.setMode(mode)}
-    />
-  </div>
-  {#if exported}
-    <span class="export caption">Read-only export</span>
-    {@const from = viewer.file && viewer.file.header.knowledge_hash === cutHash ? cutFrom(viewer.file.pieces) : null}
-    {#if from}
-      <span class="export caption" title={from.hash}>from {from.id} {shortHash(from.hash)}</span>
-    {/if}
-  {/if}
-  <label class="open caption">
-    Open a mosaic
-    <input class="file" type="file" accept=".mosaic" onchange={picked} />
-  </label>
-</header>
-{#if viewer.status === "loading"}
-  <div class="loading" role="progressbar" aria-label="Opening the mosaic"></div>
-{/if}
-{#if viewer.file}
-  <PlaceBar place={viewer.place} hrefFor={placeHref} />
-{/if}
-{#if viewer.seal === "not verified"}
-  <p class="banner body-screen" role="alert" data-seal-warning>
-    This file was changed after it was sealed, so it is not the mosaic its hash names. You can
-    still browse it. {viewer.sealFailure}
-  </p>
-{/if}
-{#if viewer.error}
-  <p class="banner body-screen" role="alert">{viewer.error}</p>
-{/if}
-{#if viewer.modelError}
-  <p class="banner body-screen" role="alert">{viewer.modelError}</p>
-{/if}
-{#if viewError}
-  <p class="banner body-screen" role="alert">{viewError}</p>
-{/if}
-{#if (viewer.shape?.notices.length ?? 0) + viewer.chainNotices.length > 0}
-  <ul class="notices body-screen" role="status" aria-label="View file notices">
-    {#each [...(viewer.shape?.notices ?? []), ...viewer.chainNotices] as notice, i (i)}
-      <li>{notice}</li>
-    {/each}
-  </ul>
-{/if}
-
-{#if viewer.linkNotices.length > 0}
-  <ul class="notices body-screen" role="status" aria-label="Link notices">
-    {#each viewer.linkNotices as notice, i (i)}
-      <li>{notice}</li>
-    {/each}
-  </ul>
-{/if}
-
-{#snippet context(page: NodeView)}
-  {#if viewer.file !== null}
-    {@const card = startingCard(viewer.view, viewer.file, page.node.type)}
-    <CardPicker
-      type={card.name}
-      options={pickOptions(viewer.file, card.name)}
-      {card}
-      chosen={viewer.chosen.includes(card.name)}
-      text={cardsText(viewer.view.cards?.length ? viewer.view.cards : [card])}
-      shape={viewer.shape}
-      onpick={(part, name, on) => void viewer.chooseCard(toggle(card, part, name, on))}
-      onreset={() => void viewer.resetCard(card.name)}
-    />
-    <aside aria-label="Links and sources">
-      <NodeContext view={page} {hrefFor} shape={viewer.shape} />
-    </aside>
-  {/if}
-{/snippet}
-
-{#if viewer.file === null || shape === null}
-  <main class="start">
-    <EmptyState message="Open a mosaic to search it. It is read in this page; nothing is sent anywhere." />
-  </main>
-{:else if viewer.place === "home"}
-  <main class="place home" data-place="home">
-    <Panel title="Saved trails">
-      {#if viewer.savedChains.length === 0}
-        <EmptyState message="No saved trails yet. Build one in Trails and keep it in the view file.">
-          {#snippet action()}<Button href={placeHref("trails")}>Build a trail</Button>{/snippet}
-        </EmptyState>
+<div class="shell">
+  <header class="top">
+    <div class="band">
+      {#if viewer.file}
+        <span class="name code">{viewer.file.name}</span>
+        <span class="hash code" title={viewer.file.header.knowledge_hash}>{shortHash(viewer.file.header.knowledge_hash)}</span>
       {:else}
-        <ul class="saved">
-          {#each viewer.savedChains as s (s.name)}
-            <li><Button href={trailHref(linkOf(s.chain, "columns", 0, [], { sort: null, filters: [] }))} data-trail={s.name}>{s.name}</Button></li>
-          {/each}
-        </ul>
+        <span class="name code">Mosaic viewer</span>
       {/if}
-    </Panel>
-    <section aria-labelledby="home-map">
-      <h1 class="title panel-title" id="home-map">Map of types</h1>
-      <SchemaView file={viewer.file} {shape} {hrefFor} {tableHref} />
-    </section>
-  </main>
-{:else if viewer.place === "explore"}
-  <main class="place explore" data-place="explore">
-    {#if narrow}
-      <div class="tabs"><Tabs tabs={exploreTabs} value={tab} label="Explore" onchange={(v) => (pickedTab = v)} /></div>
-    {/if}
-    <nav class="results" aria-label="Results" hidden={narrow && tab !== "results"}>
-      {#if viewer.results}
-        <ResultList view={viewer.results} selected={viewer.nodeId} {hrefFor} typeLabel={(type) => shape.typeLabel(type)} />
-      {:else}
-        <EmptyState message="Search for a name, an alias or words in the text." />
-      {/if}
-    </nav>
-    <div class="graph" hidden={narrow && tab === "results"}>
-      {#if viewer.nodeId === null}
-        <EmptyState message="No thing is open. Search for one in the field above, then pick a result to see it and what it links to." />
-      {:else if viewer.page && "message" in viewer.page}
-        <p class="banner body-screen" role="alert">{viewer.page.message}</p>
-        {#if viewer.page.suggestions.length > 0}
-          <p class="caption">Closest:</p>
-          <ul class="suggestions code">
-            {#each viewer.page.suggestions as id (id)}
-              <li><a href={hrefFor(id)}>{id}</a></li>
-            {/each}
-          </ul>
+      <div class="find">
+        <SearchField
+          value={viewer.query}
+          disabled={viewer.file === null}
+          mode={viewer.mode}
+          find={findTyped}
+          onopen={explore}
+          typeLabel={(type) => shape?.typeLabel(type) ?? type}
+        />
+      </div>
+      {#if exported}
+        <span class="note caption">Read-only export</span>
+        {@const from = viewer.file && viewer.file.header.knowledge_hash === cutHash ? cutFrom(viewer.file.pieces) : null}
+        {#if from}
+          <span class="note caption" title={from.hash}>from {from.id} {shortHash(from.hash)}</span>
         {/if}
       {:else}
-        <NeighbourhoodView
-          file={viewer.file}
-          {shape}
-          centre={viewer.nodeId}
-          {hrefFor}
-          {tableHref}
-          hoodHref={hrefFor}
-          address={hoodAddress}
-          onchoices={writeHood}
-          only={narrow ? (tab === "card" ? "card" : "graph") : null}
-          extra={context}
-        />
+        <span class="note caption">Read in this page · nothing is sent anywhere</span>
       {/if}
     </div>
-  </main>
-{:else if viewer.place === "trails"}
-  <main class="place trails" data-place="trails">
-    <ChainView
-      schema={viewer.file}
-      chain={viewer.chain}
-      count={viewer.chainCount}
-      shape={viewer.shape}
-      onchange={(c) => viewer.chooseChain(c)}
-      find={findIn}
-      searches={viewer.searches}
-      saved={viewer.savedChains}
-      fileChains={viewer.view.chains ?? []}
-    />
-    {#if viewer.chain === null}
-      <EmptyState message="Choose a type to start a trail from, then add steps along its links." />
-    {:else}
-      {@const chain = viewer.chain}
-      <div class="show-as" role="group" aria-label="Show the trail as">
-        <Button pressed={viewer.chainShow === "columns"} onclick={() => void viewer.showChainAs("columns")}>Columns</Button>
-        <Button pressed={viewer.chainShow === "table"} onclick={() => void viewer.showChainAs("table")}>Table</Button>
-      </div>
-      {#if viewer.chainShow === "table" && viewer.chainTable !== null}
-        <ResultTableView table={viewer.chainTable} count={viewer.chainCount} {hrefFor} />
-      {:else if viewer.chainFailure !== null}
-        <p class="banner body-screen" role="alert">{viewer.chainFailure}</p>
-      {:else if viewer.chainColumns !== null}
-        <TrailColumns
-          trail={viewer.chainColumns}
-          shape={viewer.shape}
-          {hrefFor}
-          onpin={(place, id) => viewer.chooseChain(pin(chain, place === 0 ? "start" : place - 1, id))}
+    {#if viewer.status === "loading"}
+      <div class="loading" role="progressbar" aria-label="Opening the mosaic"></div>
+    {/if}
+    <PlaceBar place={viewer.place} hrefFor={viewer.file ? placeHref : null}>
+      {#snippet status()}
+        {#if viewer.seal}
+          <span class="seal" data-seal={viewer.seal} role="status">{viewer.seal === "checking" ? "checking…" : viewer.seal}</span>
+        {/if}
+        <ModeSwitch mode={viewer.mode} disabled={viewer.file === null} onmode={(mode) => void viewer.setMode(mode)} />
+        <Menu
+          label="More"
+          items={[
+            { label: "Open a mosaic…", onselect: () => fileInput.click() },
+            { label: "About", onselect: () => about.showModal() },
+          ]}
         />
-      {:else}
-        <p class="caption" role="status">Reading the trail…</p>
-      {/if}
+      {/snippet}
+    </PlaceBar>
+    <input class="file" type="file" accept=".mosaic" aria-label="Open a mosaic" hidden bind:this={fileInput} onchange={picked} />
+  </header>
+
+  <!-- What the page has to say: it scrolls on its own, so it never pushes the place past the window. -->
+  <div class="says body-app">
+    {#if viewer.seal === "not verified"}
+      <p class="banner" role="alert" data-seal-warning>
+        This file was changed after it was sealed, so it is not the mosaic its hash names. You can
+        still browse it. {viewer.sealFailure}
+      </p>
     {/if}
-  </main>
-{:else}
-  <main class="place tables" data-place="tables">
-    {#if narrow}
-      <div class="tabs"><Tabs tabs={tableTabs} value={tab} label="Tables" onchange={(v) => (pickedTab = v)} /></div>
+    {#if viewer.error}
+      <p class="banner" role="alert">{viewer.error}</p>
     {/if}
-    <nav class="types" aria-label="Types" hidden={narrow && tab !== "types"}>
-      <TypeList types={shape.types} selected={viewer.tableRoute?.type ?? null} hrefFor={typeHref} labelFor={(type) => shape.typeLabel(type)} />
-    </nav>
-    <div class="table" hidden={narrow && tab !== "table"}>
-      {#if viewer.tableRoute}
-        {#key viewer.tableRoute.type}
-          <TableView view={viewer.table} route={viewer.tableRoute} hrefFor={tableHref} nodeHref={hrefFor} onfilter={filtered} shape={viewer.shape} />
-        {/key}
-      {:else}
-        <EmptyState message="Pick a type to see its table." />
-      {/if}
-    </div>
-  </main>
-{/if}
+    {#if viewer.modelError}
+      <p class="banner" role="alert">{viewer.modelError}</p>
+    {/if}
+    {#if viewError}
+      <p class="banner" role="alert">{viewError}</p>
+    {/if}
+    {#if (viewer.shape?.notices.length ?? 0) + viewer.chainNotices.length > 0}
+      <ul class="notices" role="status" aria-label="View file notices">
+        {#each [...(viewer.shape?.notices ?? []), ...viewer.chainNotices] as notice, i (i)}
+          <li>{notice}</li>
+        {/each}
+      </ul>
+    {/if}
+    {#if viewer.linkNotices.length > 0}
+      <ul class="notices" role="status" aria-label="Link notices">
+        {#each viewer.linkNotices as notice, i (i)}
+          <li>{notice}</li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
+
+  {#if viewer.file === null || shape === null}
+    <main class="start">
+      <EmptyState message="Open a mosaic to search it. It is read in this page; nothing is sent anywhere.">
+        {#snippet action()}<Button onclick={() => fileInput.click()}>Choose a file</Button>{/snippet}
+      </EmptyState>
+    </main>
+  {:else if viewer.place === "home"}
+    <Home {viewer} {shape} {narrow} {links} />
+  {:else if viewer.place === "explore"}
+    <Explore {viewer} {shape} {narrow} {links} hood={hoodAddress} onhood={writeHood} picked={pickedTab} onpick={(tab) => (pickedTab = tab)} />
+  {:else if viewer.place === "trails"}
+    <Trails {viewer} {shape} {narrow} {links} />
+  {:else}
+    <Tables {viewer} {shape} {narrow} {links} picked={pickedTab} onpick={(tab) => (pickedTab = tab)} />
+  {/if}
+</div>
+
+<dialog class="about body-app" bind:this={about} aria-labelledby="about-title">
+  <h2 class="panel-title" id="about-title">Mosaic viewer</h2>
+  <p>A mosaic is one sealed file of things, their links and the source of every fact. This page reads it here; nothing is sent anywhere.</p>
+  {#if viewer.file}
+    <p class="code">{viewer.file.name} · {viewer.file.header.knowledge_hash}</p>
+  {/if}
+  <form method="dialog"><Button type="submit">Close</Button></form>
+</dialog>
 
 <style>
+  :global(html),
   :global(body) {
+    block-size: 100%;
     margin: 0;
-    background: var(--surface);
+    overflow: hidden;
+  }
+
+  :global(body) {
+    background: var(--page);
     color: var(--ink);
     font-family: var(--font-sans);
+  }
+
+  /* The page fits the window: the shell's rows keep their height and the place takes the rest. */
+  .shell {
+    display: flex;
+    flex-direction: column;
+    block-size: 100dvh;
+    overflow: hidden;
+  }
+
+  .top {
+    flex: none;
   }
 
   /* Below 960px the band wraps: its first line names the mosaic, the search field takes the next. */
@@ -500,11 +396,12 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2) var(--space-4);
+    gap: var(--space-2) var(--space-3);
     min-block-size: var(--app-header);
-    padding: var(--space-2) var(--space-4);
+    padding: var(--space-2) var(--space-5);
     box-sizing: border-box;
     background: var(--slab);
+    color: var(--band-ink);
   }
 
   .find {
@@ -512,6 +409,15 @@
     flex: 1 1 100%;
     order: 1;
     min-inline-size: 0;
+  }
+
+  .note {
+    margin-inline-start: auto;
+    color: var(--band-muted);
+  }
+
+  .note + .note {
+    margin-inline-start: 0;
   }
 
   @media (width >= 960px) {
@@ -526,54 +432,25 @@
       order: 0;
       justify-content: center;
     }
+
+    .note {
+      margin-inline-start: 0;
+    }
   }
 
   .name {
     overflow: hidden;
     min-inline-size: 0;
-    color: var(--shard-4);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .hash {
     color: var(--shard-4);
-    opacity: 0.8;
-  }
-
-  .seal {
-    color: var(--shard-4);
-    opacity: 0.8;
   }
 
   .seal[data-seal="not verified"] {
-    color: var(--status-warning);
-    opacity: 1;
-  }
-
-  .export {
-    color: var(--shard-4);
-  }
-
-  .open {
-    color: var(--shard-4);
-    cursor: pointer;
-  }
-
-  .file {
-    inline-size: 1px;
-    block-size: 1px;
-    opacity: 0;
-  }
-
-  /* The label around the hidden file input shows its focus ring (below), so the input shows none. */
-  .file:focus {
-    outline: none;
-  }
-
-  .open:focus-within {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+    color: var(--majolica-text);
   }
 
   .loading {
@@ -581,8 +458,15 @@
     background: var(--accent);
   }
 
+  .says {
+    flex: none;
+    max-block-size: 25vh;
+    overflow: auto;
+    background: var(--page);
+  }
+
   .banner {
-    margin: var(--space-3) var(--space-4);
+    margin: var(--space-2) var(--space-4);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-md);
     background: var(--majolica-tint);
@@ -590,100 +474,35 @@
   }
 
   .notices {
-    margin: var(--space-3) var(--space-4);
+    margin: var(--space-2) var(--space-4);
     padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
     border-inline-start: 3px solid var(--status-warning);
     border-radius: var(--radius-md);
-    background: var(--surface-tint);
+    background: var(--surface);
     color: var(--ink);
   }
 
   .start {
+    flex: 1;
+    min-block-size: 0;
+    overflow: auto;
+    inline-size: 100%;
     max-inline-size: 40rem;
     margin-inline: auto;
   }
 
-  .place {
-    box-sizing: border-box;
-    min-inline-size: 0;
+  .about {
+    max-inline-size: 30rem;
+    padding: var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--raised);
+    color: var(--ink);
+    overflow-wrap: anywhere;
   }
 
-  [hidden] {
-    display: none;
-  }
-
-  .home,
-  .trails {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-4);
-    align-content: start;
-    padding: var(--space-4);
-  }
-
-  .title {
-    margin: 0 var(--space-4) var(--space-2);
+  .about h2 {
+    margin: 0;
     color: var(--heading);
-  }
-
-  .saved {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .show-as {
-    display: inline-flex;
-    gap: var(--space-1);
-  }
-
-  .explore,
-  .tables {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-content: start;
-  }
-
-  .tabs {
-    padding: var(--space-2) var(--space-4) 0;
-  }
-
-  .graph,
-  .table {
-    min-inline-size: 0;
-  }
-
-  .graph {
-    padding-block-start: var(--space-3);
-  }
-
-  .suggestions {
-    margin: 0;
-    padding-inline-start: var(--space-6);
-  }
-
-  /* From 960px: a place's side pane beside its main pane. */
-  @media (width >= 960px) {
-    .explore,
-    .tables {
-      grid-template-columns: 280px minmax(0, 1fr);
-      min-block-size: calc(100vh - var(--app-header));
-    }
-
-    .results,
-    .types {
-      border-inline-end: 1px solid var(--border);
-    }
-  }
-
-  /* The dark mark, as design/assets/logos/mosaic-mark-dark.svg draws it (brand book, section 6). */
-  .mark {
-    flex: none;
-    inline-size: 24px;
-    block-size: 24px;
-    background: url("./assets/mosaic-mark-dark.svg") center / contain no-repeat;
   }
 </style>

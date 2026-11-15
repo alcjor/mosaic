@@ -16,7 +16,8 @@
  * Descriptions for the graph explorer's map (need G-2) come from the view file too, since the
  * kit as it is gives none (G-12):
  * `types.<Type>.describe` and `edges.<edge>.describe`. Without one, no description is shown.
- * `edges` describes edge types only; it never chooses which appear.
+ * `edges` describes edge types only; it never chooses which appear. `types.<Type>.colour` names
+ * a type's colour; without one, types take the palette in the order listed (lib/typecolour.ts).
  *
  * The view file's `cards` (V-6, V-7, V-9, V-15, V-18) set, once per type, which facts
  * its card shows: properties (or the node's summary), the things it links to by some links,
@@ -26,6 +27,7 @@
  * reads as none set, and the page gives it its default.
  */
 import type { EdgeType, NodeType, SealedFile } from "@mosaic/kit";
+import { assignColours, COLOURS } from "./typecolour.js";
 
 export type SearchMode = "semantic" | "text";
 export type Theme = "auto" | "light" | "dark";
@@ -45,6 +47,8 @@ export interface TypeSettings {
   readonly names: ReadonlyMap<string, string>;
   /** Its description on the map (G-2), or null for none. */
   readonly describe: string | null;
+  /** Its colour, one of the palette's names (lib/typecolour.ts); null or absent takes the next in order. */
+  readonly colour?: string | null;
 }
 
 /** One edge type's settings; `null` is the default. */
@@ -188,6 +192,7 @@ export function parseView(data: unknown): ViewSettings {
             page: texts(entry.page ?? null, `${where}.page`),
             names: new Map(Object.keys(names).map((k) => [k, text(names[k], `${where}.names.${k}`)])),
             describe: maybeText(entry.describe, `${where}.describe`),
+            colour: entry.colour === null || entry.colour === undefined ? null : oneOf(entry.colour, `${where}.colour`, COLOURS),
           };
         });
   const edges =
@@ -361,6 +366,7 @@ export class Shape {
   readonly #cards = new Map<string, Card>();
   readonly #edgeFrom: ReadonlyMap<string, string | null>;
   readonly #edgeDescriptions = new Map<string, string>();
+  readonly #colours: ReadonlyMap<string, number>;
 
   constructor(view: ViewSettings, schema: Schema) {
     const notices: string[] = [];
@@ -428,6 +434,9 @@ export class Shape {
         });
       this.#cards.set(card.name, { show, links: resolve(card.links, "links"), counts: resolve(card.counts, "counts") });
     }
+    // The listed types take their colours first, then the types the page reaches but does not list.
+    const unlisted = schema.nodeTypes.filter((t) => !this.#settings.has(t.name));
+    this.#colours = assignColours([...listed.map((t) => ({ name: t.name, colour: this.#settings.get(t.name)!.colour })), ...unlisted]);
     this.types = listed;
     this.notices = notices;
   }
@@ -440,6 +449,11 @@ export class Shape {
   /** True when the page lists `type` and shows its table. */
   lists(type: string): boolean {
     return this.#settings.has(type);
+  }
+
+  /** The number of `type`'s colour token (`type-1` to `type-16`), or null for a type the mosaic lacks. */
+  typeColour(type: string): number | null {
+    return this.#colours.get(type) ?? null;
   }
 
   /** What the page calls node type `type`. */

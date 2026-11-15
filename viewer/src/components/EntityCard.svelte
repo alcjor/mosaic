@@ -287,8 +287,8 @@
   .ref-chip {
     padding: 0 var(--space-1);
     border-radius: var(--radius-sm);
-    background: var(--turquoise-tint);
-    color: var(--turquoise-text);
+    background: var(--page);
+    color: var(--ink-muted);
   }
 
   .more {

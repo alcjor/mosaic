@@ -6,7 +6,7 @@ them and tests can enforce them.
 | File | What |
 | --- | --- |
 | `assets/` | Logos, state icons and imagery, as SVG and PNG files ready to use |
-| `tokens.json` | Colours (light "Paper" and dark "Navy ground" themes), type, spacing, radii |
+| `tokens.json` | Colours (light "Paper" and dark "Charcoal" themes), type, spacing, radii |
 | `brand-book.md` | The brand book: naming, voice, colour roles, the shard motif, logo, **section 6: App** (the viewer's components and states) |
 | `components/*.md` | Guidelines per component |
 

@@ -24,6 +24,7 @@
   import type { SealedFile } from "@mosaic/kit";
   import { tick, untrack, type Snippet } from "svelte";
   import BundleList from "./BundleList.svelte";
+  import Pane from "./Pane.svelte";
   import CitationChip from "./CitationChip.svelte";
   import EntityCard from "./EntityCard.svelte";
   import Button from "./ui/Button.svelte";
@@ -728,7 +729,7 @@
   </div>
 
   {#if centre !== null}
-    <aside class="panel" aria-label="Selection" aria-live="polite" hidden={only === "graph"}>
+    <Pane place="explore" label="Selection" strip={selectedThing ? nameOf(selectedThing) : null} aria-live="polite" hidden={only === "graph"}>
       {#if selectedThing}
         <h3 class="section-label heading">{selectedThing.parent === null ? "At the centre" : "Selected thing"}</h3>
         <!-- Its card names it; until the card is read, this does. -->
@@ -817,7 +818,7 @@
       {:else}
         <EmptyState message="Select a thing to see its card, a link's line to see where it comes from, or a bundle to list what it holds." />
       {/if}
-    </aside>
+    </Pane>
   {/if}
 </div>
 
@@ -1116,11 +1117,6 @@
     outline-offset: 2px;
   }
 
-  .panel {
-    padding: 0 var(--space-4) var(--space-4);
-    border-block-start: 1px solid var(--border);
-  }
-
   .name {
     margin: var(--space-1) 0;
     color: var(--heading);
@@ -1144,7 +1140,14 @@
   /* From 960px: the picture, with the selection beside it. */
   @media (width >= 960px) {
     .hood {
-      grid-template-columns: minmax(0, 1fr) 360px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      min-block-size: 0;
+    }
+
+    /* The picture scrolls on its own; the selection's pane beside it keeps the place's height. */
+    .canvas {
+      min-block-size: 0;
+      overflow: auto;
     }
 
     .picture,
@@ -1154,11 +1157,6 @@
 
     .list {
       display: none;
-    }
-
-    .panel {
-      border-block-start: none;
-      border-inline-start: 1px solid var(--border);
     }
   }
 </style>

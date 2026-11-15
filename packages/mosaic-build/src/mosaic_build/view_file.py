@@ -11,10 +11,11 @@ of ``views/example.yaml``; ``views/view.schema.json`` is their JSON Schema.
   name. Each maps to ``label`` (shown instead of the type name), ``columns`` (its table: the
   node's name, then these properties; by default every declared property), ``page`` (its node
   page: these properties and edge types, in this order; by default all of them) and ``names``
-  (labels for its property and edge type names) and ``describe`` (its description on the graph
-  explorer's map, G-2; by default none). A type left out is absent from the type list and
-  tables only: search and links still reach its nodes, and the kit is not shaped by the view
-  file.
+  (labels for its property and edge type names), ``describe`` (its description on the graph
+  explorer's map, G-2; by default none) and ``colour`` (its colour, one of ``COLOURS``; by
+  default the types take the palette's colours in the order written). A type left out is
+  absent from the type list and tables only: search and links still reach its nodes, and the
+  kit is not shaped by the view file.
 - ``edges``: edge types by name, in the order written, each with ``describe`` (its description
   on the map; by default none). It describes edge types; it does not choose which appear.
   Descriptions come from the view file because the kit as it is gives none (G-12).
@@ -73,8 +74,12 @@ SEARCH = ("semantic", "text")
 THEMES = ("auto", "light", "dark")
 """The values of ``theme``; the first is the default."""
 
+HUES = ("cobalt", "turquoise", "terracotta", "plum", "slate", "rose", "sky", "umber")
+COLOURS = (*HUES, *(f"{hue}-2" for hue in HUES))
+"""The colours a type can be given: eight hues, then a second step of each."""
+
 _KEYS = ("search", "theme", "types", "edges", "cards", "chains", "export")
-_TYPE_KEYS = ("label", "columns", "page", "names", "describe")
+_TYPE_KEYS = ("label", "columns", "page", "names", "describe", "colour")
 _EDGE_KEYS = ("describe",)
 _CARD_KEYS = ("show", "links", "counts")
 _LINK = re.compile(r"[^ \t\n\v\f\r]+(?: (?:in|out))?")
@@ -97,6 +102,7 @@ class TypeView:
     page: tuple[str, ...] | None = None
     names: Mapping[str, str] = field(default_factory=dict)
     describe: str | None = None
+    colour: str | None = None
 
     def as_json(self) -> dict[str, Any]:
         return {
@@ -106,6 +112,7 @@ class TypeView:
             "page": None if self.page is None else list(self.page),
             "names": dict(self.names),
             "describe": self.describe,
+            "colour": self.colour,
         }
 
 
@@ -267,6 +274,12 @@ def _type_view(name: str, value: object, where: _Where) -> TypeView:
                 got[key] = _texts(item, at)
             case "names":
                 got[key] = _names(item, at)
+            case "colour":
+                if item not in COLOURS:
+                    raise ViewFileError(
+                        at, f"{_name(at)} must be one of {', '.join(COLOURS)}, not {item!r}"
+                    )
+                got[key] = item
             case _:
                 raise _unknown(at, _TYPE_KEYS)
     return TypeView(
@@ -276,6 +289,7 @@ def _type_view(name: str, value: object, where: _Where) -> TypeView:
         page=got.get("page"),
         names=got.get("names", {}),
         describe=got.get("describe"),
+        colour=got.get("colour"),
     )
 
 

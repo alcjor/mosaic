@@ -10,7 +10,7 @@ test("Home shows the map of types and the saved trails", async () => {
   const map = page.locator('main[data-place="home"] svg.map');
   await map.waitFor();
   for (const type of ["Person", "Place", "Event"]) expect(await map.textContent()).toContain(type);
-  expect(await page.getByRole("region", { name: "Saved trails" }).getByRole("link").allInnerTexts()).toEqual(["Who comes to events"]);
+  expect(await page.getByRole("complementary", { name: "Saved trails" }).getByRole("link").allInnerTexts()).toEqual(["Who comes to events"]);
   await shot("map-and-trails");
 });
 

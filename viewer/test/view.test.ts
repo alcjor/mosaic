@@ -9,7 +9,7 @@ import App from "../src/App.svelte";
 import EntityCard from "../src/components/EntityCard.svelte";
 import NodeContext from "../src/components/NodeContext.svelte";
 import ResultList from "../src/components/ResultList.svelte";
-import SearchField from "../src/components/SearchField.svelte";
+import ModeSwitch from "../src/components/ModeSwitch.svelte";
 import TableView from "../src/components/TableView.svelte";
 import TypeList from "../src/components/TypeList.svelte";
 import { nodePage, openMosaic, search, type NodeView, type SearchView } from "../src/lib/mosaic.js";
@@ -69,7 +69,7 @@ describe("the view file's settings", () => {
       export: { types: ["Alpha"] },
     });
     expect(view.types!.map((t) => t.name)).toEqual(["Zeta", "Alpha"]);
-    expect(view.types![1]).toEqual({ name: "Alpha", label: "A", columns: ["x"], page: ["y", "x"], names: new Map([["x", "Ex"]]), describe: null });
+    expect(view.types![1]).toEqual({ name: "Alpha", label: "A", columns: ["x"], page: ["y", "x"], names: new Map([["x", "Ex"]]), describe: null, colour: null });
     expect(view.exportTypes).toEqual(["Alpha"]);
   });
 
@@ -258,11 +258,11 @@ describe("the theme and the search mode follow the view file", () => {
   });
 
   it("the mode switch shows Semantic and Text, the file's mode pressed", () => {
-    const semantic = render(SearchField, { props: { onsearch: () => {} } }).body;
+    const semantic = render(ModeSwitch, { props: {} }).body;
     expect(semantic).toContain(">Semantic<");
     expect(semantic).toContain(">Text<");
     expect(semantic).toMatch(/aria-pressed="true"[^>]*data-mode="semantic"/);
-    const text = render(SearchField, { props: { mode: "text", onsearch: () => {} } }).body;
+    const text = render(ModeSwitch, { props: { mode: "text" } }).body;
     expect(text).toMatch(/aria-pressed="true"[^>]*data-mode="text"/);
     expect(text).toMatch(/aria-pressed="false"[^>]*data-mode="semantic"/);
   });

@@ -74,7 +74,7 @@ async function walk(page: Page, started: number = performance.now()) {
   await box.waitFor({ state: "visible" });
   await page.waitForFunction(() => !(document.querySelector('input[type="search"]') as HTMLInputElement).disabled, null, { timeout: 120_000 });
   lap("ready");
-  const header = (await page.locator("header.band").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
+  const header = (await page.locator("header.top").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
   await box.fill(query!);
   await box.press("Enter");
   const rows = page.locator('nav[aria-label="Results"] a[data-id]');
