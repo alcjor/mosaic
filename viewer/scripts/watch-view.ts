@@ -37,7 +37,9 @@ try {
   let loads = 0;
   page.on("load", () => loads++);
   await page.goto(url);
-  const list = page.locator('nav[aria-label="Results"] a[data-type]');
+  // The types the view file lists show in Tables.
+  await page.locator('nav[aria-label="Places"] a[data-place-link="tables"]').click();
+  const list = page.locator('nav[aria-label="Types"] a[data-type]');
   const read = () => list.evaluateAll((as) => as.map((a) => ({ type: a.getAttribute("data-type"), text: (a as HTMLElement).innerText.trim() })));
   await list.first().waitFor({ timeout: 120_000 });
   const first = await read();
@@ -48,7 +50,7 @@ try {
   writeFileSync(viewPath, next);
   const before = JSON.stringify(first);
   await page.waitForFunction(
-    (b) => JSON.stringify([...document.querySelectorAll('nav[aria-label="Results"] a[data-type]')].map((a) => ({ type: a.getAttribute("data-type"), text: (a as HTMLElement).innerText.trim() }))) !== b,
+    (b) => JSON.stringify([...document.querySelectorAll('nav[aria-label="Types"] a[data-type]')].map((a) => ({ type: a.getAttribute("data-type"), text: (a as HTMLElement).innerText.trim() }))) !== b,
     before,
     { timeout: 15_000 },
   );

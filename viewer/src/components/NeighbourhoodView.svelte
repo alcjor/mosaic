@@ -1,133 +1,101 @@
 <script lang="ts">
   /**
-   * The Neighbourhood view (needs G-3, G-4, G-7, G-10, G-11): the thing at the centre
-   * and its neighbours round it, grouped by edge type and direction, each group labelled with its
-   * edge type and count. A group with more neighbours than the chosen limit (3, 5, 10 or 20) shows
-   * that many and folds the rest into a bundle with its count; opening a bundle lists its things.
-   * The view says when it shows only part. The Graph switch for the current thing opens it too.
+   * The graph of Explore (needs G-3, G-4, G-5, G-7, G-8, G-10): the thing at the centre and what
+   * it links to, as shards coloured by type with their names under them, on a stage the graph
+   * fills. Above it, one chip per link type shows or hides that type's links, "Fit to view"
+   * brings the whole picture back on the stage and "Tidy layout" forgets where things were
+   * dragged and settles the picture again.
    *
-   * The data is the kit's, loaded by lib/graph/hood.ts with bounded calls (one `get` and one
-   * `neighbors` per group) and kept for the session; the layout is lib/graph/hood-layout.ts, the
-   * same picture for the same thing and choices (G-7). Below 960px the picture gives way to the
-   * same contents as a list (G-11).
+   * A thing shows a few of its links per link type; a badge "+N" counts the links it keeps
+   * folded. Pointing at a thing (or moving the keyboard's focus to it) shows a small summary;
+   * selecting it tells the page (`onselect`), which shows its card; selecting it again unfolds
+   * it, and again shows more. A thing dragged stays where it is dropped. The stage itself is
+   * dragged to move the picture, and the wheel makes it larger or smaller.
    *
-   * The address holds the choices made (G-8): the view opens from an address's choices
-   * (`address`), applying what the mosaic allows and saying what it could not, and tells the page
-   * each new state (`onchoices`), so a link to it lands on exactly the same picture.
-   *
-   * Every link drawn keeps its source (G-6): selecting a thing shows its type's card,
-   * the same card its page shows (V-7), and where it comes from; selecting a link (its line, or
-   * from the list of a selected thing's links) shows the rows behind it, through `cite`
-   * (lib/graph/sources.ts).
+   * The data is the kit's, loaded by lib/graph/hood.ts with bounded calls and kept for the
+   * session; the layout is lib/graph/hood-layout.ts, laid out by forces, the same picture for the
+   * same thing and choices (G-7). The address holds the choices made (G-8): the view opens from
+   * an address's choices (`address`), applying what the mosaic allows and saying what it could
+   * not, and tells the page each new state (`onchoices`).
    */
   import type { SealedFile } from "@mosaic/kit";
-  import { tick, untrack } from "svelte";
-  import BundleList from "./BundleList.svelte";
-  import CitationChip from "./CitationChip.svelte";
-  import EntityCard from "./EntityCard.svelte";
-  import {
-    collapse,
-    DEFAULT_LIMIT,
-    expand,
-    hide,
-    hoodOf,
-    LIMITS,
-    MOST_EXPANDED,
-    MOST_HIDDEN,
-    openBundle,
-    recentre,
-    showEdge,
-    shows,
-    unhide,
-    withLimit,
-    type Bundle,
-    type Hood,
-    type HoodState,
-    type Limit,
-    type Thing,
-  } from "../lib/graph/hood.js";
-  import { layoutHood, type PlacedGroup, type PlacedThing } from "../lib/graph/hood-layout.js";
-  import { groupText, mustOpen, once, partNotes, placeThingNames, summary, viewBoxOf } from "../lib/graph/hoodview.js";
-  import { COLUMN, columns, noun, number, type Rect } from "../lib/graph/mapview.js";
-  import { hoodLoaderFor, sourcesFor } from "../lib/graph/session.js";
-  import { linkKey, type LinkRef, type Sources } from "../lib/graph/sources.js";
-  import { shardPoints, svgPoints } from "../lib/graph/shard.js";
+  import { untrack } from "svelte";
+  import Shard from "./Shard.svelte";
+  import Button from "./ui/Button.svelte";
+  import Chip from "./ui/Chip.svelte";
+  import { canExpand, expand, hoodOf, recentre, showEdge, shows, type Hood, type HoodState, type Loaded } from "../lib/graph/hood.js";
+  import { layoutHood, placesOf, settleHood, type PlacedGroup, type PlacedThing } from "../lib/graph/hood-layout.js";
+  import type { Point } from "../lib/graph/force-layout.js";
+  import { allOnStage, edgeChoices, fitView, foldedLinks, onStage, tipPlace, type View } from "../lib/graph/hoodview.js";
+  import { cutTo, noun, number } from "../lib/graph/mapview.js";
+  import { hoodLoaderFor } from "../lib/graph/session.js";
+  import { linkKey } from "../lib/graph/sources.js";
   import { applyAddress, hoodRoute } from "../lib/graph/hood-address.js";
-  import { routeHash, type HoodChoices, type TableRoute } from "../lib/route.js";
+  import type { HoodChoices } from "../lib/route.js";
+  import { typeColours } from "../lib/typecolour.context.js";
   import type { Shape } from "../lib/view.js";
 
   let {
     file,
     shape,
     centre,
-    hrefFor,
-    tableHref,
-    hoodHref = (id: string) => routeHash({ query: "", node: id, view: "neighbourhood" }),
-    initial,
-    selected: first,
-    selectedLink: firstLink,
-    sources: given,
+    selected = null,
+    onselect,
     address = null,
-    unapplied: firstUnapplied = [],
     onchoices,
   }: {
     file: SealedFile;
     shape: Shape;
-    /** The thing at the centre: the current thing, or null when none is open. */
-    centre: string | null;
-    hrefFor: (id: string) => string;
-    tableHref: (table: TableRoute) => string;
-    /** The address of a thing's neighbourhood: re-centring goes there, so the address follows. */
-    hoodHref?: (id: string) => string;
-    /** A neighbourhood already loaded, drawn at once (the page loads its own). */
-    initial?: Hood;
-    /** A thing selected from the start. */
-    selected?: string;
-    /** A link selected from the start. */
-    selectedLink?: LinkRef;
-    /** Cards and link rows already read (the page reads its own, kept for the session). */
-    sources?: Sources;
+    /** The thing at the centre. */
+    centre: string;
+    /** The thing selected, whose card the page shows. */
+    selected?: string | null;
+    onselect?: (id: string) => void;
     /** The choices the address holds (G-8), applied when the centre or the address changes. */
     address?: HoodChoices | null;
-    /** What an address already applied could not apply, said from the start. */
-    unapplied?: readonly string[];
     /** Told each state the person's choices make, so the page's address can hold it. */
     onchoices?: (state: HoodState) => void;
   } = $props();
 
-  /** Shard sizes: the thing at the centre, a neighbour, a bundle. */
-  const R_CENTRE = 26;
-  const R_THING = 13;
-  const R_BUNDLE = 22;
+  const uid = $props.id();
+  const colourOf = typeColours();
 
-  /** The person's choices (G-5): expanded, hidden, edge types shown and limit, for the thing at the centre. */
-  let choices = $state<HoodState | null>(untrack(() => initial?.state ?? (centre === null ? null : hoodOf(centre))));
-  const limit = $derived(choices?.limit ?? DEFAULT_LIMIT);
+  /** How far a shard reaches from its middle: the thing at the centre, and any other. */
+  const R_CENTRE = 32;
+  const R_THING = 22;
+  /** A shard's corners, as parts of its box. */
+  const CORNERS = [
+    [0.5, 0],
+    [0.96, 0.22],
+    [0.88, 0.8],
+    [0.42, 1],
+    [0.04, 0.7],
+    [0.1, 0.2],
+  ] as const;
+  /** Most characters of a name under a shard. */
+  const NAME = 28;
+  const TIP_WIDE = 230;
 
-  let hood = $state<Hood | null>(untrack(() => initial ?? null));
+  /** The person's choices (G-5): what is unfolded and the edge types shown, for the thing at the centre. */
+  let choices = $state<HoodState | null>(null);
+  let hood = $state<Hood | null>(null);
   let failed = $state<string | null>(null);
-
   /** What the address asked that the mosaic does not allow (G-8). */
-  let unapplied = $state<readonly string[]>(untrack(() => firstUnapplied));
+  let unapplied = $state<readonly string[]>([]);
 
-  // The centre follows the address. A new centre keeps the edge types shown and the limit, and
-  // starts with nothing expanded, hidden or selected, unless the address says otherwise.
+  // The centre follows the address. A new centre keeps the edge types shown and starts with
+  // nothing more unfolded, unless the address says otherwise.
   $effect(() => {
     const c = centre;
     const asked = address;
     let stop: (() => void) | undefined;
     untrack(() => {
-      if (c === null) return;
       if (asked !== null) {
         // An address with choices: open as it says, unless that is what is drawn already.
         if (choices !== null && choices.centre === c && sameChoices(choices, asked)) return;
         let current = true;
         void applyAddress(file, c, asked).then((applied) => {
           if (!current || centre !== c) return;
-          if (choices?.centre !== c) {
-            selected = null;
-            opened = null;
-          }
           choices = applied.state;
           unapplied = applied.unapplied;
         });
@@ -137,8 +105,6 @@
       if (choices === null) choices = hoodOf(c);
       else if (choices.centre !== c) {
         choices = recentre(choices, c);
-        selected = null;
-        opened = null;
         unapplied = [];
       }
     });
@@ -147,8 +113,7 @@
 
   /** Whether `state` is what `asked` names, as its address would write it. */
   function sameChoices(state: HoodState, asked: HoodChoices): boolean {
-    const written = hoodRoute(state).hood ?? null;
-    return JSON.stringify(written) === JSON.stringify({ expanded: asked.expanded, hidden: asked.hidden, edges: asked.edges, limit: asked.limit });
+    return JSON.stringify(hoodRoute(state).hood ?? null) === JSON.stringify({ expanded: asked.expanded, edges: asked.edges });
   }
 
   // Each state the person's choices make goes to the page, for its address (G-8).
@@ -172,991 +137,503 @@
     };
   });
 
-  /**
-   * The neighbourhood drawn: the last one loaded for the thing at the centre, kept while a new
-   * choice loads (the picture says it is busy), else none yet.
-   */
+  /** The neighbourhood drawn: the last one loaded for the thing at the centre, kept while a new choice loads. */
   const shown = $derived(hood !== null && choices !== null && hood.state.centre === choices.centre ? hood : null);
   const busy = $derived(shown === null || JSON.stringify(shown.state) !== JSON.stringify(choices));
-  const layout = $derived(
-    shown === null ? null : layoutHood(shown.centre, shown.expanded, { hidden: new Set(shown.state.hidden), shows: (e) => shows(shown.state, e) }),
-  );
-  const box = $derived(layout === null ? null : viewBoxOf(layout));
-  const at = $derived(new Map((layout?.things ?? []).map((t) => [t.id, t])));
-  const notes = $derived(shown === null || layout === null ? [] : partNotes(shown, layout));
+
+  /** Things the person dragged round a centre, where they were dropped: they stay there. */
+  let pins = $state<{ centre: string; at: ReadonlyMap<string, Point> } | null>(null);
+  /** Where everything was last drawn, and round which centre: a new picture of it stays near there. */
+  let last: { centre: string; places: Map<string, Point> } | null = null;
+  /** Bumped by "Tidy layout", so the picture settles again from nothing. */
+  let tidied = $state(0);
+  /** True while a thing is dragged: the picture settles in fewer ticks, to keep up with the pointer. */
+  let dragging = $state(false);
+  const DRAG_TICKS = 20;
+
+  const layout = $derived.by(() => {
+    void tidied;
+    if (shown === null) return null;
+    const id = shown.centre.centre.id;
+    const start = layoutHood(shown.centre, shown.expanded, { shows: (e) => shows(shown.state, e) });
+    const before = untrack(() => last);
+    const pinned = pins?.centre === id ? { pinned: pins.at } : {};
+    const settled = settleHood(start, before?.centre === id ? { previous: before.places, ...pinned, ...(dragging ? { ticks: DRAG_TICKS } : {}) } : pinned);
+    last = { centre: id, places: placesOf(settled) };
+    return settled;
+  });
+
+  /** The stage's size, and how the picture sits on it. */
+  let width = $state(0);
+  let height = $state(0);
+  let view = $state.raw<View | null>(null);
+  /** What the view was last fitted to: a new centre or a new size fits it again. */
+  let fitted: { centre: string; width: number; height: number } | null = null;
+
+  // The picture fits the stage when it is first drawn, when the stage changes size, and when a
+  // new choice puts a thing off the stage; otherwise it stays as the person left it.
+  $effect(() => {
+    const l = layout;
+    const stage = { width, height };
+    if (l === null || width === 0 || height === 0) return;
+    untrack(() => {
+      if (dragging) return;
+      const id = l.things[0]!.id;
+      const same = fitted !== null && fitted.centre === id && fitted.width === width && fitted.height === height;
+      if (view !== null && same && allOnStage(l.things, view, stage)) return;
+      view = fitView(l.things, stage);
+      fitted = { centre: id, ...stage };
+    });
+  });
+
+  function fit(): void {
+    if (layout !== null && width > 0 && height > 0) view = fitView(layout.things, { width, height });
+  }
+
+  function tidy(): void {
+    pins = null;
+    last = null;
+    fitted = null;
+    tidied++;
+  }
+
+  const radius = (t: PlacedThing) => (t.parent === null ? R_CENTRE : R_THING);
+  /** Each thing drawn, with where the view puts it. */
+  const things = $derived(view === null || layout === null ? [] : layout.things.map((t) => ({ t, r: radius(t), ...onStage(view!, t) })));
+  const at = $derived(new Map(things.map((p) => [p.t.id, p])));
+  const folded = $derived(shown === null || layout === null ? new Map<string, number>() : foldedLinks(shown, layout));
+  /** Every thing loaded, by id, with its link counts. */
+  const loaded = $derived(new Map<string, Loaded>((shown === null ? [] : [shown.centre, ...shown.expanded, ...shown.leaves]).map((l) => [l.centre.id, l])));
+
+  /** True when thing `id` is drawn: the page selects only what the graph shows. */
+  export function has(id: string): boolean {
+    return at.has(id);
+  }
 
   const typeLabel = (type: string | null) => (type === null ? "type not known" : shape.typeLabel(type));
-  /** An edge type's name as the view file gives it, for a group of `owner`'s. */
-  const edgeName = (ownerType: string | null, edge: string) => (ownerType === null ? null : shape.edgeLabel(ownerType, edge)) ?? edge;
   const nameOf = (t: { id: string; label: string | null }) => t.label ?? t.id;
-  const radius = (t: PlacedThing) => (t.parent === null ? R_CENTRE : R_THING);
-  const ownerType = (g: { owner: string }) => at.get(g.owner)?.type ?? null;
-  const groupName = (g: PlacedGroup) => groupText(edgeName(ownerType(g), g.edge), g.direction, g.count);
-  const groupKey = (g: { edge: string; direction: string }) => `${g.edge} ${g.direction}`;
-
-  /** The groups a neighbour is drawn in: those whose links join it to the thing it hangs from, in the picture's order. */
-  const groupsOf = $derived.by(() => {
-    const out = new Map<string, PlacedGroup[]>();
-    for (const t of layout?.things ?? []) {
-      if (t.parent === null) continue;
-      const mine: PlacedGroup[] = [];
-      for (const l of layout!.links) {
-        if (!((l.from === t.parent && l.to === t.id) || (l.to === t.parent && l.from === t.id))) continue;
-        const direction = l.from === t.parent ? "out" : "in";
-        const g = layout!.groups.find((x) => x.owner === t.parent && x.edge === l.edge && x.direction === direction);
-        if (g !== undefined && !mine.includes(g)) mine.push(g);
-      }
-      out.set(t.id, mine);
-    }
-    return out;
-  });
-
-  /** A thing's name for a screen reader: its name, its type, and where it is in the picture. */
-  function spoken(t: PlacedThing): string {
-    const base = `${nameOf(t)} (${typeLabel(t.type)})`;
-    if (t.parent === null) return `${base}, at the centre`;
-    const groups = groupsOf.get(t.id) ?? [];
-    return groups.length === 0 ? base : `${base}, in ${groups.map(groupName).join(" and ")}`;
+  /** An edge type as a reader says it, as the view file names it for `type`; links reaching the thing start with "←". */
+  function edgeName(type: string | null, edge: string, direction: "out" | "in" = "out"): string {
+    const words = (type === null ? null : shape.edgeLabel(type, edge)) ?? edge.replaceAll("_", " ");
+    return direction === "in" ? `← ${words}` : words;
   }
 
-  /** Each group's name on a box: kept clear of by the things' names. */
-  const GROUP_HIGH = 16;
-  const groupBoxes = $derived(
-    (layout?.groups ?? []).map((g) => {
-      const width = columns(groupName(g)) * COLUMN + 6;
-      return { x: g.labelAt.x - width / 2, y: g.labelAt.y - GROUP_HIGH / 2, width, height: GROUP_HIGH };
-    }),
-  );
-
-  /** Each thing's name beside its shard, or null when there is no clear place for it. */
-  const names = $derived.by(() => {
-    if (layout === null) return [];
-    const shards: Rect[] = layout.things.map((t) => ({ x: t.x - radius(t), y: t.y - radius(t), width: 2 * radius(t), height: 2 * radius(t) }));
-    for (const g of layout.groups) if (g.bundle) shards.push({ x: g.bundle.x - R_BUNDLE, y: g.bundle.y - R_BUNDLE, width: 2 * R_BUNDLE, height: 2 * R_BUNDLE });
-    const bundles = layout.groups.filter((g) => g.bundle !== null);
-    return placeThingNames(
-      [
-        ...layout.things.map((t) => ({ x: t.x, y: t.y, r: radius(t), text: nameOf(t) })),
-        ...bundles.map((g) => ({ x: g.bundle!.x + 3, y: g.bundle!.y - 3, r: R_BUNDLE + 3, text: `${number(g.bundle!.count)} more ${noun(g.bundle!.count, "link", "links")}` })),
-      ],
-      [...shards, ...groupBoxes],
-    );
-  });
-
-  /** A link's line, from the edge of one shard to the edge of the other. */
-  function line(from: PlacedThing, to: PlacedThing): string {
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const d = Math.max(1e-9, Math.hypot(dx, dy));
-    const a = radius(from) + 2;
-    const b = radius(to) + 7;
-    const r = (n: number) => Math.round(n * 100) / 100;
-    return `M${r(from.x + (dx * a) / d)},${r(from.y + (dy * a) / d)} L${r(to.x - (dx * b) / d)},${r(to.y - (dy * b) / d)}`;
-  }
-
-  /** A thing's link to itself: a loop out of its top right and back in at its right. */
-  function loop(t: PlacedThing): string {
-    const r = radius(t);
-    return `M${t.x + r * 0.5},${t.y - r * 0.87} Q${t.x + r * 2.6},${t.y - r * 2.2} ${t.x + r + 5},${t.y}`;
-  }
-
-  /** A bundle's link: from its owner to it. */
-  function toBundle(g: PlacedGroup): string {
-    const owner = at.get(g.owner)!;
-    return line(owner, { ...owner, id: "", x: g.bundle!.x, y: g.bundle!.y, parent: owner.id });
-  }
-
-  type Selection =
-    | { kind: "thing"; id: string }
-    | { kind: "bundle"; owner: string; edge: string; direction: "out" | "in" }
-    | ({ kind: "link" } & LinkRef);
-  let selected = $state<Selection | null>(
-    untrack(() => (firstLink !== undefined ? { kind: "link", ...firstLink } : first === undefined ? null : { kind: "thing", id: first })),
-  );
-
-  /** Where things and links come from (G-6): cards and rows read once, kept for the session. */
-  const read = $derived(given ?? sourcesFor(file, shape));
-  /** Bumped when a card or a link's rows arrive, so what was read is shown. */
-  let arrived = $state(0);
-  $effect(() => {
-    const s = selected;
-    const k = read;
-    // Read what is not read yet, or what the kit could not give last time.
-    if (s?.kind === "thing") {
-      const c = k.cardNow(s.id);
-      if (c === null || "message" in c) void k.card(s.id).then(() => arrived++);
-    }
-    if (s?.kind === "link") {
-      const rows = k.linkNow(s);
-      if (rows === null || rows.error !== undefined) void k.link(s).then(() => arrived++);
-    }
-  });
-  /**
-   * The lines drawn: one per start, edge type and end. Links of one type between the same two
-   * things (told apart by their qualifiers) share a line, and selecting it shows the rows of each.
-   */
+  /** The lines drawn: one per start, edge type and end. */
   const lines = $derived.by(() => {
     const seen = new Set<string>();
     return (layout?.links ?? []).filter((l) => !seen.has(linkKey(l)) && seen.add(linkKey(l)) !== undefined);
   });
-  const selectedCard = $derived.by(() => {
-    void arrived;
-    return selected?.kind === "thing" ? read.cardNow(selected.id) : null;
-  });
-  /** The link selected, if it is drawn. */
-  const selectedLinkDrawn = $derived.by(() => {
-    const s = selected;
-    return s?.kind === "link" ? (lines.find((l) => linkKey(l) === linkKey(s)) ?? null) : null;
-  });
-  const selectedRows = $derived.by(() => {
-    void arrived;
-    return selectedLinkDrawn === null ? null : read.linkNow(selectedLinkDrawn);
-  });
-  const isLink = (l: LinkRef) => selected?.kind === "link" && linkKey(selected) === linkKey(l);
-  /** A link in words: its start, its edge type as the view file names it, and its end. */
-  function linkText(l: LinkRef): string {
-    const from = at.get(l.from);
-    const to = at.get(l.to);
-    return `${from ? nameOf(from) : l.from} ${edgeName(from?.type ?? null, l.edge)} ${to ? nameOf(to) : l.to}`;
-  }
-  /** The links drawn to or from thing `id`, in the picture's order. */
-  const linksOf = (id: string) => lines.filter((l) => l.from === id || l.to === id);
 
-  let linkTitle = $state<HTMLElement | null>(null);
-  /** A link chosen from the panel's list: the panel now shows it, and takes the focus (G-11). */
-  function chooseLink(l: LinkRef): void {
-    select({ kind: "link", from: l.from, edge: l.edge, to: l.to });
-    void tick().then(() => linkTitle?.focus());
-  }
-
-  /** The bundle opened, as it loads. */
-  let opened = $state<{ key: string; bundle: Bundle | null; failed: string | null } | null>(null);
-
-  function select(next: Selection): void {
-    selected = next;
-    if (next.kind !== "bundle") return;
-    const key = `${next.owner} ${next.edge} ${next.direction}`;
-    if (!mustOpen(opened, key)) return;
-    const owner: Thing = at.get(next.owner) ?? { id: next.owner, label: null, type: null };
-    opened = { key, bundle: null, failed: null };
-    openBundle(file, { id: owner.id, label: owner.label, type: owner.type }, next.edge, next.direction)
-      .then((bundle) => opened?.key === key && (opened = { key, bundle, failed: null }))
-      .catch((e: unknown) => opened?.key === key && (opened = { key, bundle: null, failed: e instanceof Error ? e.message : String(e) }));
-  }
-
-  /** A new limit draws a new picture: what was selected in the old one is let go. */
-  function choose(n: Limit): void {
-    if (choices === null || n === choices.limit) return;
-    choices = withLimit(choices, n);
-    selected = null;
-    opened = null;
-  }
-
-  /** Make a choice (G-5). */
-  function act(next: (state: HoodState) => HoodState): void {
-    if (choices !== null) choices = next(choices);
-  }
-
-  /** Where the keyboard's focus goes after a choice that removes the control it was on (G-11). */
-  let hiddenLine = $state<HTMLElement | null>(null);
-  let actions = $state<HTMLElement | null>(null);
-  /** A thing shown again: its actions take the focus once it is drawn. */
-  let focusActionsOf = $state<string | null>(null);
-
-  function hideThing(id: string): void {
-    act((s) => hide(s, id));
-    selected = null;
-    // Its "show again" button takes the focus, so the choice can be undone at once.
-    void tick().then(() => [...(hiddenLine?.querySelectorAll<HTMLElement>("[data-unhide]") ?? [])].find((b) => b.dataset.unhide === id)?.focus());
-  }
-
-  function unhideThing(id: string): void {
-    const rest = (choices?.hidden ?? []).filter((h) => h !== id);
-    act((s) => unhide(s, id));
-    if (rest.length > 0) {
-      const next = rest[Math.min((choices?.hidden ?? []).indexOf(id), rest.length - 1)] ?? rest[0]!;
-      void tick().then(() => [...(hiddenLine?.querySelectorAll<HTMLElement>("[data-unhide]") ?? [])].find((b) => b.dataset.unhide === next)?.focus());
-    } else {
-      selected = { kind: "thing", id };
-      focusActionsOf = id;
-    }
-  }
-
-  $effect(() => {
-    const id = focusActionsOf;
-    if (id === null || selectedThing?.id !== id || actions === null) return;
-    focusActionsOf = null;
-    actions.querySelector<HTMLElement>("[data-action]")?.focus();
-  });
-
-  function setEdge(edge: string, on: boolean): void {
-    act((s) => showEdge(s, file.edgeTypes.map((e) => e.name), edge, on));
-    if (!on && selected?.kind === "bundle" && selected.edge === edge) {
-      selected = null;
-      opened = null;
-    }
-  }
-
-  /**
-   * An edge type's name in the list of edge types: as the view file names it for the thing at the
-   * centre's type, else for the type the edge type leaves. Groups around an expanded thing of
-   * another type use that thing's type, so a view file naming one edge type differently per type
-   * names it there as that type does.
-   */
-  const edgeTypeName = (edge: string) => edgeName(shown?.centre.centre.type ?? null, edge);
-
-  /** Every thing the neighbourhood has loaded, by id: the centre, the expanded and their neighbours. */
-  const known = $derived.by(() => {
-    const out = new Map<string, Thing>();
-    for (const loaded of shown === null ? [] : [shown.centre, ...shown.expanded]) {
-      out.set(loaded.centre.id, loaded.centre);
-      for (const g of loaded.groups) for (const t of g.shown) if (!out.has(t.id)) out.set(t.id, t);
+  /** One name per group of lines: beside the middle line of the group, half way along it. */
+  const groupNames = $derived.by(() => {
+    const out: { key: string; text: string; x: number; y: number; anchor: "start" | "middle" | "end" }[] = [];
+    // A line belongs to the first group that draws it: the line an unfolded thing hangs by is its owner's.
+    const named = new Set<string>();
+    for (const g of layout?.groups ?? []) {
+      const owner = at.get(g.owner);
+      const mine = lines.filter((l) => l.edge === g.edge && l.from !== l.to && (g.direction === "out" ? l.from === g.owner : l.to === g.owner) && !named.has(linkKey(l)));
+      for (const l of mine) named.add(linkKey(l));
+      const ends = mine.map((l) => at.get(g.direction === "out" ? l.to : l.from));
+      const end = ends[Math.floor((ends.length - 1) / 2)];
+      if (owner === undefined || end === undefined) continue;
+      const d = Math.max(1e-9, Math.hypot(end.x - owner.x, end.y - owner.y));
+      // Beside the line, on its right going out and reading away from it, and every other name
+      // nearer the owner, so the names of two lines side by side do not meet.
+      const along = out.length % 2 === 0 ? 0.62 : 0.46;
+      const side = { x: -(end.y - owner.y) / d, y: (end.x - owner.x) / d };
+      out.push({
+        key: groupKey(g),
+        text: edgeName(owner.t.type, g.edge, g.direction),
+        x: owner.x + (end.x - owner.x) * along + side.x * 8,
+        y: owner.y + (end.y - owner.y) * along + side.y * 12 + 4,
+        anchor: side.x > 0.3 ? "start" : side.x < -0.3 ? "end" : "middle",
+      });
     }
     return out;
   });
-  /** Expanded as the person chose, before the picture has caught up. */
-  const isExpanded = (id: string) => choices?.expanded.includes(id) ?? false;
+  const groupKey = (g: PlacedGroup) => `${g.owner} ${g.edge} ${g.direction}`;
 
-  function key(event: KeyboardEvent, next: Selection): void {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      select(next);
-    }
+  /** A shard's corners round (`x`, `y`). */
+  const shard = (x: number, y: number, r: number) => CORNERS.map(([cx, cy]) => `${Math.round((x - r + 2 * r * cx) * 10) / 10},${Math.round((y - r + 2 * r * cy) * 10) / 10}`).join(" ");
+  /** A thing's link to itself: a loop out of its top right and back in at its right. */
+  const loop = (p: { x: number; y: number; r: number }) => `M${p.x + p.r * 0.5},${p.y - p.r * 0.87} Q${p.x + p.r * 2.6},${p.y - p.r * 2.2} ${p.x + p.r},${p.y}`;
+
+  /** The thing pointed at, and the thing the keyboard's focus is on. */
+  let pointed = $state<string | null>(null);
+  let focused = $state<string | null>(null);
+  let tipHigh = $state(0);
+  /** The thing whose summary shows, and where: on the stage and off the thing. */
+  const tip = $derived.by(() => {
+    const p = dragging ? undefined : at.get(pointed ?? focused ?? "");
+    if (p === undefined) return null;
+    const l = loaded.get(p.t.id);
+    const facts = [...(l?.groups ?? [])]
+      .filter((g) => g.count > 0 && (shown === null || shows(shown.state, g.edge)))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 2)
+      .map((g) => `${edgeName(p.t.type, g.edge, g.direction)} · ${number(g.count)}`);
+    const n = folded.get(p.t.id) ?? 0;
+    const more = choices !== null && canExpand(choices, p.t.id);
+    const how =
+      n === 0
+        ? "select to read"
+        : `${number(n)} ${noun(n, "link", "links")} folded · ${more ? (selected === p.t.id ? "select again to unfold" : "select to read, select again to unfold") : "open its table for the rest"}`;
+    // Its name, under the shard, is part of the thing: the summary keeps off it too.
+    const name = { wide: Math.min(nameOf(p.t).length, NAME) * 3.5 + 4, low: p.r + 22 };
+    return { p, facts, how, ...tipPlace({ ...p, ...name }, { width: TIP_WIDE, height: tipHigh || 120 }, { width, height }) };
+  });
+
+  /** Select a thing; selected already, unfold it (again). */
+  function activate(id: string): void {
+    if (selected !== id) onselect?.(id);
+    else if (choices !== null && (folded.get(id) ?? 0) > 0) choices = expand(choices, id);
   }
 
-  const isThing = (id: string) => selected?.kind === "thing" && selected.id === id;
-  const isBundle = (g: PlacedGroup) => selected?.kind === "bundle" && selected.owner === g.owner && selected.edge === g.edge && selected.direction === g.direction;
-  const selectedThing = $derived(selected?.kind === "thing" ? (at.get(selected.id) ?? null) : null);
+  function setEdge(edge: string, on: boolean): void {
+    if (choices !== null) choices = showEdge(choices, file.edgeTypes.map((e) => e.name), edge, on);
+  }
 
-  /** For the list (G-11): each thing whose neighbourhood is open, the centre first, with its groups and their things. */
-  const listOwners = $derived(
-    shown === null || layout === null
-      ? []
-      : [shown.centre, ...shown.expanded]
-          .filter((loaded) => at.has(loaded.centre.id))
-          .map((loaded) => ({
-            owner: loaded.centre,
-            groups: layout.groups
-              .filter((g) => g.owner === loaded.centre.id)
-              .map((g) => ({
-                g,
-                things: once(loaded.groups.find((x) => x.edge === g.edge && x.direction === g.direction)?.shown ?? []).filter((t) => !shown.state.hidden.includes(t.id)),
-              })),
-          })),
-  );
+  let svg = $state<SVGSVGElement | null>(null);
+  /** The thing being dragged, or the stage itself (`id` null), and where the pointer took it. */
+  let drag: { id: string | null; pointer: number; x: number; y: number; from: View; moved: boolean } | null = null;
+  /** Set when a drag ends, so the click it ends with does not also select. */
+  let dropped = false;
+  /** A pointer that moves less than this has clicked, not dragged. */
+  const SLACK = 4;
+
+  function grab(e: PointerEvent, id: string | null): void {
+    dropped = false;
+    if (e.button !== 0 || view === null) return;
+    if (id === null && e.target !== e.currentTarget) return;
+    drag = { id, pointer: e.pointerId, x: e.clientX, y: e.clientY, from: view, moved: false };
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  }
+
+  function pull(e: PointerEvent): void {
+    if (drag === null || e.pointerId !== drag.pointer || view === null || svg === null) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < SLACK) return;
+    drag.moved = true;
+    if (drag.id === null) {
+      view = { k: drag.from.k, x: drag.from.x + e.clientX - drag.x, y: drag.from.y + e.clientY - drag.y };
+      return;
+    }
+    const id = shown?.centre.centre.id;
+    if (id === undefined) return;
+    const box = svg.getBoundingClientRect();
+    const p = { x: Math.round(((e.clientX - box.left - view.x) / view.k) * 100) / 100, y: Math.round(((e.clientY - box.top - view.y) / view.k) * 100) / 100 };
+    dragging = true;
+    pins = { centre: id, at: new Map(pins?.centre === id ? pins.at : []).set(drag.id, p) };
+  }
+
+  function drop(e: PointerEvent): void {
+    if (drag === null || e.pointerId !== drag.pointer) return;
+    dropped = drag.moved && drag.id !== null;
+    drag = null;
+    dragging = false;
+  }
+
+  function click(id: string): void {
+    if (dropped) dropped = false;
+    else activate(id);
+  }
+
+  function key(e: KeyboardEvent, id: string): void {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    activate(id);
+  }
+
+  /** The wheel makes the picture larger or smaller round the pointer. */
+  function zoom(e: WheelEvent): void {
+    if (view === null || svg === null) return;
+    e.preventDefault();
+    const box = svg.getBoundingClientRect();
+    const k = Math.max(0.2, Math.min(2, view.k * Math.exp(-e.deltaY * 0.0015)));
+    const [x, y] = [e.clientX - box.left, e.clientY - box.top];
+    view = { k, x: x - ((x - view.x) / view.k) * k, y: y - ((y - view.y) / view.k) * k };
+  }
 </script>
 
 <div class="hood">
-  <div class="canvas">
-    {#if centre === null}
-      <p class="empty body-screen">Open a thing first: search for it, or pick a row of a table.</p>
-    {:else}
-      <div class="controls">
-        <span class="caption">Per group, show</span>
-        <div class="limits" role="group" aria-label="Neighbours shown per group">
-          {#each LIMITS as n (n)}
-            <button type="button" class="limit body-screen" class:on={n === limit} data-limit={n} aria-pressed={n === limit} onclick={() => choose(n)}>{n}</button>
-          {/each}
-        </div>
-        {#if shown !== null && choices !== null}
-          {@const offered = shown.counts}
-          <details class="edges">
-            <summary class="body-screen">Edge types shown: {number(offered.filter((c) => shows(choices!, c.edge)).length)} of {number(offered.length)}</summary>
-            <fieldset class="edge-list">
-              <legend class="caption">Each with its links among the things drawn, each link counted once</legend>
-              {#each offered as c (c.edge)}
-                <label class="edge-choice body-screen">
-                  <input type="checkbox" data-edge-type={c.edge} checked={shows(choices, c.edge)} onchange={(e) => setEdge(c.edge, e.currentTarget.checked)} />
-                  <span>{edgeTypeName(c.edge)} · {c.atLeast ? `at least ${number(c.count)}` : number(c.count)}</span>
-                </label>
-              {/each}
-              {#if offered.some((c) => c.atLeast)}
-                <p class="caption muted">
-                  “At least”: the kit lists 20 of a thing's links at a time, so the links between two things that both have more
-                  than that cannot always be told apart.
-                </p>
-              {/if}
-            </fieldset>
-          </details>
-        {/if}
-      </div>
-      {#if choices !== null && choices.hidden.length > 0}
-        <p class="hidden-line caption" bind:this={hiddenLine}>
-          Hidden: {number(choices.hidden.length)}
-          {#each choices.hidden as id (id)}
-            {@const t = known.get(id)}
-            <button type="button" class="unhide body-screen" data-unhide={id} aria-label="Show {t ? nameOf(t) : id} again" onclick={() => unhideThing(id)}>{t ? nameOf(t) : id}</button>
-          {/each}
-        </p>
+  <div class="bar">
+    <div class="links" role="group" aria-label="Show links">
+      <span class="heading section-label" aria-hidden="true">Show links</span>
+      {#if shown !== null && choices !== null}
+        {#each edgeChoices(shown) as edge (edge)}
+          <Chip pressed={shows(choices, edge)} onclick={() => setEdge(edge, !shows(choices!, edge))}>{edgeName(shown.centre.centre.type, edge)}</Chip>
+        {/each}
       {/if}
-      {#if failed !== null}
-        <p class="banner body-screen" role="alert">Could not load the neighbourhood: {failed}</p>
-      {:else if shown === null || layout === null || box === null}
-        <p class="empty body-screen" role="status">Loading the neighbourhood…</p>
-      {:else}
-        {@const c = shown.centre}
-        <p class="intro caption">{summary(c)}</p>
-        {#each unapplied as note (note)}
-          <p class="note caption" role="status" data-unapplied>{note}</p>
-        {/each}
-        {#each notes as note (note)}
-          <p class="note caption" role="status">{note}</p>
-        {/each}
-        <svg class="picture" viewBox="{box.x} {box.y} {box.width} {box.height}" role="group" aria-busy={busy} aria-label="Neighbourhood of {nameOf(c.centre)}">
-          <defs>
-            <marker id="hood-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-              <path class="head" d="M0,0 L10,5 L0,10 z" />
-            </marker>
-          </defs>
-          {#each lines as l (linkKey(l))}
-            {@const from = at.get(l.from)}
-            {@const to = at.get(l.to)}
-            {#if from && to}
-              {@const d = l.from === l.to ? loop(from) : line(from, to)}
-              <path class="link" class:selected={isLink(l)} {d} marker-end="url(#hood-arrow)" />
-              <!-- A wider line the pointer can take, to select the link; the keyboard selects it from a thing's links. -->
-              <path
-                class="hit"
-                class:selected={isLink(l)}
-                data-link={linkKey(l)}
-                {d}
-                aria-hidden="true"
-                onclick={() => select({ kind: "link", from: l.from, edge: l.edge, to: l.to })}
-              />
+    </div>
+    <Button onclick={fit}>Fit to view</Button>
+    <Button onclick={tidy}>Tidy layout</Button>
+  </div>
+  {#each unapplied as note (note)}
+    <p class="note caption" role="status" data-unapplied>{note}</p>
+  {/each}
+  {#each shown?.failed ?? [] as f (f.id)}
+    <p class="note caption" role="status">Could not unfold {f.id}: {f.message}</p>
+  {/each}
+  <div class="stage" bind:clientWidth={width} bind:clientHeight={height}>
+    {#if failed !== null}
+      <p class="banner body-app" role="alert">Could not load the graph: {failed}</p>
+    {:else if shown === null || view === null}
+      <p class="note caption" role="status">Loading the graph…</p>
+    {:else}
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <svg
+        class="picture"
+        {width}
+        {height}
+        role="group"
+        aria-busy={busy}
+        aria-label="Graph round {nameOf(shown.centre.centre)}"
+        bind:this={svg}
+        onpointerdown={(e) => grab(e, null)}
+        onpointermove={pull}
+        onpointerup={drop}
+        onpointercancel={drop}
+        onwheel={zoom}
+      >
+        {#each lines as l (linkKey(l))}
+          {@const from = at.get(l.from)}
+          {@const to = at.get(l.to)}
+          {#if from && to}
+            {@const lit = pointed !== null && (l.from === pointed || l.to === pointed)}
+            {#if l.from === l.to}
+              <path class="link" class:lit data-link={linkKey(l)} d={loop(from)} />
+            {:else}
+              <line class="link" class:lit data-link={linkKey(l)} x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
             {/if}
-          {/each}
-          {#each layout.groups as g (g.owner + " " + groupKey(g))}
-            {#if g.bundle}
-              <path class="link folded" d={toBundle(g)} />
+          {/if}
+        {/each}
+        {#each groupNames as g (g.key)}
+          <text class="group-name caption" data-group={g.key} x={g.x} y={g.y} text-anchor={g.anchor} aria-hidden="true">{g.text}</text>
+        {/each}
+        {#each things as { t, x, y, r } (t.id)}
+          {@const n = folded.get(t.id) ?? 0}
+          {@const badge = `+${number(n)}`}
+          <g
+            class="thing"
+            class:selected={selected === t.id}
+            role="button"
+            tabindex="0"
+            data-centre={t.parent === null ? t.id : undefined}
+            data-thing={t.parent === null ? undefined : t.id}
+            aria-pressed={selected === t.id}
+            aria-label="{nameOf(t)} ({typeLabel(t.type)}){n > 0 ? `, ${number(n)} ${noun(n, 'link', 'links')} folded` : ''}"
+            aria-describedby={tip?.p.t.id === t.id ? `${uid}-tip` : undefined}
+            onclick={() => click(t.id)}
+            onkeydown={(e) => key(e, t.id)}
+            onpointerdown={(e) => grab(e, t.id)}
+            onpointermove={pull}
+            onpointerup={drop}
+            onpointercancel={drop}
+            onpointerenter={() => (pointed = t.id)}
+            onpointerleave={() => pointed === t.id && (pointed = null)}
+            onfocus={(e) => (focused = e.currentTarget.matches(":focus-visible") ? t.id : null)}
+            onblur={() => focused === t.id && (focused = null)}
+          >
+            {#if selected === t.id}
+              <circle class="ring" cx={x} cy={y} r={r + 9} />
             {/if}
-          {/each}
-          {#each layout.groups as g, i (g.owner + " " + groupKey(g))}
-            {@const b = groupBoxes[i]!}
-            <g class="group-name" data-owner={g.owner} data-group={groupKey(g)} aria-hidden="true">
-              <rect class="name-back" x={b.x} y={b.y} width={b.width} height={b.height} />
-              <text class="group-label caption" x={g.labelAt.x} y={g.labelAt.y + 4} text-anchor="middle">{groupName(g)}</text>
-            </g>
-          {/each}
-          {#each layout.things as t, i (t.id)}
-            {@const r = radius(t)}
-            {@const placed = names[i]}
-            <g
-              class="thing"
-              class:centre={t.parent === null}
-              class:expanded={isExpanded(t.id)}
-              class:selected={isThing(t.id)}
-              role="button"
-              tabindex="0"
-              data-centre={t.parent === null ? t.id : undefined}
-              data-thing={t.parent === null ? undefined : t.id}
-              data-expanded={isExpanded(t.id) ? t.id : undefined}
-              aria-pressed={isThing(t.id)}
-              aria-label={spoken(t)}
-              onclick={() => select({ kind: "thing", id: t.id })}
-              onkeydown={(e) => key(e, { kind: "thing", id: t.id })}
-            >
-              <polygon class="shard" points={svgPoints(shardPoints(t.id, t.x, t.y, r))} />
-              {#if placed === null}
-                <!-- No clear place for its name: it shows while the thing has the focus or is selected. -->
-                <g class="late-name" aria-hidden="true">
-                  <rect class="name-back" x={t.x - 70} y={t.y + r + 4} width="140" height="16" />
-                  <text class="thing-label caption" x={t.x} y={t.y + r + 16} text-anchor="middle">{nameOf(t)}</text>
-                </g>
-              {/if}
-            </g>
-          {/each}
-          {#each layout.groups as g (g.owner + " " + groupKey(g))}
-            {#if g.bundle}
-              {@const name = `${g.direction === "in" ? "← " : ""}${edgeName(ownerType(g), g.edge)}`}
-              <g
-                class="bundle"
-                class:selected={isBundle(g)}
-                role="button"
-                tabindex="0"
-                data-bundle={groupKey(g)}
-                data-more={g.bundle.count}
-                aria-pressed={isBundle(g)}
-                aria-label="{name}: {number(g.bundle.count)} more {noun(g.bundle.count, 'link', 'links')}, not drawn. Open the bundle to list {g.bundle.count === 1 ? 'it' : 'them'}"
-                onclick={() => select({ kind: "bundle", owner: g.owner, edge: g.edge, direction: g.direction })}
-                onkeydown={(e) => key(e, { kind: "bundle", owner: g.owner, edge: g.edge, direction: g.direction })}
-              >
-                <polygon class="stack" points={svgPoints(shardPoints(`${g.owner} ${groupKey(g)} 2`, g.bundle.x + 6, g.bundle.y - 6, R_BUNDLE))} />
-                <polygon class="stack" points={svgPoints(shardPoints(`${g.owner} ${groupKey(g)} 1`, g.bundle.x + 3, g.bundle.y - 3, R_BUNDLE))} />
-                <polygon class="shard bundle-shard" points={svgPoints(shardPoints(`${g.owner} ${groupKey(g)}`, g.bundle.x, g.bundle.y, R_BUNDLE))} />
-                <text class="more panel-title" x={g.bundle.x} y={g.bundle.y + 5} text-anchor="middle">+</text>
+            <polygon class="shard" data-type-colour={t.type === null ? undefined : (colourOf(t.type) ?? undefined)} points={shard(x, y, r)} />
+            <text class="name caption" {x} y={y + r + 16} text-anchor="middle">{cutTo(nameOf(t), NAME)}</text>
+            {#if n > 0}
+              <g class="badge" data-folded={n} aria-hidden="true">
+                <rect x={x + 8} y={y - r - 7} width={12 + 7 * badge.length} height="16" rx="8" />
+                <text class="caption" x={x + 14 + 3.5 * badge.length} y={y - r + 5} text-anchor="middle">{badge}</text>
               </g>
             {/if}
-          {/each}
-          <g class="names" aria-hidden="true">
-            {#each names as n, i (i)}
-              {#if n !== null}
-                <rect class="name-back" x={n.back.x} y={n.back.y} width={n.back.width} height={n.back.height} />
-                <text class="thing-label caption" class:centre-label={i === 0} x={n.x} y={n.y} text-anchor="middle">{n.text}</text>
-              {/if}
-            {/each}
           </g>
-        </svg>
-        <p class="picture-note caption">
-          The thing at the centre, and round it its neighbours, one group per edge type and direction (← for links that
-          reach it). A stack marked + holds the neighbours a group does not draw, with how many.
-        </p>
-
-        <!-- Below 960px: the same contents as a list (G-11). -->
-        <div class="list">
-          <h3 class="section-label heading">At the centre</h3>
-          <button type="button" class="pick body-screen" class:selected={isThing(c.centre.id)} aria-pressed={isThing(c.centre.id)} onclick={() => select({ kind: "thing", id: c.centre.id })}>
-            <span>{nameOf(c.centre)}</span><span class="caption">{typeLabel(c.centre.type)}</span>
-          </button>
-          {#each listOwners as { owner, groups } (owner.id)}
-            {#if owner.id !== c.centre.id}
-              <h3 class="section-label heading around">Around {nameOf(owner)}</h3>
-            {/if}
-            {#each groups as { g, things } (groupKey(g))}
-              <h3 class="section-label heading group-heading">{groupName(g)}</h3>
-              <ul>
-                {#each things as t (t.id)}
-                  <li class="item">
-                    <a class="row body-screen" href={hrefFor(t.id)}>{nameOf(t)}</a>
-                    <button type="button" class="more-for caption" aria-label="More for {nameOf(t)}: expand, hide, re-centre" onclick={() => select({ kind: "thing", id: t.id })}>More</button>
-                  </li>
-                {/each}
-                {#if g.bundle}
-                  <li>
-                    <button type="button" class="pick body-screen" class:selected={isBundle(g)} aria-pressed={isBundle(g)} onclick={() => select({ kind: "bundle", owner: g.owner, edge: g.edge, direction: g.direction })}>
-                      <span>+{number(g.bundle.count)} more {noun(g.bundle.count, "link", "links")}</span><span class="caption">open the bundle</span>
-                    </button>
-                  </li>
-                {/if}
-              </ul>
-            {/each}
-          {/each}
-        </div>
-      {/if}
+        {/each}
+        {#if tip !== null}
+          <foreignObject class="tip-box" x={tip.x} y={tip.y} width={TIP_WIDE} height={tipHigh || 120}>
+            <div class="tip" role="tooltip" id="{uid}-tip" bind:offsetHeight={tipHigh}>
+              <span class="kind caption"><Shard type={tip.p.t.type} />{typeLabel(tip.p.t.type)}</span>
+              <strong class="label-app">{nameOf(tip.p.t)}</strong>
+              {#each tip.facts as fact (fact)}
+                <span class="caption">{fact}</span>
+              {/each}
+              <span class="how caption">{tip.how}</span>
+            </div>
+          </foreignObject>
+        {/if}
+      </svg>
     {/if}
   </div>
-
-  {#if centre !== null}
-    <aside class="panel" aria-label="Selection" aria-live="polite">
-      {#if selectedThing}
-        <h3 class="section-label heading">{selectedThing.parent === null ? "At the centre" : "Selected thing"}</h3>
-        <p class="panel-title name">{nameOf(selectedThing)}</p>
-        <p class="caption muted">{typeLabel(selectedThing.type)} · <span class="code">{selectedThing.id}</span></p>
-        {#if selectedThing.parent !== null}
-          {@const id = selectedThing.id}
-          {@const fullExpanded = !isExpanded(id) && (choices?.expanded.length ?? 0) >= MOST_EXPANDED}
-          {@const fullHidden = (choices?.hidden.length ?? 0) >= MOST_HIDDEN}
-          <div class="actions" bind:this={actions}>
-            <!-- One button that turns from Expand to Collapse, so the keyboard's focus stays on it. -->
-            <button
-              type="button"
-              class="action body-screen"
-              data-action={isExpanded(id) ? "collapse" : "expand"}
-              disabled={fullExpanded}
-              aria-describedby={fullExpanded ? "hood-most-expanded" : undefined}
-              onclick={() => act((s) => (isExpanded(id) ? collapse(s, id) : expand(s, id)))}>{isExpanded(id) ? "Collapse" : "Expand"}</button
-            >
-            <button
-              type="button"
-              class="action body-screen"
-              data-action="hide"
-              disabled={fullHidden}
-              aria-describedby={fullHidden ? "hood-most-hidden" : undefined}
-              onclick={() => hideThing(id)}>Hide</button
-            >
-          </div>
-          <!-- At the bound, the control that would go past it says why it is off. -->
-          {#if fullExpanded}
-            <!-- One neighbourhood view is on the page at a time, so these ids are its own. -->
-            <p class="caption muted" id="hood-most-expanded">At most {MOST_EXPANDED} expanded: collapse one to expand another.</p>
-          {/if}
-          {#if fullHidden}
-            <p class="caption muted" id="hood-most-hidden">At most {MOST_HIDDEN} hidden: show one again to hide another.</p>
-          {/if}
-          <a class="button step-title" href={hoodHref(id)}>Re-centre here</a>
-        {/if}
-        <a class="button step-title" href={hrefFor(selectedThing.id)}>Open its page</a>
-        <div class="sources">
-          {#if selectedCard === null}
-            <p class="empty body-screen" role="status">Reading its card…</p>
-          {:else if "message" in selectedCard}
-            <p class="banner body-screen" role="alert">Could not read its card: {selectedCard.message}</p>
-          {:else}
-            <EntityCard node={selectedCard.page.node} {shape} facts={selectedCard.facts} {hrefFor} />
-            <h3 class="section-label heading">Where it comes from</h3>
-            <CitationChip sections={[{ title: null, evidence: { rows: selectedCard.page.sources, total: selectedCard.page.sourcesTotal } }]} />
-          {/if}
-          {#if linksOf(selectedThing.id).length > 0}
-            <h3 class="section-label heading">Its links in the picture</h3>
-            <ul class="links">
-              {#each linksOf(selectedThing.id) as l (linkKey(l))}
-                <li>
-                  <button type="button" class="pick body-screen" data-select-link={linkKey(l)} onclick={() => chooseLink(l)}>{linkText(l)}</button>
-                </li>
-              {/each}
-            </ul>
-          {/if}
-        </div>
-      {:else if selectedLinkDrawn !== null}
-        {@const l = selectedLinkDrawn}
-        <h3 class="section-label heading">Link</h3>
-        <p class="panel-title name" tabindex="-1" bind:this={linkTitle}>{linkText(l)}</p>
-        <p class="caption muted">
-          From <a class="end" href={hrefFor(l.from)}>{at.get(l.from) ? nameOf(at.get(l.from)!) : l.from}</a>
-          to <a class="end" href={hrefFor(l.to)}>{at.get(l.to) ? nameOf(at.get(l.to)!) : l.to}</a>
-        </p>
-        <h3 class="section-label heading">Where it comes from</h3>
-        {#if selectedRows === null}
-          <p class="empty body-screen" role="status">Reading its source…</p>
-        {:else}
-          <CitationChip sections={[{ title: null, evidence: selectedRows }]} />
-        {/if}
-      {:else if selected?.kind === "bundle"}
-        <h3 class="section-label heading">Bundle</h3>
-        {#if opened?.failed}
-          <p class="banner body-screen" role="alert">Could not open the bundle: {opened.failed}</p>
-        {:else if opened?.bundle}
-          <BundleList
-            bundle={opened.bundle}
-            name={edgeName(opened.bundle.owner.type, opened.bundle.edge)}
-            {hrefFor}
-            {tableHref}
-          />
-        {:else}
-          <p class="empty body-screen" role="status">Opening the bundle…</p>
-        {/if}
-      {:else}
-        <p class="empty body-screen">
-          Select a thing or a bundle to see more. Each group is one edge type in one direction, with how many links it has. Select a
-          link's line to see where it comes from.
-        </p>
-      {/if}
-    </aside>
-  {/if}
+  <p class="hint caption">
+    Point at a thing for a summary. Select it to read it on the right; select it again to unfold its links. Drag anything to rearrange; a dragged thing
+    stays where you put it.
+  </p>
 </div>
 
 <style>
-  /* A name with no break in it wraps anywhere rather than pushing the page sideways (G-11). */
   .hood {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    overflow-wrap: anywhere;
-  }
-
-  .canvas {
-    min-inline-size: 0;
-    padding: 0 var(--space-4) var(--space-4);
-  }
-
-  .controls {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-    margin: var(--space-2) 0;
-    color: var(--ink-muted);
-  }
-
-  .limits {
-    display: inline-flex;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-  }
-
-  .limit {
-    min-inline-size: var(--space-6);
-    padding: var(--space-1) var(--space-2);
-    border: none;
-    background: none;
-    color: var(--ink);
-    font-family: var(--font-mono);
-    cursor: pointer;
-  }
-
-  .limit + .limit {
-    border-inline-start: 1px solid var(--border);
-  }
-
-  .limit.on {
-    background: var(--accent);
-    color: var(--surface);
-  }
-
-  .limit:first-child {
-    border-start-start-radius: var(--radius-md);
-    border-end-start-radius: var(--radius-md);
-  }
-
-  .limit:last-child {
-    border-start-end-radius: var(--radius-md);
-    border-end-end-radius: var(--radius-md);
-  }
-
-  .limit:focus-visible {
-    position: relative;
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  .edges summary {
-    cursor: pointer;
-    color: var(--ink);
-  }
-
-  .edges summary:focus-visible,
-  .edge-choice input:focus-visible,
-  .unhide:focus-visible,
-  .action:focus-visible,
-  .more-for:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  /* At the bound: the control is off, at the brand book's disabled look (§6, States). */
-  .action:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .action:disabled:hover {
-    background: var(--surface);
-  }
-
-  .edge-list {
-    display: grid;
-    gap: var(--space-1);
-    margin: var(--space-2) 0 0;
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-  }
-
-  .edge-choice {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--ink);
-    cursor: pointer;
-  }
-
-  .hidden-line {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-    margin: var(--space-2) 0;
-    color: var(--ink-muted);
-  }
-
-  .unhide,
-  .action,
-  .more-for {
-    min-block-size: var(--space-6);
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-md);
-    background: var(--surface);
-    color: var(--accent);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .unhide:hover,
-  .action:hover,
-  .more-for:hover {
-    background: var(--surface-tint);
-  }
-
-  .actions {
-    display: flex;
-    gap: var(--space-2);
-    margin: var(--space-2) 0;
-  }
-
-  .item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .item .row {
-    flex: 1;
-  }
-
-  .around {
-    margin-block-start: var(--space-6);
-  }
-
-  .expanded .shard {
-    stroke: var(--accent);
-    stroke-width: 3;
-  }
-
-  .intro,
-  .note {
-    margin: var(--space-2) 0;
-    color: var(--ink-muted);
-  }
-
-  .picture,
-  .picture-note {
-    display: none;
-  }
-
-  .picture {
-    inline-size: 100%;
-    block-size: auto;
-    max-block-size: 70vh;
-  }
-
-  .shard {
-    fill: var(--accent);
-    stroke: var(--surface);
-    stroke-width: 2;
-  }
-
-  /* The centre stands out from the page in both themes: the heading colour is dark on light, light on dark. */
-  .centre .shard {
-    fill: var(--heading);
-  }
-
-  /* A bundle: a stack of pale shards, its count on top, readable on both grounds. */
-  .stack,
-  .bundle-shard {
-    fill: var(--surface-tint);
-    stroke: var(--accent);
-    stroke-width: 1.5;
-  }
-
-  .thing:hover .shard {
-    fill: var(--shard-5);
-  }
-
-  .bundle:hover .bundle-shard {
-    fill: var(--surface);
-  }
-
-  .thing.selected .shard {
-    stroke: var(--heading);
-    stroke-width: 4;
-  }
-
-  .bundle.selected .bundle-shard {
-    stroke: var(--heading);
-    stroke-width: 3;
-  }
-
-  .thing,
-  .bundle {
-    cursor: pointer;
-  }
-
-  .thing:focus-visible,
-  .bundle:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  .link {
-    fill: none;
-    stroke: var(--ink-muted);
-    stroke-width: 1.5;
-  }
-
-  .folded {
-    stroke-dasharray: 4 4;
-  }
-
-  .link.selected {
-    stroke: var(--accent);
-    stroke-width: 3;
-  }
-
-  /* The line the pointer takes to select a link: wider than the one drawn, and not seen. */
-  .hit {
-    fill: none;
-    stroke: transparent;
-    stroke-width: 12;
-    pointer-events: stroke;
-    cursor: pointer;
-  }
-
-  .head {
-    fill: var(--ink-muted);
-  }
-
-  .name-back {
-    fill: var(--surface);
-  }
-
-  .group-label {
-    fill: var(--accent);
-    font-family: var(--font-mono);
-  }
-
-  .thing-label {
-    fill: var(--ink);
-  }
-
-  .centre-label {
-    fill: var(--heading);
-  }
-
-  .more {
-    fill: var(--heading);
-    pointer-events: none;
-  }
-
-  .late-name {
-    visibility: hidden;
-  }
-
-  .thing:focus-visible .late-name,
-  .thing.selected .late-name {
-    visibility: visible;
-  }
-
-  .list ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .heading {
-    margin: var(--space-4) 0 var(--space-1);
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-
-  .group-heading {
-    text-transform: none;
-    font-family: var(--font-mono);
-  }
-
-  .pick,
-  .row {
+    flex-direction: column;
+    gap: var(--space-3);
     box-sizing: border-box;
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-2);
-    inline-size: 100%;
-    padding: var(--space-2) var(--space-3);
-    border: none;
-    border-inline-start: 3px solid transparent;
-    background: none;
-    color: var(--ink);
-    text-align: start;
-    text-decoration: none;
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  /* A long name with no break in it wraps rather than pushing the page sideways. */
-  .pick > span,
-  .row {
     min-inline-size: 0;
-    overflow-wrap: anywhere;
+    min-block-size: 0;
+    padding: var(--space-4);
   }
 
-  .pick:hover,
-  .row:hover {
-    background: var(--surface-tint);
-  }
-
-  .pick:focus-visible,
-  .row:focus-visible,
-  .button:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  .pick.selected {
-    border-inline-start-color: var(--accent);
-    background: var(--surface-tint);
-    color: var(--accent);
-  }
-
-  .sources {
-    margin-block-start: var(--space-4);
+  .bar,
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
   }
 
   .links {
+    flex: 1;
+    min-inline-size: 0;
+  }
+
+  .heading {
+    margin-inline-end: var(--space-1);
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .note,
+  .hint {
     margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .end {
-    color: var(--accent);
-  }
-
-  .end:focus-visible,
-  .name:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-
-  .panel {
-    padding: 0 var(--space-4) var(--space-4);
-    border-block-start: 1px solid var(--border);
-  }
-
-  .name {
-    margin: var(--space-1) 0;
-    color: var(--heading);
-  }
-
-  .muted {
-    margin: var(--space-1) 0;
     color: var(--ink-muted);
   }
 
-  .code {
-    font-family: var(--font-mono);
-  }
-
-  .button {
-    display: inline-block;
-    margin-block: var(--space-2);
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-md);
-    background: var(--accent);
-    color: var(--surface);
-    text-decoration: none;
-  }
-
-  .button:hover {
-    background: var(--shard-3);
-  }
-
-  .empty {
-    margin: var(--space-4) 0;
-    color: var(--ink-muted);
+  .stage .note {
+    padding: var(--space-4);
   }
 
   .banner {
+    margin: var(--space-4);
     padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
     background: var(--majolica-tint);
     color: var(--majolica-text);
   }
 
-  /* From 960px: the picture, with the selection beside it. */
+  /* Below 960px the stage takes most of the window; from 960px, what the place leaves. */
+  .stage {
+    position: relative;
+    block-size: 70vh;
+    min-block-size: 320px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+  }
+
   @media (width >= 960px) {
-    .hood {
-      grid-template-columns: minmax(0, 1fr) 320px;
+    .stage {
+      flex: 1;
+      block-size: auto;
+      min-block-size: 0;
     }
+  }
 
-    .picture,
-    .picture-note {
-      display: block;
-    }
+  .picture {
+    position: absolute;
+    inset: 0;
+    display: block;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
 
-    .list {
-      display: none;
-    }
+  .link {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 2;
+    pointer-events: none;
+  }
 
-    .panel {
-      border-block-start: none;
-      border-inline-start: 1px solid var(--border);
-    }
+  .link.lit {
+    stroke: var(--accent);
+  }
+
+  .group-name,
+  .name {
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 4;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+
+  .group-name {
+    fill: var(--ink-muted);
+  }
+
+  .name {
+    fill: var(--ink);
+  }
+
+  .thing {
+    cursor: grab;
+    outline: none;
+  }
+
+  .shard {
+    fill: var(--type-colour);
+  }
+
+  .ring {
+    fill: none;
+    stroke: var(--heading);
+    stroke-width: 2;
+    stroke-dasharray: 5 4;
+  }
+
+  .thing:focus-visible .shard {
+    stroke: var(--focus-ring);
+    stroke-width: 3;
+    stroke-linejoin: round;
+  }
+
+  .badge rect {
+    fill: var(--heading);
+  }
+
+  .badge text {
+    fill: var(--surface);
+    font-family: var(--font-mono);
+    font-weight: bold;
+  }
+
+  .tip-box {
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .tip {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    box-sizing: border-box;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: 0 var(--space-2) var(--space-5) var(--shadow);
+    overflow-wrap: anywhere;
+  }
+
+  .tip strong {
+    color: var(--heading);
+  }
+
+  .kind {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .kind,
+  .how {
+    color: var(--ink-muted);
   }
 </style>

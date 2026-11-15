@@ -16,3 +16,10 @@ Third-party data used by the conformance fixtures (not part of Mosaic itself):
 - "Netflix Movies and TV Shows" dataset by Shivam Bansal, published on Kaggle under
   CC0 1.0 Universal (https://www.kaggle.com/datasets/shivamb/netflix-shows). Files
   derived from it are in conformance/ (the Netflix titles fixture).
+
+Third-party fonts packed into the viewer and every single-file export:
+
+- IBM Plex Sans and IBM Plex Mono, Copyright 2017-2019 IBM Corp., licensed under the
+  SIL Open Font License, Version 1.1 (https://openfontlicense.org), as packaged by
+  Fontsource (@fontsource/ibm-plex-sans, @fontsource/ibm-plex-mono). Only the latin
+  woff2 files are packed; the licence text ships in those packages' LICENSE files.

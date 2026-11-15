@@ -200,7 +200,7 @@ The first implementation proved the whole flow on the Netflix titles fixture, th
 | Reference tessera builder | Table importers only: CSV, with columns as linked things (optionally split on a separator) and value conversion (dates, mixed units), and SQLite, with rows as nodes and foreign keys as edges | Document and code importers (M8); the AI step (M10); knowledge graph importers (not scheduled) |
 | Mosaic builder | The eight build steps, build report, strict mode, vectors with the v0 embedding model | Several pieces proved on a fixture (M7); link rules from mentions (M8); proposals in practice (M10); incremental builds (not scheduled) |
 | Kit | TypeScript, running in the page: `find` (exact, full-text and vector tiers), `get`, `neighbors`, `table`, `cite`; query embedding with the v0 model | Counting the results of a chain (M6); `path`, the generated card and a Node build for the MCP server (M9); a Python wrapper for scripts and notebooks (M11); tiny-mosaic text and the answer schema in full (not scheduled) |
-| Viewer | Search box (semantic search through `find`), tables rebuilt from node types, a node page with its links and sources, graph views, chains and cards; `mosaic view` to explore and a single-file HTML export, both shaped by a view file | The rework into four places (M5); "count by" and filter chips (M6); a path between two things (M9) |
+| Viewer | Search box (semantic search through `find`) above four places: Home (the map of types and saved trails), Explore (a force-laid graph to drag and unfold, beside the selected thing's card, links and sources), Trails (a chain as columns, one per step, or as one table) and Tables (rebuilt from node types); `mosaic view` to explore and a single-file HTML export, both shaped by a view file | "count by" and filter chips (M6); a path between two things (M9) |
 | Agent interface | None | MCP server and card (M9) |
 
 The first milestone was done when the Netflix titles and Chinook mosaics built with their expected hashes, the viewer opened them offline and exported each to one HTML file, and a plain-language search found the right titles.
@@ -239,7 +239,7 @@ mosaic/
 
 **Milestones**
 
-No dates: each milestone starts when the one before passes. M0 to M4 are built: M1 to M3 are the first milestone above, and M4 added chains and cards to the viewer. M5 onwards is the plan.
+No dates: each milestone starts when the one before passes. M0 to M5 are built: M1 to M3 are the first milestone above, M4 added chains and cards to the viewer, and M5 rebuilt the viewer as four places. M6 onwards is the plan.
 
 |  | Goal | Done when | Status |
 | --- | --- | --- | --- |
@@ -248,7 +248,7 @@ No dates: each milestone starts when the one before passes. M0 to M4 are built: 
 | M2 | Netflix, read side | Vectors in the builder; TypeScript kit with `find`, `get`, `neighbors`, `table`, `cite`; `mosaic view` explores the Netflix mosaic with semantic search | Built |
 | M3 | First milestone complete | View files, single-file export with both search settings, the Chinook fixture and its tool cases pass | Built |
 | M4 | Viewer: chains and cards | The viewer chains and cards needs V-1 to V-18 (below) are met, except V-4, which waits for the kit's `path` (M9): on the Netflix and Chinook mosaics a person defines a chain, sees its results as cards and as one table, and chooses what each type's card shows; the chains and cards are saved in the view file and look the same in `mosaic view` and in the single-file export, offline | Built |
-| M5 | Viewer rework | The Netflix and Chinook mosaics can be explored end to end in the four places (Home, Explore, Trails, Tables), in `mosaic view` and in the single-file export | Planned |
+| M5 | Viewer rework | The Netflix and Chinook mosaics can be explored end to end in the four places (Home, Explore, Trails, Tables), in `mosaic view` and in the single-file export, as the approved mockup shows them | Built |
 | M6 | Counting | The question "which person appears in the most titles listed in Comedies" is answered on the Netflix mosaic in the viewer and through the kit, with tool cases in `conformance/` | Planned |
 | M7 | Several pieces | A fixture with at least two sources that name the same things differently (two open museum collections, joined by their Wikidata ids; OpenFlights stays as the second case) builds, with merging pieces, qualifiers, weak ids and notices | Planned |
 | M8 | Text and mentions | Document and code tessera builders, link rules from mentions and `source_text` work on the Marlin fixture (firmware source and its documentation, GPL-3.0, downloaded by hash) | Planned |
@@ -256,15 +256,26 @@ No dates: each milestone starts when the one before passes. M0 to M4 are built: 
 | M10 | AI input | The AI step in tessera builders, the pattern assistant and proposals work end to end | Planned |
 | M11 | Freeze 0.1 | The Python wrapper exists, the budgets are met, the full conformance suite passes, and the specification is frozen | Planned |
 
-**M5, viewer rework.** What the rework covers:
+**M5, viewer rework (built).** What the rework covered:
 
-- **Shared building blocks.** Button, chip, panel, tabs, table and empty state are each styled once, from the design tokens, and used everywhere.
+- **Shared building blocks.** Button, chip, table and empty state are each styled once, from the design tokens, and used everywhere.
 - **Four places.** The views are regrouped into Home (the map of types, and saved trails), Explore (the graph and the selected thing's card, side by side), Trails (a chain as columns, one per step) and Tables.
 - **Graph layout.** The graph is laid out by forces, and a person can drag things and unfold them.
 - **Dependencies.** A headless component library and d3-force are allowed.
 - **Tests.** Browser tests with screenshots replace the tests that read source text.
 
-**M6, counting.** The kit gains a tool that counts the results of a chain grouped by one of its steps, for questions such as "which person appears in the most titles listed in Comedies". Trails shows it as "count by", and table filters become chips.
+As built, from the maintainer's mockup (the canvas "Mosaic viewer M5 mockup", approved on 15 November 2026) and accepted on Netflix and Chinook. Browser tests (`viewer/browser/`) run in the fast gate on a small invented mosaic and save screenshots as a CI artifact; nothing is compared pixel by pixel. The viewer is an alpha reference and is not polished further for now.
+
+- **Shell.** The page fits the window and never scrolls as a whole; panes scroll on their own. Surfaces are neutral in both themes and only the header band is navy. One right pane, which can be resized and collapsed to a strip. Search results drop down under the search field; opening one lands in Explore. The "verified" mark and the Semantic / Text switch sit at the right of the row of places.
+- **Type colours.** One colour per type from a palette of eight hues and a lighter second step (sixteen, then repeating), in the order the view file lists the types; a view file may name a type's colour. Each value is checked for contrast before it enters the tokens.
+- **Home.** The map of types, shards sized by count and coloured by type; saved trails with their descriptions and "Jump back in" in the pane.
+- **Explore.** Link types as toggle chips, "Tidy layout" and "Fit to view"; a badge counts a thing's folded links; pointing at a thing shows a small summary, selecting it opens its card in the pane, selecting it again unfolds it; dragged things stay put. The card shows properties with their sources, links as type-coloured chips, and the card settings in a menu.
+- **Trails.** A one-line builder; three views: all cards (one column per step, joined by lines; picking a card lights up what connects to it; long columns show "more"), one result at a time (previous and next, and a strip of all results) and the table.
+- **Tables.** Types as chips across the top, linked things as chips in the cells, filters as removable chips, paging in the footer; a row's card opens in the pane.
+
+Decided on the way: IBM Plex is packed into the page and the export; a table's count shows the type's label as is; a new trail asks for a thing to start at; a card's link groups show their source on request; a trail's cards and its one-at-a-time view cover the first 200 results, the table all of them. Left as it is: the search list has no "see all as a table"; in Explore an edge label can sit under a badge, a tooltip can cover the centre thing in a narrow window, there is no fold or hide, and the selected thing is not in the address; below 960px the card sits under the graph; the third column of a long trail takes about two seconds on Netflix; the table filters became chips here, not in M6.
+
+**M6, counting.** The kit gains a tool that counts the results of a chain grouped by one of its steps, for questions such as "which person appears in the most titles listed in Comedies". Trails shows it as "count by".
 
 **Until the format is frozen.** The hardening planned for the freeze is deliberately light until M11: running the full integrity check on every open, the large set of invalid-file cases, and the size and speed budgets. The knowledge hash and determinism stay from the start.
 

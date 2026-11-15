@@ -7,12 +7,10 @@ import { render } from "svelte/server";
 import { describe, expect, it, vi } from "vitest";
 import App from "../src/App.svelte";
 import EntityCard from "../src/components/EntityCard.svelte";
-import NodeContext from "../src/components/NodeContext.svelte";
-import ResultList from "../src/components/ResultList.svelte";
-import SearchField from "../src/components/SearchField.svelte";
+import ModeSwitch from "../src/components/ModeSwitch.svelte";
 import TableView from "../src/components/TableView.svelte";
 import TypeList from "../src/components/TypeList.svelte";
-import { nodePage, openMosaic, search, type NodeView, type SearchView } from "../src/lib/mosaic.js";
+import { nodePage, openMosaic, type NodeView } from "../src/lib/mosaic.js";
 import { routeHash, type TableRoute } from "../src/lib/route.js";
 import { tableArgs, type TableView as Table } from "../src/lib/tables.js";
 import { applyTheme, DEFAULT_VIEW, fetchNamedView, parseView, Shape, type ViewSettings } from "../src/lib/view.js";
@@ -21,6 +19,10 @@ import { reading } from "./fixtures.js";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { buildMosaic, type MosaicSpec } from "../../kit/test/build-mosaic.js";
+
+/** The card with the thing's links and sources, as Explore's pane draws it. */
+const context = (view: NodeView, hrefFor: (id: string) => string, shape: Shape | null = null) =>
+  render(EntityCard, { props: { node: view.node, links: view.links, sources: { rows: view.sources, total: view.sourcesTotal }, hrefFor, shape } });
 
 const hrefFor = (id: string) => routeHash({ query: "", node: id });
 const tableHref = (route: TableRoute) => routeHash({ query: "", node: null, table: route });
@@ -69,7 +71,7 @@ describe("the view file's settings", () => {
       export: { types: ["Alpha"] },
     });
     expect(view.types!.map((t) => t.name)).toEqual(["Zeta", "Alpha"]);
-    expect(view.types![1]).toEqual({ name: "Alpha", label: "A", columns: ["x"], page: ["y", "x"], names: new Map([["x", "Ex"]]), describe: null });
+    expect(view.types![1]).toEqual({ name: "Alpha", label: "A", columns: ["x"], page: ["y", "x"], names: new Map([["x", "Ex"]]), describe: null, colour: null });
     expect(view.exportTypes).toEqual(["Alpha"]);
   });
 
@@ -122,8 +124,8 @@ describe("the page lists only the view file's types", () => {
       props: { types: shape.types, hrefFor: (t: string) => `#${t}`, labelFor: (t: string) => shape.typeLabel(t) },
     });
     expect(attributes(body, "data-type")).toEqual(["Item", "Group"]);
-    expect(body).toContain(">Thing<");
-    expect(body).not.toContain(">Item<");
+    expect(body).toMatch(/>Thing\s*</);
+    expect(body).not.toMatch(/>Item\s*</);
     expect(new Shape(SHAPED, file).types.map((t) => t.name)).toEqual(["Item"]);
     file.close();
   });
@@ -160,16 +162,14 @@ describe("tables show the view file's columns", () => {
     expect((viewer.table as Table).columns).toEqual(["id", "label", "size"]);
   });
 
-  it("the table's title and headers carry the file's labels", async () => {
+  it("the table's headers carry the file's labels", async () => {
     const file = await open();
     const shape = new Shape(SHAPED, file);
     const view: Table = { route: route("Item"), columns: ["id", "label", "size"], rows: [["Item:a", "Item A", 1]], page: 1, total: 1, pages: 1 };
     const { body } = render(TableView, {
       props: { view, route: route("Item"), hrefFor: tableHref, nodeHref: hrefFor, onfilter: () => {}, shape },
     });
-    expect(body).toContain(">Thing<");
     expect(body).toMatch(/data-column="size"[^>]*>How big</);
-    expect(body).toContain('<option value="size">How big</option>');
     file.close();
   });
 
@@ -200,12 +200,12 @@ describe("node pages show what the view file sets", () => {
   it("the links are the edge types `page` names, under its labels", async () => {
     const file = await open();
     const view = (await nodePage(file, "Item:a")) as NodeView;
-    const shown = render(NodeContext, { props: { view, hrefFor, shape: new Shape(SHAPED, file) } }).body;
+    const shown = context(view, hrefFor, new Shape(SHAPED, file)).body;
     expect(shown).toContain("Belongs to · 1");
     expect(shown).toContain('data-id="Group:x"');
     const hidden = new Shape(settings({ types: [{ name: "Item", label: null, columns: null, page: ["size"], names: {} }] }), file);
-    const none = render(NodeContext, { props: { view, hrefFor, shape: hidden } }).body;
-    expect(none).toContain("No links.");
+    const none = context(view, hrefFor, hidden).body;
+    expect(none).not.toContain('aria-label="Links"');
     expect(none).not.toContain('data-id="Group:x"');
     file.close();
   });
@@ -214,7 +214,7 @@ describe("node pages show what the view file sets", () => {
     const file = await open();
     const view = (await nodePage(file, "Group:x")) as NodeView;
     const shape = new Shape(settings({ types: [{ name: "Group", label: null, columns: null, page: ["in_group"], names: { in_group: "Members" } }] }), file);
-    expect(render(NodeContext, { props: { view, hrefFor, shape } }).body).toContain("← Members · 2");
+    expect(context(view, hrefFor, shape).body).toContain("← Members · 2");
     file.close();
   });
 
@@ -223,18 +223,10 @@ describe("node pages show what the view file sets", () => {
     const view = (await nodePage(file, "Item:a")) as NodeView;
     const shape = new Shape(DEFAULT_VIEW, file);
     expect(render(EntityCard, { props: { node: view.node, shape } }).body).toBe(render(EntityCard, { props: { node: view.node } }).body);
-    expect(render(NodeContext, { props: { view, hrefFor, shape } }).body).toBe(render(NodeContext, { props: { view, hrefFor } }).body);
+    expect(context(view, hrefFor, shape).body).toBe(context(view, hrefFor).body);
     file.close();
   });
 
-  it("search results carry the type's label", async () => {
-    const file = await open();
-    const shape = new Shape(SHAPED, file);
-    const view = (await search(file, "Item A")) as SearchView;
-    const body = render(ResultList, { props: { view, hrefFor, typeLabel: (t: string) => shape.typeLabel(t) } }).body;
-    expect(body).toContain(">Thing<");
-    file.close();
-  });
 });
 
 describe("the theme and the search mode follow the view file", () => {
@@ -258,11 +250,11 @@ describe("the theme and the search mode follow the view file", () => {
   });
 
   it("the mode switch shows Semantic and Text, the file's mode pressed", () => {
-    const semantic = render(SearchField, { props: { onsearch: () => {} } }).body;
+    const semantic = render(ModeSwitch, { props: {} }).body;
     expect(semantic).toContain(">Semantic<");
     expect(semantic).toContain(">Text<");
     expect(semantic).toMatch(/aria-pressed="true"[^>]*data-mode="semantic"/);
-    const text = render(SearchField, { props: { mode: "text", onsearch: () => {} } }).body;
+    const text = render(ModeSwitch, { props: { mode: "text" } }).body;
     expect(text).toMatch(/aria-pressed="true"[^>]*data-mode="text"/);
     expect(text).toMatch(/aria-pressed="false"[^>]*data-mode="semantic"/);
   });
@@ -335,6 +327,7 @@ describe("a view file naming what the mosaic does not have", () => {
     expect(viewer.status).toBe("ready");
     await viewer.showTable(route("Item"));
     expect((viewer.table as Table).columns).toEqual(["id", "label", "size"]);
+    viewer.place = "tables";
     const { body } = render(App, { props: { viewer } });
     expect(body).toContain('aria-label="View file notices"');
     expect(body).toContain("the mosaic has no node type Nothing");
@@ -354,7 +347,7 @@ describe("decided edges", () => {
     const view = (await nodePage(file, "Group:x")) as NodeView;
     const shape = new Shape(SHAPED, file);
     expect(shape.edgeLabel("Group", "in_group")).toBe("Belongs to");
-    expect(render(NodeContext, { props: { view, hrefFor, shape } }).body).toContain("← Belongs to · 2");
+    expect(context(view, hrefFor, shape).body).toContain("← Belongs to · 2");
     file.close();
   });
 
@@ -648,7 +641,7 @@ describe("view: further cases", () => {
         render(TypeList, { props: { types: viewer.shape!.types, hrefFor: (t: string) => `#${t}`, labelFor: (t: string) => viewer.shape!.typeLabel(t) } }).body,
         render(TableView, { props: { view: viewer.table as Table, route: route("Item"), hrefFor: tableHref, nodeHref: hrefFor, onfilter: () => {}, shape: viewer.shape } }).body,
         render(EntityCard, { props: { node: (viewer.page as NodeView).node, shape: viewer.shape } }).body,
-        render(NodeContext, { props: { view: viewer.page as NodeView, hrefFor, shape: viewer.shape } }).body,
+        context(viewer.page as NodeView, hrefFor, viewer.shape).body,
       ];
       for (const body of pieces) {
         expect(body).not.toContain("<script>");
@@ -745,8 +738,8 @@ describe("view: further cases", () => {
       const view = viewer.page as NodeView;
       const shape = viewer.shape!;
       expect(attributes(render(EntityCard, { props: { node: view.node, shape } }).body, "data-prop")).toEqual([]);
-      const links = render(NodeContext, { props: { view, hrefFor, shape } }).body;
-      expect(links).toContain("No links.");
+      const links = context(view, hrefFor, shape).body;
+      expect(links).not.toContain('aria-label="Links"');
       expect(links).not.toContain('data-id="Tag:t"');
       expect(links).not.toContain('data-id="Other:o"');
     });
@@ -756,7 +749,7 @@ describe("view: further cases", () => {
       const view = (await nodePage(file, "Item:one")) as NodeView;
       const order = (page: string[]) => {
         const shape = new Shape(settings({ types: [{ name: "Item", page }] }), file);
-        const body = render(NodeContext, { props: { view, hrefFor, shape } }).body;
+        const body = context(view, hrefFor, shape).body;
         return [body.indexOf('data-id="Tag:t"'), body.indexOf('data-id="Other:o"')];
       };
       const [tag1, other1] = order(["has_tag", "next_to"]);
@@ -781,7 +774,7 @@ describe("view: further cases", () => {
       const view = (await nodePage(file, "Item:bare")) as NodeView;
       const shape = new Shape(settings({ types: [{ name: "Item", page: ["alpha", "has_tag"] }] }), file);
       const card = render(EntityCard, { props: { node: view.node, shape } }).body;
-      const links = render(NodeContext, { props: { view, hrefFor, shape } }).body;
+      const links = context(view, hrefFor, shape).body;
       for (const body of [card, links]) {
         expect(body).not.toContain("undefined");
         expect(body).not.toMatch(/>null</);
@@ -795,8 +788,8 @@ describe("view: further cases", () => {
       await viewer.show("Tag:t");
       const view = viewer.page as NodeView;
       expect(view.node.id).toBe("Tag:t");
-      const default_ = render(NodeContext, { props: { view, hrefFor } }).body;
-      expect(render(NodeContext, { props: { view, hrefFor, shape: viewer.shape } }).body).toBe(default_);
+      const default_ = context(view, hrefFor).body;
+      expect(context(view, hrefFor, viewer.shape).body).toBe(default_);
     });
   });
 

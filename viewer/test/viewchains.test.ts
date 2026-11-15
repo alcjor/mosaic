@@ -2,9 +2,7 @@
 // saved in the view file beside its other choices; V-16, anyone who opens the same mosaic with the
 // same view file sees the same chains; V-18, a view file whose chains name types, links or things
 // the mosaic does not have still opens, and the viewer reports what it could not apply.
-import { render } from "svelte/server";
 import { describe, expect, it } from "vitest";
-import ChainView from "../src/components/ChainView.svelte";
 import { type Chain, type Step, offers } from "../src/lib/chain.js";
 import { parseView, type ChainSettings } from "../src/lib/view.js";
 import { Viewer } from "../src/lib/viewer.svelte.js";
@@ -142,39 +140,6 @@ describe("a chain the person built, as view-file text to copy (V-15)", () => {
   it("a default label names the chain's types in order", () => {
     expect(chainName(built, (t) => t)).toBe("Item → Group → Item");
     expect(chainName(built, (t) => (t === "Item" ? "Thing" : t))).toBe("Thing → Group → Thing");
-  });
-});
-
-describe("the Chain view, drawn, with the view file's chains", () => {
-  const SCHEMA = { nodeTypes: [{ name: "Group", count: 1 }, { name: "Item", count: 2 }], edgeTypes: [{ name: "in_group", from: "Item", to: "Group" }] };
-  const props = (chain: Chain | null, more: Record<string, unknown> = {}) => ({ schema: SCHEMA, chain, count: null, onchange: () => {}, find: async () => [], ...more });
-  const items = { name: "Items in x", chain: { start: "Item", pin: null, steps: [step("in_group", "out", "Group", "Group:x")] } };
-
-  it("lists each saved chain by its label, as a button that opens it", () => {
-    const { body } = render(ChainView, { props: props(null, { saved: [items, { name: "Groups", chain: { start: "Group", pin: null, steps: [] } }] }) });
-    const list = body.split('aria-label="Saved chains"')[1]!;
-    expect(list).toMatch(/<button[^>]*>\s*Items in x\s*<\/button>/);
-    expect(list).toMatch(/<button[^>]*>\s*Groups\s*<\/button>/);
-    expect(list.indexOf("Items in x")).toBeLessThan(list.indexOf("Groups"));
-  });
-
-  it("with none saved, no list", () => {
-    expect(render(ChainView, { props: props(null) }).body).not.toContain("Saved chains");
-  });
-
-  it("gives the chain built as view-file text, under a label the person can change", () => {
-    const chain: Chain = { start: "Item", pin: null, steps: [step("in_group", "out", "Group")] };
-    const { body } = render(ChainView, { props: props(chain, { fileChains: [saved("Old", "Group")] }) });
-    expect(body).toMatch(/<input[^>]*id="[^"]*-label"[^>]*value="Item → Group"/);
-    expect(body).toContain("chains:\n  Old:\n    start: Group\n  Item → Group:\n    start: Item\n    steps:\n      - in_group\n".replace("  Item → Group:", '  "Item → Group":'));
-    expect(body).toContain("Copy the text");
-    // Behind a button, closed until asked for: the results stay next to their count.
-    expect(body).toMatch(/<button[^>]*aria-expanded="false"[^>]*>\s*Keep the chain in the view file/);
-    expect(body).toMatch(/<div class="place keep[^"]*"[^>]*hidden/);
-  });
-
-  it("with no chain, no text", () => {
-    expect(render(ChainView, { props: props(null) }).body).not.toContain("Copy the text");
   });
 });
 
@@ -502,34 +467,6 @@ describe("parseView: chains of the view file as the page reads them (V-15)", () 
   it("a duplicate label is refused, whichever pair of chains it is", () => {
     const c = (name: string) => ({ name, start: "A", pin: null, steps: [] });
     expect(() => parseView({ chains: [c("a"), c("b"), c("a")] })).toThrow(/chains\[2\]\.name/);
-  });
-});
-
-describe("the Chain view draws a view file's labels as text, never as markup", () => {
-  const hostile = '<img src=x onerror="alert(1)"> & "q"';
-  const props = (more: Record<string, unknown>) => ({
-    schema: { nodeTypes: [{ name: "Group", count: 1 }, { name: "Item", count: 2 }], edgeTypes: [{ name: "in_group", from: "Item", to: "Group" }] },
-    chain: null,
-    count: null,
-    onchange: () => {},
-    find: async () => [],
-    ...more,
-  });
-
-  it("a saved chain's label", async () => {
-    const { render } = await import("svelte/server");
-    const ChainView = (await import("../src/components/ChainView.svelte")).default;
-    const { body } = render(ChainView, { props: props({ saved: [{ name: hostile, chain: { start: "Item", pin: null, steps: [] } }] }) });
-    expect(body).not.toContain("<img src=x");
-    expect(body).toContain("&lt;img src=x");
-  });
-
-  it("the text to copy, which holds the label", async () => {
-    const { render } = await import("svelte/server");
-    const ChainView = (await import("../src/components/ChainView.svelte")).default;
-    const chain: Chain = { start: "Item", pin: null, steps: [step("in_group", "out", "Group")] };
-    const { body } = render(ChainView, { props: props({ chain, fileChains: [saved(hostile, "Group")] }) });
-    expect(body).not.toContain("<img src=x");
   });
 });
 

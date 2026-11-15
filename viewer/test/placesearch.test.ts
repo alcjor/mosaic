@@ -1,9 +1,7 @@
 // What a chain place's search finds (V-2, V-3: a pin is a thing of the open
 // mosaic, of the place's type). Kept per place as it is, the latest search's answer only, and
 // none of it once another mosaic is open.
-import { render } from "svelte/server";
 import { describe, expect, it } from "vitest";
-import ChainView from "../src/components/ChainView.svelte";
 import { findThings, PlaceSearches, slotOf, slotsFrom } from "../src/lib/placesearch.svelte.js";
 import { Viewer } from "../src/lib/viewer.svelte.js";
 import { reading } from "./fixtures.js";
@@ -78,40 +76,14 @@ describe("the Chain view's searches belong to the open mosaic (V-3)", () => {
   });
 });
 
-describe("what a place's search shows", () => {
-  const schema = { nodeTypes: [{ name: "Person", count: 2 }], edgeTypes: [] };
-  const drawn = async (answer: Parameters<PlaceSearches["run"]>[1]) => {
-    const searches = new PlaceSearches();
-    searches.queries["start Person"] = "Ada";
-    await searches.run("start Person", answer);
-    const chain = { start: "Person", pin: null, steps: [] };
-    return render(ChainView, { props: { schema, chain, onchange: () => {}, find: async () => [], searches } }).body;
-  };
-
-  it("a search the kit could not answer says why, and not that nothing matches", async () => {
-    const body = await drawn(async () => ({ error: "find: the query holds no words" }));
-    expect(body).toContain("Could not search: find: the query holds no words");
-    expect(body).not.toContain("No Person matches");
-  });
-
-  it("nothing found says so, with the query", async () => {
-    const body = await drawn(async () => []);
-    expect(body).toContain("No Person matches “Ada”.");
-    expect(body).not.toContain("Could not search");
-  });
-
-  it("things found are listed, each a button that pins the place", async () => {
-    const body = await drawn(async () => [thing("Person:ada")]);
-    expect(body).toMatch(/<button class="thing[^"]*" type="button"[^>]*>[\s\S]*Person:ada/);
-  });
-});
-
 describe("searching the kit for a place's things", () => {
-  it("gives the things find gives, at most 10, of the place's type", async () => {
+  it("gives the things find gives, at most 10, of the place's type, or of any type", async () => {
     const asked: unknown[] = [];
     const file = { find: async (args: unknown) => (asked.push(args), { tool: "find" as const, mosaic: "m", data: { results: [{ id: "Person:ada", type: "Person", label: "Ada", match: "exact" as const }], total: 1 } }) };
-    expect(await findThings(file as never, "Person", "Ada")).toEqual([{ id: "Person:ada", label: "Ada" }]);
+    expect(await findThings(file as never, "Person", "Ada")).toEqual([{ id: "Person:ada", type: "Person", label: "Ada" }]);
     expect(asked).toEqual([{ query: "Ada", type: "Person", limit: 10 }]);
+    await findThings(file as never, null, "Ada");
+    expect(asked[1]).toEqual({ query: "Ada", limit: 10 });
   });
 
   it("gives the kit's error as an error, not as nothing found", async () => {

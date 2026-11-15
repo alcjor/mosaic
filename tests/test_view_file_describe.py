@@ -101,7 +101,7 @@ def test_the_schema_refuses_each_wrong_description(text: str, line: int, setting
 
 def test_an_unknown_setting_lists_describe_and_edges(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="describe"):
-        read(_write(tmp_path, "types:\n  A:\n    colour: x\n"))
+        read(_write(tmp_path, "types:\n  A:\n    shade: x\n"))
     with pytest.raises(ValueError, match="edges"):
         read(_write(tmp_path, "colour: x\n"))
     with pytest.raises(ValueError, match=r"describe$"):
@@ -204,3 +204,10 @@ def test_settings_read_from_a_json_document_equal_those_read_from_the_file(
 def test_from_json_refuses_malformed_descriptions(value: object) -> None:
     with pytest.raises(ValueError):
         from_json(value)
+
+
+def test_a_type_takes_a_colour_from_the_palette(tmp_path: Path) -> None:
+    settings = read(_write(tmp_path, "types:\n  A: {colour: plum-2}\n  B: {}\n"))
+    assert [t["colour"] for t in settings.as_json()["types"]] == ["plum-2", None]
+    with pytest.raises(ValueError, match=r"types\.A\.colour"):
+        read(_write(tmp_path, "types:\n  A: {colour: green}\n"))

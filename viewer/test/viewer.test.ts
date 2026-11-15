@@ -11,9 +11,12 @@ import { QUERY_LIMIT, RESULT_LIMIT, openFile } from "@mosaic/kit";
 import { buildMosaic, type EdgeSpec, type MosaicSpec, type NodeSpec } from "../../kit/test/build-mosaic.js";
 import App from "../src/App.svelte";
 import EntityCard from "../src/components/EntityCard.svelte";
-import NodeContext from "../src/components/NodeContext.svelte";
-import ResultList from "../src/components/ResultList.svelte";
 import { parseRoute, routeHash } from "../src/lib/route.js";
+import type { Shape } from "../src/lib/view.js";
+
+/** The card with the thing's links and sources, as Explore's pane draws it. */
+const context = (view: NodeView, hrefFor: (id: string) => string, shape: Shape | null = null) =>
+  render(EntityCard, { props: { node: view.node, links: view.links, sources: { rows: view.sources, total: view.sourcesTotal }, hrefFor, shape } });
 
 describe("Viewer", () => {
   it("opens a mosaic; a refused file is an error and keeps no file", async () => {
@@ -252,20 +255,12 @@ describe("search: find's bounds and untrusted text (sections 8.1, 8.2, 10)", () 
     expect(view.total).toBe(30);
   });
 
-  it("the results list names how many matched when it shows fewer", async () => {
-    const viewer = await viewerOn(thirty());
-    await viewer.search("Widget");
-    const { body } = render(ResultList, { props: { view: groups(viewer.results), hrefFor } });
-    expect(body).toMatch(/\b30\b/);
-  });
-
   it("a query over the kit's limit is the kit's error on screen, not an exception", async () => {
     const viewer = await viewerOn(thirty());
     await viewer.search("a".repeat(QUERY_LIMIT + 1));
     expect(viewer.results && "message" in viewer.results).toBe(true);
     const failure = viewer.results as ToolFailure;
     expect(failure.message).not.toBe("");
-    expect(render(ResultList, { props: { view: failure, hrefFor } }).body).toContain('role="alert"');
   });
 
   it("a query exactly at the limit is searched", async () => {
@@ -354,68 +349,6 @@ describe("search: find's bounds and untrusted text (sections 8.1, 8.2, 10)", () 
   });
 });
 
-describe("results list: every result shows id, type, label and match (section 8.2)", () => {
-  it("a result with no label still shows its id, type and match, and no 'null'", () => {
-    const view: SearchView = {
-      query: "x",
-      total: 1,
-      groups: [{ match: "exact", results: [{ id: "Item:nolabel", type: "Item", label: null, match: "exact" }] }],
-    };
-    const { body } = render(ResultList, { props: { view, hrefFor } });
-    expect(body).toContain("Item:nolabel");
-    expect(body).toContain('data-match="exact"');
-    expect(body).not.toMatch(/>\s*(null|undefined)\s*</);
-  });
-
-  it("a result of the vector tier is marked as one", () => {
-    const view: SearchView = {
-      query: "x",
-      total: 1,
-      groups: [{ match: "vector", results: [{ id: "Item:v", type: "Item", label: "V", match: "vector" }] }],
-    };
-    expect(render(ResultList, { props: { view, hrefFor } }).body).toContain('data-match="vector"');
-  });
-
-  it("an id with quotes, ampersands and angle brackets cannot break out of an attribute", () => {
-    const id = `Item:"><img src=x onerror=1>&'`;
-    const view: SearchView = {
-      query: "x",
-      total: 1,
-      groups: [{ match: "text", results: [{ id, type: "Item", label: id, match: "text" }] }],
-    };
-    const { body } = render(ResultList, { props: { view, hrefFor: (i: string) => `#node=${i}`, selected: id } });
-    expect(body).not.toContain("<img");
-    expect(body).not.toMatch(/"><img/);
-  });
-
-  it("a tool error's message and suggestions are escaped", () => {
-    const view: ToolFailure = { message: "<script>x</script>", suggestions: ["Item:<i>a</i>"] };
-    const { body } = render(ResultList, { props: { view, hrefFor } });
-    expect(body).not.toContain("<script>");
-    expect(body).not.toContain("<i>");
-  });
-
-  it("two results with the same label are two rows, told apart by their ids", () => {
-    const view: SearchView = {
-      query: "x",
-      total: 2,
-      groups: [
-        {
-          match: "text",
-          results: [
-            { id: "Item:a", type: "Item", label: "Same", match: "text" },
-            { id: "Other:a", type: "Other", label: "Same", match: "text" },
-          ],
-        },
-      ],
-    };
-    const { body } = render(ResultList, { props: { view, hrefFor } });
-    expect(body.match(/data-id="/g)).toHaveLength(2);
-    expect(body).toContain('data-id="Item:a"');
-    expect(body).toContain('data-id="Other:a"');
-  });
-});
-
 describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2, 3.4)", () => {
   const edge = (from: string, to: string, type = "rel"): EdgeSpec => ({ type, from, to });
 
@@ -426,7 +359,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
     expect(view.links).toEqual([]);
     expect(view.sources.length).toBeGreaterThan(0);
     expect(view.sourcesTotal).toBe(view.sources.length);
-    const { body } = render(NodeContext, { props: { view, hrefFor } });
+    const { body } = context(view, hrefFor);
     expect(body).toContain("why it exists");
   });
 
@@ -442,7 +375,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
     expect(view.links).toHaveLength(1);
     expect(view.links[0]!.count).toBe(25);
     expect(view.links[0]!.edges).toHaveLength(RESULT_LIMIT);
-    const { body } = render(NodeContext, { props: { view, hrefFor } });
+    const { body } = context(view, hrefFor);
     expect(body).toContain("25");
     expect(body.match(/href="/g)).toHaveLength(RESULT_LIMIT);
   });
@@ -463,7 +396,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
     await viewer.show("N:a");
     const view = nodeView(viewer.page);
     expect(view.links.map((l) => `${l.edge}/${l.direction}/${l.count}`).sort()).toEqual(["knows/in/1", "knows/out/1", "likes/out/1"]);
-    const { body } = render(NodeContext, { props: { view, hrefFor } });
+    const { body } = context(view, hrefFor);
     const opened = [...body.matchAll(/href="([^"]*)"/g)].map((m) => parseRoute(m[1]!.replaceAll("&amp;", "&")).node).sort();
     expect(opened).toEqual(["N:b", "N:c", "N:c"]);
   });
@@ -507,7 +440,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
       edges: [edge("N:a", "N:unlabelled")],
     });
     await viewer.show("N:a");
-    const { body } = render(NodeContext, { props: { view: nodeView(viewer.page), hrefFor } });
+    const { body } = context(nodeView(viewer.page), hrefFor);
     expect(parseRoute((/href="([^"]*)"/.exec(body)?.[1] ?? "").replaceAll("&amp;", "&")).node).toBe("N:unlabelled");
     expect(body).toContain("N:unlabelled");
     expect(body).not.toMatch(/>\s*(null|undefined)\s*</);
@@ -556,7 +489,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
     });
     await viewer.show("N:a");
     const view = nodeView(viewer.page);
-    const { body } = render(NodeContext, { props: { view, hrefFor } });
+    const { body } = context(view, hrefFor);
     expect(body).toContain("about a");
     expect(body).not.toContain("about b");
     const cited = await viewer.file!.cite({ id: "N:a" });
@@ -581,7 +514,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
     await viewer.show("N:a");
     const view = nodeView(viewer.page);
     expect(view.sources[0]).toMatchObject({ method: "inferred", confidence: 0.25 });
-    const { body } = render(NodeContext, { props: { view, hrefFor } });
+    const { body } = context(view, hrefFor);
     expect(body).toMatch(/inferred/i);
     expect(body).toContain("0.25");
   });
@@ -626,6 +559,7 @@ describe("node page: get, neighbors and cite on awkward nodes (sections 8.1, 8.2
     const failure = viewer.page as ToolFailure;
     expect("message" in failure).toBe(true);
     expect(failure.message).toContain("Item:appel");
+    viewer.place = "explore";
     const { body } = render(App, { props: { viewer } });
     expect(body).toContain("Item:appel");
     for (const s of failure.suggestions) expect(body).toContain(s);

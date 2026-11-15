@@ -24,7 +24,8 @@
               "release_year": "Year",
               "directed_by": "Directed by"
             },
-            "describe": "A movie or TV show in the catalogue"
+            "describe": "A movie or TV show in the catalogue",
+            "colour": "cobalt"
           },
           {
             "name": "Person",
@@ -32,7 +33,8 @@
             "columns": null,
             "page": null,
             "names": {},
-            "describe": null
+            "describe": null,
+            "colour": null
           },
           {
             "name": "Genre",
@@ -40,7 +42,8 @@
             "columns": null,
             "page": null,
             "names": {},
-            "describe": null
+            "describe": null,
+            "colour": null
           }
         ],
         "edges": [
@@ -146,7 +149,8 @@
               "listed_in": "Genres",
               "made_in": "Countries"
             },
-            "describe": "A movie or TV show in the catalogue"
+            "describe": "A movie or TV show in the catalogue",
+            "colour": null
           },
           {
             "name": "Person",
@@ -154,7 +158,8 @@
             "columns": null,
             "page": null,
             "names": {},
-            "describe": "A director or cast member of a title"
+            "describe": "A director or cast member of a title",
+            "colour": null
           },
           {
             "name": "Genre",
@@ -162,7 +167,8 @@
             "columns": null,
             "page": null,
             "names": {},
-            "describe": "A category a title is listed in"
+            "describe": "A category a title is listed in",
+            "colour": null
           },
           {
             "name": "Country",
@@ -170,7 +176,8 @@
             "columns": null,
             "page": null,
             "names": {},
-            "describe": "A country where a title was produced"
+            "describe": "A country where a title was produced",
+            "colour": null
           }
         ],
         "edges": [

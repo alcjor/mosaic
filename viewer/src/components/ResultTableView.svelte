@@ -6,11 +6,10 @@
    * holds its text; the pager moves through pages of 20 rows; and the rows the sort and filters
    * keep are saved as a CSV file. It says which rows are shown, of how many: the chain's count,
    * or how many rows the filters keep. While every row is read to sort or filter, it says how
-   * many are read so far. A thing's name opens its page. The row of the result the cards show is
-   * marked, and each row's number shows that result as cards. When a filter drops the
-   * result that was the place, one line says so; when the filters keep nothing, a button clears
-   * them.
+   * many are read so far. A thing's name opens it in Explore. When the filters keep
+   * nothing, a button clears them.
    */
+  import Button from "./ui/Button.svelte";
   import { TABLE_ROWS, type ChainTable } from "../lib/chaintable.svelte.js";
   import { cellString } from "../lib/resulttable.js";
   import type { ChainCount } from "../lib/viewer.svelte.js";
@@ -19,16 +18,10 @@
     table,
     count,
     hrefFor = null,
-    onshow = null,
-    onclear = null,
   }: {
     table: ChainTable;
     count: ChainCount | null;
     hrefFor?: ((id: string) => string) | null;
-    /** Show the result at a place (a position among the rows as sorted and filtered) as cards. */
-    onshow?: ((place: number) => void) | null;
-    /** Clear every filter (the empty state's action); by default the table's own. */
-    onclear?: (() => void) | null;
   } = $props();
 
   const id = $props.id();
@@ -89,17 +82,16 @@
     <p class="which caption" role="status" aria-live="polite">
       {said}{#if table.loaded !== null}. Reading every row to sort and filter: {figure(table.loaded)} read{/if}
     </p>
-    <button class="secondary step-title" type="button" onclick={save} aria-describedby="{id}-save-note">Save as CSV</button>
+    <Button onclick={save} aria-describedby="{id}-save-note">Save as CSV</Button>
     <p class="said caption" id="{id}-save-note">Text that starts with = + - @ gets a leading ' so spreadsheets don't run it.</p>
     {#if saving !== ""}<p class="said caption" role="status">{saving}</p>{/if}
-    {#if table.moved}<p class="said caption" role="status">The result you were on no longer matches.</p>{/if}
-    {#if none}<button class="secondary step-title" type="button" onclick={() => (onclear ?? (() => table.clearFilters()))()}>Clear filters</button>{/if}
+    {#if none}<Button onclick={() => table.clearFilters()}>Clear filters</Button>{/if}
   </div>
   {#if table.error !== null}
     <p class="problem caption" role="alert">The rows could not be read: {table.error}</p>
   {/if}
   <div class="scroll">
-    <table class="rows body-screen">
+    <table class="rows body-app">
       <thead>
         <tr>
           <th scope="col" rowspan="3" class="num caption">#</th>
@@ -135,13 +127,9 @@
       <tbody>
         {#each table.rows ?? [] as row, i (row.index)}
           {@const place = first + i}
-          <tr data-row={row.index} aria-current={place === table.current ? "true" : undefined} class:current={place === table.current}>
+          <tr data-row={row.index}>
             <td class="num mono">
-              {#if onshow !== null}
-                <button class="show" type="button" aria-label="Show result {figure(place + 1)} as cards" onclick={() => (table.pick(place), onshow(place))}>{figure(place + 1)}</button>
-              {:else}
-                {figure(place + 1)}
-              {/if}
+              {figure(place + 1)}
             </td>
             {#each row.cells as cell, i (i)}
               {@const column = columns[i]!}
@@ -159,17 +147,20 @@
     </table>
   </div>
   <nav class="pager" aria-label="Pages of rows">
-    <button class="secondary step-title" type="button" disabled={table.page === 0} onclick={() => table.show(0)}>First</button>
-    <button class="secondary step-title" type="button" disabled={table.page === 0} onclick={() => table.show(table.page - 1)}>Previous</button>
-    <button class="secondary step-title" type="button" disabled={last || (table.rows !== null && table.rows.length < TABLE_ROWS)} onclick={() => table.show(table.page + 1)}>Next</button>
+    <Button disabled={table.page === 0} onclick={() => table.show(0)}>First</Button>
+    <Button disabled={table.page === 0} onclick={() => table.show(table.page - 1)}>Previous</Button>
+    <Button disabled={last || (table.rows !== null && table.rows.length < TABLE_ROWS)} onclick={() => table.show(table.page + 1)}>Next</Button>
   </nav>
 </section>
 
 <style>
+  /* The table takes the height it is given: its rows scroll inside their panel, the pager stays under it. */
   .result-table {
-    display: grid;
-    gap: var(--space-3);
-    margin-block-start: var(--space-4);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-block-size: 0;
     min-inline-size: 0;
   }
 
@@ -198,28 +189,13 @@
     color: var(--majolica-text);
   }
 
-  .secondary {
-    min-block-size: var(--space-6);
-    padding: 0 var(--space-3);
-    border: 1px solid var(--accent);
+  .scroll {
+    flex: 0 1 auto;
+    min-block-size: 0;
+    overflow: auto;
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface);
-    color: var(--accent);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .secondary:hover:not(:disabled) {
-    background: var(--surface-tint);
-  }
-
-  .secondary:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .scroll {
-    overflow-x: auto;
   }
 
   .rows {
@@ -236,9 +212,12 @@
 
   .head {
     padding: var(--space-1) var(--space-3);
-    background: var(--surface-tint);
     text-align: start;
     white-space: nowrap;
+  }
+
+  .head .sort {
+    color: var(--ink-muted);
   }
 
   .start {
@@ -268,23 +247,35 @@
     box-sizing: border-box;
     inline-size: 100%;
     min-inline-size: 6rem;
-    block-size: 2rem;
+    block-size: 28px;
     padding-inline: var(--space-2);
-    border: 1px solid var(--ink-muted);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface);
     color: var(--ink);
   }
 
   td {
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border-block-end: 1px solid var(--border);
     vertical-align: top;
-    overflow-wrap: anywhere;
+  }
+
+  tbody tr:last-child td {
+    border-block-end: 0;
+  }
+
+  tbody tr:hover {
+    background: var(--selection);
   }
 
   td a {
     color: var(--accent);
+    text-decoration: none;
+  }
+
+  td a:hover {
+    text-decoration: underline;
   }
 
   .mono {
@@ -297,24 +288,8 @@
     white-space: nowrap;
   }
 
-  .show {
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--accent);
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
-  }
-
-  tr.current td {
-    background: var(--surface-tint);
-  }
-
-  .secondary:focus-visible,
   .sort:focus-visible,
   .control:focus-visible,
-  .show:focus-visible,
   td a:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;

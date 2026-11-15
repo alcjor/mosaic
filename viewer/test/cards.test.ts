@@ -6,7 +6,6 @@
 // default from what the mosaic holds. Brand book §6: EntityCard, PropertyTable, CitationChip.
 import { render } from "svelte/server";
 import { describe, expect, it } from "vitest";
-import App from "../src/App.svelte";
 import EntityCard from "../src/components/EntityCard.svelte";
 import { cardFacts, chipLabel, type Fact, SHOWN } from "../src/lib/cards.js";
 import { nodePage, openMosaic, type NodeView } from "../src/lib/mosaic.js";
@@ -212,7 +211,9 @@ describe("the card, drawn", () => {
       expect(chips.length, row).toBeGreaterThan(0);
       for (const chip of chips) expect(chip).toContain('aria-expanded="false"');
     }
-    expect(body).toContain(">doc:row=1 +1<");
+    // A property's chip says the row; the rows it opens name the source too.
+    expect(body).toContain(">row=1 +1<");
+    expect(body).toContain(">first/doc:row=1<");
     expect(body).toContain(">Group x<");
     file.close();
   });
@@ -229,21 +230,11 @@ describe("the card, drawn", () => {
     const page = (await nodePage(file, "Item:a")) as NodeView;
     const { body } = render(EntityCard, { props: { node: page.node, shape, facts: await cardFacts(file, page, shape) } });
     expect(body).toContain(">How big<");
-    expect(body).toContain(">Belongs to<");
+    expect(body).toMatch(/>Belongs to · \d+</);
     expect(body).toContain(">Thing<");
     file.close();
   });
 
-  it("the node page shows the type's card, with its chips", async () => {
-    const viewer = new Viewer();
-    await viewer.open(reading("mosaic.mosaic"), "mosaic.mosaic");
-    await viewer.show("Item:a");
-    expect(viewer.facts).not.toBeNull();
-    const { body } = render(App, { props: { viewer } });
-    expect(body).toMatch(/data-fact="property:code"/);
-    expect(body).toMatch(/data-fact="count:in_group out"/);
-    expect(body).toContain(">doc:row=1 +1<");
-  });
 });
 
 describe("cards: further cases", () => {

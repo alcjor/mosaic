@@ -6,10 +6,12 @@
    * once. The page cannot write the view file, so the picker gives the view file's `cards` text
    * to copy into it.
    *
-   * A button opens the picker below the card (`aria-expanded`); each fact is a checkbox, so the
+   * A button opens the picker below the card (`aria-expanded`), or, with `button` off, the
+   * caller's own control does, through `open`; each fact is a checkbox, so the
    * picker works by keyboard (Tab, Space) as by pointer. Controls follow the brand book, section
    * 6: secondary buttons, the focus ring on every control.
    */
+  import Button from "./ui/Button.svelte";
   import type { Part, PickOptions } from "../lib/cardpick.js";
   import type { CardSettings, Shape } from "../lib/view.js";
 
@@ -20,6 +22,8 @@
     chosen,
     text,
     shape = null,
+    button = true,
+    open = $bindable(false),
     onpick,
     onreset,
   }: {
@@ -33,12 +37,14 @@
     /** The view file's `cards` text for every card as it is now. */
     text: string;
     shape?: Shape | null;
+    /** Whether the picker has its own button; without it the caller opens it. */
+    button?: boolean;
+    open?: boolean;
     onpick: (part: Part, name: string, on: boolean) => void;
     onreset: () => void;
   } = $props();
 
   const id = $props.id();
-  let open = $state(false);
   let said = $state("");
   let area = $state<HTMLTextAreaElement | null>(null);
 
@@ -70,9 +76,11 @@
 </script>
 
 <section class="picker" aria-label="Choose what {typeName} cards show">
-  <button class="secondary step-title" type="button" aria-expanded={open} aria-controls="{id}-panel" onclick={() => (open = !open)}>
-    Choose what {typeName} cards show
-  </button>
+  {#if button}
+    <Button aria-expanded={open} aria-controls="{id}-panel" onclick={() => (open = !open)}>
+      Choose what {typeName} cards show
+    </Button>
+  {/if}
   <div class="panel" id="{id}-panel" hidden={!open}>
     <p class="note caption">
       Every {typeName} card in the page shows what you pick, in the order picked. The page cannot change the view file: copy the text below into it to keep the card.
@@ -93,9 +101,9 @@
     <label class="section-label" for="{id}-text">View file text</label>
     <textarea class="text code" id="{id}-text" readonly wrap="off" rows={text.split("\n").length} value={text} bind:this={area}></textarea>
     <div class="actions">
-      <button class="secondary step-title" type="button" onclick={copy}>Copy the text</button>
+      <Button onclick={copy}>Copy the text</Button>
       {#if chosen}
-        <button class="ghost step-title" type="button" onclick={onreset}>Back to the view file's card</button>
+        <Button variant="ghost" onclick={onreset}>Back to the view file's card</Button>
       {/if}
       <p class="said caption" role="status">{said}</p>
     </div>
@@ -103,49 +111,14 @@
 </section>
 
 <style>
-  .picker {
-    margin-block-start: var(--space-4);
+  .picker:has(.panel:not([hidden])) {
+    margin-block-end: var(--space-4);
   }
 
-  .secondary,
-  .ghost {
-    min-block-size: var(--space-6);
-    padding: 0 var(--space-3);
-    border-radius: var(--radius-md);
-    font-family: var(--font-sans);
-    cursor: pointer;
-  }
-
-  .secondary {
-    border: 1px solid var(--accent);
-    background: var(--surface);
-    color: var(--accent);
-  }
-
-  .secondary:hover {
-    background: var(--surface-tint);
-  }
-
-  .ghost {
-    border: none;
-    background: none;
-    color: var(--ink);
-  }
-
-  .ghost:hover {
-    background: var(--surface-tint);
-  }
-
-  .secondary:focus-visible,
-  .ghost:focus-visible,
   .option input:focus-visible,
   .text:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-  }
-
-  .secondary[aria-expanded="true"] {
-    background: var(--surface-tint);
   }
 
   .panel {

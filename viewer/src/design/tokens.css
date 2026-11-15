@@ -1,18 +1,75 @@
 /* Mosaic — generated from design/tokens.json by scripts/gen_tokens.py. Do not edit. */
 
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2") format("woff2");
+}
+
 :root,
 :root[data-theme="light"] {
   --brand-navy: #0a2a5c;
   --slab: #0a2a5c;
   --grout: #061733;
   --ground-shard: #0c3168;
+  --page: #f6f6f4;
   --surface: #ffffff;
-  --surface-tint: #eaf2fb;
-  --heading: #0a2a5c;
-  --ink: #1b2a3d;
-  --ink-muted: #3b4b5f;
+  --surface-tint: #eaf1fa;
+  --raised: #ffffff;
+  --shadow: #00000038;
+  --selection: var(--surface-tint);
+  --accent-ink: #ffffff;
+  --band-ink: #ffffff;
+  --band-muted: #c9d6ea;
+  --band-field: #233f6c;
+  --band-field-line: #788aa5;
+  --heading: #151a23;
+  --ink: #1d2430;
+  --ink-muted: #5a6270;
   --accent: #2f6db5;
-  --border: #c9dcf0;
+  --border: #deded9;
   --mark-base: var(--brand-navy);
   --mark-mid: #163c78;
   --mark-piece: var(--saffron);
@@ -24,6 +81,23 @@
   --shard-5: #3d7fc9;
   --shard-6: #cfe2f6;
   --shard-7: #5590d0;
+  --type-1: #2f6db5;
+  --type-2: #14837f;
+  --type-3: #c8622a;
+  --type-4: #7b4ea8;
+  --type-5: #5b6b80;
+  --type-6: #b8477e;
+  --type-7: #3498c6;
+  --type-8: #8a6a3b;
+  --type-9: #18395e;
+  --type-10: #0b4947;
+  --type-11: #743918;
+  --type-12: #3b2651;
+  --type-13: #2e3741;
+  --type-14: #632644;
+  --type-15: #226382;
+  --type-16: #4a3920;
+  --type-colour: var(--ink-muted);
   --turquoise: #14837f;
   --turquoise-tint: #cfedea;
   --turquoise-text: #0c5552;
@@ -61,26 +135,43 @@
   --grout-print: 3px;
   --grout-hero: 4.6px;
   --app-header: 48px;
+  --app-places: 44px;
+  --app-rail: 40px;
   --radius-none: 0;
   --radius-md: 6px;
   --radius-sm: 4px;
+  --radius-pill: 14px;
   --font-sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --slab: #061733;
-    --surface: #0a2a5c;
-    --surface-tint: #0c3168;
-    --heading: #ffffff;
-    --ink: #e6eef8;
-    --ink-muted: #9cc3e8;
-    --accent: #6fa8dc;
-    --border: #1f5296;
+    --page: #141518;
+    --surface: #1b1c20;
+    --surface-tint: #22303f;
+    --raised: #24262b;
+    --shadow: #00000080;
+    --accent-ink: #10151c;
+    --heading: #f4f5f6;
+    --ink: #e4e6e9;
+    --ink-muted: #a0a5ad;
+    --accent: #8ab8e8;
+    --border: #34363c;
     --mark-base: #ffffff;
     --mark-mid: var(--shard-4);
     --mark-line: var(--shard-4);
+    --type-1: #3171bb;
+    --type-4: #885cb3;
+    --type-5: #607187;
+    --type-9: #8fb4e0;
+    --type-10: #7cc4bf;
+    --type-11: #e6a77f;
+    --type-12: #b79ad6;
+    --type-13: #a3afbf;
+    --type-14: #de95b9;
+    --type-15: #a8d6ec;
+    --type-16: #c4ac86;
     --turquoise-tint: #0c5552;
     --turquoise-text: #cfedea;
     --terracotta-tint: #6e3412;
@@ -95,17 +186,31 @@
 }
 
 :root[data-theme="dark"] {
-  --slab: #061733;
-  --surface: #0a2a5c;
-  --surface-tint: #0c3168;
-  --heading: #ffffff;
-  --ink: #e6eef8;
-  --ink-muted: #9cc3e8;
-  --accent: #6fa8dc;
-  --border: #1f5296;
+  --page: #141518;
+  --surface: #1b1c20;
+  --surface-tint: #22303f;
+  --raised: #24262b;
+  --shadow: #00000080;
+  --accent-ink: #10151c;
+  --heading: #f4f5f6;
+  --ink: #e4e6e9;
+  --ink-muted: #a0a5ad;
+  --accent: #8ab8e8;
+  --border: #34363c;
   --mark-base: #ffffff;
   --mark-mid: var(--shard-4);
   --mark-line: var(--shard-4);
+  --type-1: #3171bb;
+  --type-4: #885cb3;
+  --type-5: #607187;
+  --type-9: #8fb4e0;
+  --type-10: #7cc4bf;
+  --type-11: #e6a77f;
+  --type-12: #b79ad6;
+  --type-13: #a3afbf;
+  --type-14: #de95b9;
+  --type-15: #a8d6ec;
+  --type-16: #c4ac86;
   --turquoise-tint: #0c5552;
   --turquoise-text: #cfedea;
   --terracotta-tint: #6e3412;
@@ -116,6 +221,70 @@
   --olive-text: #e6edd3;
   --majolica-tint: #5e1c15;
   --majolica-text: #f6dad5;
+}
+
+[data-type-colour="1"] {
+  --type-colour: var(--type-1);
+}
+
+[data-type-colour="2"] {
+  --type-colour: var(--type-2);
+}
+
+[data-type-colour="3"] {
+  --type-colour: var(--type-3);
+}
+
+[data-type-colour="4"] {
+  --type-colour: var(--type-4);
+}
+
+[data-type-colour="5"] {
+  --type-colour: var(--type-5);
+}
+
+[data-type-colour="6"] {
+  --type-colour: var(--type-6);
+}
+
+[data-type-colour="7"] {
+  --type-colour: var(--type-7);
+}
+
+[data-type-colour="8"] {
+  --type-colour: var(--type-8);
+}
+
+[data-type-colour="9"] {
+  --type-colour: var(--type-9);
+}
+
+[data-type-colour="10"] {
+  --type-colour: var(--type-10);
+}
+
+[data-type-colour="11"] {
+  --type-colour: var(--type-11);
+}
+
+[data-type-colour="12"] {
+  --type-colour: var(--type-12);
+}
+
+[data-type-colour="13"] {
+  --type-colour: var(--type-13);
+}
+
+[data-type-colour="14"] {
+  --type-colour: var(--type-14);
+}
+
+[data-type-colour="15"] {
+  --type-colour: var(--type-15);
+}
+
+[data-type-colour="16"] {
+  --type-colour: var(--type-16);
 }
 
 .wordmark {
@@ -183,11 +352,46 @@
   font-weight: 400;
 }
 
+.body-app {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.label-app {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
 .caption {
   font-family: var(--font-sans);
   font-size: 12px;
   line-height: 1.4;
   font-weight: 400;
+}
+
+.heading-app {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.subheading-app {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.control-app {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 600;
 }
 
 .code {

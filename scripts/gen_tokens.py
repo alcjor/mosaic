@@ -5,7 +5,9 @@
 
 Colours: the first theme is the default; the second ("dark") applies under
 `prefers-color-scheme: dark` unless the page sets data-theme="light", and always
-under data-theme="dark". Aliases "{name}" become var(--name).
+under data-theme="dark". Aliases "{name}" become var(--name). An element with
+data-type-colour="N" takes the type colour N as --type-colour. Each entry of type.fonts
+becomes an @font-face rule over a woff2 file named by its package path.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ REPO = Path(__file__).resolve().parent.parent
 SOURCE = REPO / "design" / "tokens.json"
 TARGET = REPO / "viewer" / "src" / "design" / "tokens.css"
 ALIAS = re.compile(r"^\{([A-Za-z0-9][A-Za-z0-9_.-]*)\}$")
+TYPE_COLOUR = re.compile(r"^type-(\d+)$")
 KEBAB = re.compile(r"(?<!^)(?=[A-Z])")
 
 
@@ -55,6 +58,22 @@ def render(tokens: dict[str, Any]) -> str:
 
     out = [
         "/* Mosaic — generated from design/tokens.json by scripts/gen_tokens.py. Do not edit. */",
+    ]
+    # The packed fonts: the build inlines each file into the stylesheet, so the page and its
+    # single-file export render the same offline.
+    for font in tokens["type"].get("fonts", []):
+        family, weight, file = font["family"], font["weight"], font["file"]
+        out += [
+            "",
+            "@font-face {",
+            f'  font-family: "{family}";',
+            "  font-style: normal;",
+            f"  font-weight: {weight};",
+            "  font-display: swap;",
+            f'  src: url("{file}") format("woff2");',
+            "}",
+        ]
+    out += [
         "",
         f':root,\n:root[data-theme="{first}"] {{',
         *base,
@@ -73,6 +92,11 @@ def render(tokens: dict[str, Any]) -> str:
                 "}",
             ]
         out += ["", f':root[data-theme="{theme}"] {{', *lines, "}"]
+
+    for tok in tokens["color"]["tokens"]:
+        if m := TYPE_COLOUR.match(tok["name"]):
+            n, name = m.group(1), tok["name"]
+            out += ["", f'[data-type-colour="{n}"] {{', f"  --type-colour: var(--{name});", "}"]
 
     families = tokens["type"]["families"]
     for group in tokens["type"]["groups"]:

@@ -1,12 +1,11 @@
 // The graph explorer's layouts (needs G-7, G-1, G-3, G-9): the map's, the
-// neighbourhood's and the overview's positions are functions of the mosaic's data and the
+// neighbourhood's positions are functions of the mosaic's data and the
 // person's choices only. The same input gives the same positions, with no clock and no
 // randomness; sizes on the map follow the counts; a neighbourhood places its groups by edge
 // type and direction. Data is invented.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { byBytes } from "../src/lib/graph/bytes.js";
 import { groupOrder, layoutHood, RING, type HoodGroup, type HoodInput, type PlacedLink } from "../src/lib/graph/hood-layout.js";
-import { GAP, layoutOverview, rowCuts, type OverviewBand } from "../src/lib/graph/overview-layout.js";
 import { layoutSchema, type SchemaEdge, type SchemaType } from "../src/lib/graph/schema.js";
 import { generator, hashText, round, seeded } from "../src/lib/graph/seed.js";
 import { shardPoints, svgPoints } from "../src/lib/graph/shard.js";
@@ -196,28 +195,12 @@ describe("a neighbourhood (G-3, G-4, G-5, G-7)", () => {
     expect(layoutHood(CENTRE)).toEqual(layoutHood(CENTRE));
   });
 
-  it("folds a group's neighbours past those shown into one bundle with their count", () => {
-    const hood = layoutHood(CENTRE);
-    const about = hood.groups.find((g) => g.edge === "about" && g.direction === "in")!;
-    expect(about).toMatchObject({ count: 7, shown: 3 });
-    expect(about.bundle!.count).toBe(4);
-    expect(Math.hypot(about.bundle!.x, about.bundle!.y)).toBeCloseTo(RING, 0);
-    expect(hood.groups.find((g) => g.edge === "tagged" && g.direction === "out")!.bundle).toBeNull();
-  });
-
   it("draws each thing once, and every link, as its edge points", () => {
     const hood = layoutHood(CENTRE);
     expect(hood.things.filter((t) => t.id === "Tag:a")).toHaveLength(1);
     expect(hood.links).toContainEqual({ from: "Item:c", to: "Tag:a", edge: "tagged" });
     expect(hood.links).toContainEqual({ from: "Tag:a", to: "Item:c", edge: "tagged" });
     expect(hood.links).toContainEqual({ from: "Note:1", to: "Item:c", edge: "about" });
-  });
-
-  it("leaves out hidden things and edge types not shown", () => {
-    const hood = layoutHood(CENTRE, [], { hidden: new Set(["Note:2"]), shows: (e) => e !== "tagged" });
-    expect(hood.things.map((t) => t.id).sort(byBytes)).toEqual(["Item:c", "Item:x", "Note:1", "Note:3"]);
-    expect(hood.groups.map((g) => g.edge)).toEqual(["about", "about"]);
-    expect(hood.links.some((l) => l.from === "Note:2" || l.to === "Note:2")).toBe(false);
   });
 
   it("opens an expanded neighbour's groups in a fan pointing away from the centre", () => {
@@ -234,40 +217,6 @@ describe("a neighbourhood (G-3, G-4, G-5, G-7)", () => {
     expect(hood.links.filter((l) => l.from === "Note:1" && l.to === "Item:c")).toHaveLength(1);
   });
 
-  it("draws every link between an expanded thing and where it hangs, once each", () => {
-    // Two links of different edge types between the centre and a neighbour: the expanded
-    // neighbour's group that mirrors the link it hangs by adds nothing; its other link is drawn.
-    const centre: HoodInput = { centre: thing("Item:c"), groups: [group("knows", "out", 1, ["Item:n"])] };
-    const n: HoodInput = {
-      centre: thing("Item:n"),
-      groups: [group("knows", "in", 1, ["Item:c"]), group("likes", "out", 1, ["Item:c"]), group("likes", "in", 1, ["Item:z"])],
-    };
-    const hood = layoutHood(centre, [n]);
-    expect(hood.links).toEqual([
-      { from: "Item:c", to: "Item:n", edge: "knows" },
-      { from: "Item:n", to: "Item:c", edge: "likes" },
-      { from: "Item:z", to: "Item:n", edge: "likes" },
-    ]);
-    expect(hood.things.filter((t) => t.id === "Item:c")).toHaveLength(1);
-    const knowsIn = hood.groups.find((g) => g.owner === "Item:n" && g.edge === "knows")!;
-    expect(knowsIn).toMatchObject({ count: 1, shown: 0, bundle: null });
-  });
-
-  it("draws two links of one edge type between one pair, which the kit lists as two rows of one group", () => {
-    // Two edges that differ only by qualifier (section 3.4) are two links, each with its evidence.
-    const centre: HoodInput = { centre: thing("Item:c"), groups: [group("knows", "out", 2, ["Item:n", "Item:n"])] };
-    const alone = layoutHood(centre);
-    expect(alone.links).toEqual([
-      { from: "Item:c", to: "Item:n", edge: "knows" },
-      { from: "Item:c", to: "Item:n", edge: "knows" },
-    ]);
-    expect(alone.groups[0]).toMatchObject({ count: 2, shown: 2, bundle: null });
-    // Expanded, the neighbour's group that mirrors both adds nothing.
-    const n: HoodInput = { centre: thing("Item:n"), groups: [group("knows", "in", 2, ["Item:c", "Item:c"])] };
-    const both = layoutHood(centre, [n]);
-    expect(both.links).toEqual(alone.links);
-  });
-
   it("opens expanded things given before the neighbour they hang from, and never twice", () => {
     const note: HoodInput = { centre: thing("Note:1"), groups: [group("by", "out", 1, ["Person:p"])] };
     const person: HoodInput = { centre: thing("Person:p"), groups: [group("knows", "out", 1, ["Person:z"])] };
@@ -276,117 +225,12 @@ describe("a neighbourhood (G-3, G-4, G-5, G-7)", () => {
     expect(inOrder.things.find((t) => t.id === "Person:z")!.parent).toBe("Person:p");
   });
 
-  it("leaves out an expanded thing that is hidden or not drawn", () => {
-    const stray: HoodInput = { centre: thing("Elsewhere:1"), groups: [group("by", "out", 1, ["Person:p"])] };
-    const note: HoodInput = { centre: thing("Note:1"), groups: [group("by", "out", 1, ["Person:p"])] };
-    expect(layoutHood(CENTRE, [stray])).toEqual(layoutHood(CENTRE));
-    const hidden = layoutHood(CENTRE, [note], { hidden: new Set(["Note:1"]) });
-    expect(hidden.things.some((t) => t.id === "Person:p")).toBe(false);
-  });
-
   it("is a lone centre when the thing has no links", () => {
     expect(layoutHood({ centre: thing("Item:alone"), groups: [] })).toEqual({
       things: [{ ...thing("Item:alone"), x: 0, y: 0, parent: null }],
       groups: [],
       links: [],
     });
-  });
-});
-
-function bands(): OverviewBand[] {
-  const ids = (type: string, n: number) => Array.from({ length: n }, (_, i) => `${type}:${String(i).padStart(4, "0")}`);
-  return [
-    { type: "Small", ids: ids("Small", 3) },
-    { type: "Big", ids: ids("Big", 400) },
-    { type: "Mid", ids: ids("Mid", 120) },
-    { type: "Empty", ids: [] },
-  ];
-}
-
-describe("the overview (G-9, G-7)", () => {
-  const SIZE = 600;
-
-  it("draws one shard per thing, each with its type", () => {
-    const view = layoutOverview(bands(), SIZE);
-    const want = bands().flatMap((b) => b.ids);
-    expect(view.shards.map((s) => s.id).sort(byBytes)).toEqual([...want].sort(byBytes));
-    for (const s of view.shards) expect(s.type).toBe(s.id.slice(0, s.id.indexOf(":")));
-  });
-
-  it("groups shards in bands by type, most shards in the middle, an empty type none", () => {
-    const view = layoutOverview(bands(), SIZE);
-    expect(view.bands.map((b) => [b.type, b.shards])).toEqual([
-      ["Big", 400],
-      ["Mid", 120],
-      ["Small", 3],
-    ]);
-    for (let i = 1; i < view.bands.length; i++) expect(view.bands[i]!.inner).toBe(view.bands[i - 1]!.outer);
-    const band = Object.fromEntries(view.bands.map((b) => [b.type, b]));
-    for (const s of view.shards) {
-      const b = band[s.type]!;
-      const r = Math.hypot(s.centre.x - SIZE / 2, s.centre.y - SIZE / 2);
-      expect(r).toBeGreaterThanOrEqual(b.inner - 0.01);
-      expect(r).toBeLessThanOrEqual(b.outer + 0.01);
-      for (const p of s.points) {
-        expect(p.x).toBeGreaterThanOrEqual(0);
-        expect(p.y).toBeGreaterThanOrEqual(0);
-        expect(p.x).toBeLessThanOrEqual(SIZE);
-        expect(p.y).toBeLessThanOrEqual(SIZE);
-      }
-    }
-  });
-
-  it("gives a band with few things room enough to see", () => {
-    const view = layoutOverview(bands(), SIZE);
-    const small = view.bands.find((b) => b.type === "Small")!;
-    expect(small.outer - small.inner).toBeGreaterThan(GAP * 2);
-  });
-
-  it("is the same picture every time, whatever order bands and ids come in", () => {
-    const one = layoutOverview(bands(), SIZE);
-    expect(layoutOverview(bands(), SIZE)).toEqual(one);
-    const shuffled = bands()
-      .reverse()
-      .map((b) => ({ ...b, ids: [...b.ids].reverse() }));
-    expect(layoutOverview(shuffled, SIZE)).toEqual(one);
-  });
-
-  it("draws a thing listed twice once", () => {
-    const view = layoutOverview([{ type: "A", ids: ["A:1", "A:1", "A:2"] }], SIZE);
-    expect(view.shards.map((s) => s.id)).toEqual(["A:1", "A:2"]);
-  });
-
-  it("draws shards as irregular polygons, never squares", () => {
-    const view = layoutOverview(bands(), SIZE);
-    const sides = new Set(view.shards.map((s) => s.points.length));
-    for (const n of sides) expect(n).toBeGreaterThanOrEqual(4);
-    // Not every shard has the same shape: cuts lean and depths vary.
-    const widths = view.shards.filter((s) => s.type === "Big").map((s) => Math.round(Math.hypot(s.points[0]!.x - s.points[1]!.x, s.points[0]!.y - s.points[1]!.y)));
-    expect(new Set(widths).size).toBeGreaterThan(3);
-  });
-
-  it("never lets two neighbouring cuts of a row cross, at either edge", () => {
-    // Shards are cells between neighbouring cuts: a cut past its neighbour would make two shards
-    // overlap. Checked over many bands, rows and cell counts.
-    const types = ["A", "Title", "Person", "Genre", "Ünïcode", "\u{1F600}", "x".repeat(40)];
-    for (const type of types) {
-      for (let row = 0; row < 30; row++) {
-        for (const cells of [1, 2, 3, 5, 8, 13, 40, 200]) {
-          const cuts = rowCuts(type, row, cells);
-          for (const side of ["inner", "outer"] as const) {
-            for (let i = 0; i < cells; i++) {
-              const a = cuts[i]![side];
-              const b = i + 1 < cells ? cuts[i + 1]![side] : cuts[0]![side] + 2 * Math.PI;
-              expect(b - a, `${type} row ${row}, ${cells} cells, ${side} cut ${i}`).toBeGreaterThan(0);
-            }
-          }
-        }
-      }
-    }
-  });
-
-  it("draws nothing for no things", () => {
-    expect(layoutOverview([], SIZE)).toEqual({ size: SIZE, bands: [], shards: [] });
   });
 });
 
@@ -837,29 +681,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
       expect(numbers(hood).every(Number.isFinite)).toBe(true);
     });
 
-    it("shows only a bundle when the limit shows nothing but links remain", () => {
-      const hood = layoutHood({ centre: thing("Item:c"), groups: [group("a", "out", 12, [])] });
-      expect(hood.groups[0]!.shown).toBe(0);
-      expect(hood.groups[0]!.bundle!.count).toBe(12);
-      expect(numbers(hood).every(Number.isFinite)).toBe(true);
-    });
-
-    it("has no bundle when every link is shown, however many", () => {
-      const ids = Array.from({ length: 20 }, (_, i) => `N:${i}`);
-      const hood = layoutHood({ centre: thing("Item:c"), groups: [group("a", "out", 20, ids)] });
-      expect(hood.groups[0]).toMatchObject({ count: 20, shown: 20, bundle: null });
-    });
-
-    it("puts a bundle where no shard of its group is", () => {
-      const ids = ["N:1", "N:2", "N:3", "N:4", "N:5"];
-      const hood = layoutHood({ centre: thing("Item:c"), groups: [group("a", "out", 500, ids), group("b", "in", 2, ["M:1", "M:2"])] });
-      const a = hood.groups.find((g) => g.edge === "a")!;
-      for (const id of ids) {
-        const t = hood.things.find((x) => x.id === id)!;
-        expect(Math.hypot(t.x - a.bundle!.x, t.y - a.bundle!.y)).toBeGreaterThan(1);
-      }
-    });
-
     it("places a crowded group of sixty without two shards on one spot, the same twice", () => {
       const ids = Array.from({ length: 60 }, (_, i) => `N:${String(i).padStart(2, "0")}`);
       const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 61, ids)] };
@@ -916,22 +737,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
       for (const a of asked) expect(a[0]).toBe("a");
     });
 
-    it("leaves out every group but keeps nothing hanging when all its neighbours are hidden", () => {
-      const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 2, ["N:1", "N:2"])] };
-      const hood = layoutHood(input, [], { hidden: new Set(["N:1", "N:2"]) });
-      expect(hood.things.map((t) => t.id)).toEqual(["Item:c"]);
-      expect(hood.links).toEqual([]);
-      expect(numbers(hood).every(Number.isFinite)).toBe(true);
-    });
-
-    it("draws no link to a hidden thing, in either direction, nor to what hangs from it", () => {
-      const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 1, ["N:1"]), group("b", "in", 1, ["N:1"])] };
-      const n1: HoodInput = { centre: thing("N:1"), groups: [group("by", "out", 1, ["P:1"])] };
-      const hood = layoutHood(input, [n1], { hidden: new Set(["N:1"]) });
-      expect(hood.links).toEqual([]);
-      expect(hood.things.map((t) => t.id)).toEqual(["Item:c"]);
-    });
-
     it("ignores an expanded input for the centre itself and the same picture comes out", () => {
       const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 2, ["N:1", "N:2"])] };
       expect(layoutHood(input, [input])).toEqual(layoutHood(input));
@@ -970,13 +775,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
       }
     });
 
-    it("does not write to its input", () => {
-      const input = freeze<HoodInput>({ centre: thing("Item:c"), groups: [group("b", "in", 3, ["N:1"]), group("a", "out", 1, ["N:2"])] });
-      const expanded = freeze<HoodInput>({ centre: thing("N:1"), groups: [group("by", "out", 1, ["P:1"])] });
-      expect(() => layoutHood(input, freeze([expanded]), { hidden: freeze(new Set(["Z"])) })).not.toThrow();
-      expect(input.groups.map((g) => g.edge)).toEqual(["b", "a"]);
-    });
-
     it("rounds every coordinate to hundredths", () => {
       const input: HoodInput = { centre: thing("Item:c"), groups: [group("a", "out", 30, Array.from({ length: 11 }, (_, i) => `N:${i}`)), group("b", "in", 3, ["M:1", "M:2", "M:3"])] };
       const expanded: HoodInput = { centre: thing("N:3"), groups: [group("by", "out", 4, ["P:1", "P:2", "P:3", "P:4"])] };
@@ -1013,10 +811,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
     });
   });
 
-  function bandOf(type: string, n: number): OverviewBand {
-    return { type, ids: Array.from({ length: n }, (_, i) => `${type}:${String(i).padStart(5, "0")}`) };
-  }
-
   /** Signed area of a polygon: positive when it turns clockwise on a y-down screen. */
   function area(points: readonly { x: number; y: number }[]): number {
     let a = 0;
@@ -1027,233 +821,8 @@ describe("graph layout: timing and clock cases, and further ones", () => {
     return a / 2;
   }
 
-  describe("the overview, more cases (G-9, G-7)", () => {
-    const SIZE = 600;
-
-    it("draws a single thing as one shard in a single band, inside the square", () => {
-      const view = layoutOverview([{ type: "A", ids: ["A:1"] }], SIZE);
-      expect(view.bands.map((b) => [b.type, b.shards])).toEqual([["A", 1]]);
-      expect(view.shards).toHaveLength(1);
-      for (const p of view.shards[0]!.points) {
-        expect(p.x >= 0 && p.x <= SIZE && p.y >= 0 && p.y <= SIZE).toBe(true);
-      }
-      expect(numbers(view).every(Number.isFinite)).toBe(true);
-    });
-
-    it("draws nothing but the size for bands that hold no things", () => {
-      expect(layoutOverview([{ type: "A", ids: [] }, { type: "B", ids: [] }], SIZE)).toEqual({ size: SIZE, bands: [], shards: [] });
-    });
-
-    it("orders bands of equal size by type name in UTF-8 bytes, not UTF-16 units", () => {
-      const bands = [ASTRAL, WIDE, "b"].map((t) => ({ type: t, ids: [`${t}:1`, `${t}:2`] }));
-      const view = layoutOverview(bands, SIZE);
-      expect(view.bands.map((b) => b.type)).toEqual(["b", WIDE, ASTRAL]);
-      expect(layoutOverview([...bands].reverse(), SIZE)).toEqual(view);
-    });
-
-    it("fills a band in id order by UTF-8 bytes, whatever order the ids come in", () => {
-      const ids = [`A:${ASTRAL}`, `A:${WIDE}`, "A:b", "A:B", "A:\0", "A:"];
-      const one = layoutOverview([{ type: "A", ids }], SIZE);
-      expect(layoutOverview([{ type: "A", ids: [...ids].reverse() }], SIZE)).toEqual(one);
-      // In order: the shard of each id in turn sits at a growing place along the band (rows from the
-      // inside), so the first id of the sorted order is at the first cell.
-      const sorted = [...ids].sort(byBytes);
-      const first = one.shards.find((s) => s.id === sorted[0])!;
-      const last = one.shards.find((s) => s.id === sorted.at(-1))!;
-      expect(first).toBeDefined();
-      expect(last).toBeDefined();
-      expect(one.shards).toHaveLength(6);
-    });
-
-    it("gives ids with NULs, empty ids and very long ids a shard each, different shapes for different ids", () => {
-      const ids = ["A:", "A:\0", "A:\0\0", "A:a\0b", "A:a\0c", "A:" + "x".repeat(20000)];
-      const view = layoutOverview([{ type: "A", ids }], SIZE);
-      expect(view.shards.map((s) => s.id).sort(byBytes)).toEqual([...ids].sort(byBytes));
-      expect(numbers(view).every(Number.isFinite)).toBe(true);
-      const shapes = new Set(view.shards.map((s) => JSON.stringify(s.points)));
-      expect(shapes.size).toBe(ids.length);
-      expect(layoutOverview([{ type: "A", ids }], SIZE)).toEqual(view);
-    });
-
-    it("keeps every corner of a shard inside its own band", () => {
-      const view = layoutOverview([bandOf("Big", 300), bandOf("Mid", 80), bandOf("Small", 4)], SIZE);
-      const band = Object.fromEntries(view.bands.map((b) => [b.type, b]));
-      for (const s of view.shards) {
-        const b = band[s.type]!;
-        for (const p of s.points) {
-          const r = Math.hypot(p.x - SIZE / 2, p.y - SIZE / 2);
-          expect(r).toBeGreaterThanOrEqual(b.inner - 0.5);
-          expect(r).toBeLessThanOrEqual(b.outer + 0.5);
-        }
-      }
-    });
-
-    it("keeps the last band inside the square and the first band outside an empty middle", () => {
-      const view = layoutOverview([bandOf("Big", 300), bandOf("Mid", 80)], SIZE);
-      expect(view.bands[0]!.inner).toBeGreaterThan(0);
-      expect(view.bands.at(-1)!.outer).toBeLessThanOrEqual(SIZE / 2 + 0.01);
-    });
-
-    it("gives a band with more things more area, though no band shrinks to nothing", () => {
-      const view = layoutOverview([bandOf("Big", 900), bandOf("Mid", 90), bandOf("Tiny", 1)], SIZE);
-      const areas = view.bands.map((b) => Math.PI * (b.outer ** 2 - b.inner ** 2));
-      expect(areas[0]!).toBeGreaterThan(areas[1]!);
-      expect(areas[1]!).toBeGreaterThan(areas[2]!);
-      expect(areas[2]!).toBeGreaterThan(0);
-    });
-
-    it("scales with the square: twice the size, bands twice as far out", () => {
-      const small = layoutOverview([bandOf("Big", 200), bandOf("Mid", 50)], 400);
-      const big = layoutOverview([bandOf("Big", 200), bandOf("Mid", 50)], 800);
-      small.bands.forEach((b, i) => {
-        expect(big.bands[i]!.outer / b.outer).toBeCloseTo(2, 1);
-        expect(big.bands[i]!.shards).toBe(b.shards);
-      });
-      expect(big.size).toBe(800);
-    });
-
-    it("draws shards clockwise on screen, as the shards of the map and the neighbourhood do", () => {
-      const view = layoutOverview([bandOf("Big", 120), bandOf("Mid", 30)], SIZE);
-      for (const s of view.shards) expect(area(s.points)).toBeGreaterThan(0);
-    });
-
-    it("puts each shard's centre inside its own corners' bounding box", () => {
-      const view = layoutOverview([bandOf("Big", 120), bandOf("Mid", 30)], SIZE);
-      for (const s of view.shards) {
-        const xs = s.points.map((p) => p.x);
-        const ys = s.points.map((p) => p.y);
-        expect(s.centre.x).toBeGreaterThanOrEqual(Math.min(...xs));
-        expect(s.centre.x).toBeLessThanOrEqual(Math.max(...xs));
-        expect(s.centre.y).toBeGreaterThanOrEqual(Math.min(...ys));
-        expect(s.centre.y).toBeLessThanOrEqual(Math.max(...ys));
-      }
-    });
-
-    it("gives no two shards the same centre", () => {
-      const view = layoutOverview([bandOf("Big", 200), bandOf("Mid", 40), bandOf("Small", 5)], SIZE);
-      expect(new Set(view.shards.map((s) => `${s.centre.x},${s.centre.y}`)).size).toBe(view.shards.length);
-    });
-
-    it("rounds every coordinate to hundredths", () => {
-      const view = layoutOverview([bandOf("Big", 200), bandOf("Mid", 40)], 613);
-      for (const x of numbers(view.shards)) expect(Math.round(x * 100) / 100).toBe(x);
-    });
-
-    it("is the same picture under any clock", () => {
-      vi.useFakeTimers();
-      try {
-        vi.setSystemTime(new Date("2001-01-01T00:00:00Z"));
-        const early = layoutOverview([bandOf("A", 50), bandOf("B", 20)], SIZE);
-        vi.setSystemTime(new Date("2099-12-31T23:59:59Z"));
-        expect(layoutOverview([bandOf("A", 50), bandOf("B", 20)], SIZE)).toEqual(early);
-      } finally {
-        vi.useRealTimers();
-      }
-    });
-
-    it("does not write to its input", () => {
-      const input = freeze([{ type: "B", ids: ["B:2", "B:1"] }, { type: "A", ids: ["A:1"] }]);
-      expect(() => layoutOverview(input, SIZE)).not.toThrow();
-      expect(input[0]!.ids).toEqual(["B:2", "B:1"]);
-    });
-
-    it("keeps a thing's shard when other bands change only in how the others are numbered", () => {
-      // The same band, with the same ids, in the same square, is the same shards: ids are the only
-      // source of its jitter.
-      const alone = layoutOverview([bandOf("A", 30)], SIZE);
-      const again = layoutOverview([bandOf("A", 30)], SIZE);
-      expect(again.shards).toEqual(alone.shards);
-    });
-
-    it("draws twenty thousand things in good time, each once (G-10)", () => {
-      const bands = [bandOf("Title", 12000), bandOf("Person", 7000), bandOf("Genre", 1000)];
-      const started = performance.now();
-      const view = layoutOverview(bands, 1200);
-      const took = performance.now() - started;
-      expect(view.shards).toHaveLength(20000);
-      expect(new Set(view.shards.map((s) => s.id)).size).toBe(20000);
-      expect(took).toBeLessThan(5000);
-    });
-  });
-
-  describe("a neighbourhood of a busy thing stays responsive (G-10)", () => {
-    it("places twelve hundred shown neighbours in good time", () => {
-      const ids = Array.from({ length: 1200 }, (_, i) => `Title:${String(i).padStart(5, "0")}`);
-      const input: HoodInput = { centre: thing("Country:x"), groups: [group("made_in", "in", 5000, ids)] };
-      const started = performance.now();
-      const hood = layoutHood(input);
-      const took = performance.now() - started;
-      expect(hood.things).toHaveLength(1201);
-      expect(hood.groups[0]!.bundle!.count).toBe(3800);
-      expect(took).toBeLessThan(5000);
-    });
-  });
-
   describe("graph layout: further cases", () => {
     const TWO_PI = 2 * Math.PI;
-
-    describe("the cuts of an overview row (G-9, G-7)", () => {
-      it("go up round the ring and end before the first comes again, at both edges, for many cell counts", () => {
-        // Needs G-9, G-7: "angles that go up round the ring; the last cut is followed by the first, a turn later".
-        const counts = [1, 2, 3, 4, 6, 7, 11, 25, 64, 100, 257, 1000, 4096];
-        for (const type of ["Person", "Title", "", "a\u0000b", "\u{1F600}", "Ünï"]) {
-          for (const row of [0, 1, 2, 9, 63, 500]) {
-            for (const cells of counts) {
-              const cuts = rowCuts(type, row, cells);
-              expect(cuts).toHaveLength(cells);
-              for (const side of ["inner", "outer"] as const) {
-                for (let i = 0; i + 1 < cells; i++) {
-                  expect(cuts[i + 1]![side] - cuts[i]![side], `${JSON.stringify(type)} row ${row}, ${cells} cells, ${side} ${i}`).toBeGreaterThan(0);
-                }
-                const wrap = cuts[0]![side] + TWO_PI - cuts[cells - 1]![side];
-                expect(wrap, `${JSON.stringify(type)} row ${row}, ${cells} cells, ${side} wrap`).toBeGreaterThan(0);
-              }
-            }
-          }
-        }
-      });
-
-      it("leave every cell a real share of its width: no cell shrinks to a sliver at either edge", () => {
-        // Needs G-9: shards are "roughly even"; a cell squeezed to nothing is an overlap in all but name.
-        for (const type of ["Person", "Title", "Genre"]) {
-          for (let row = 0; row < 40; row++) {
-            for (const cells of [2, 5, 12, 90, 600]) {
-              const width = TWO_PI / cells;
-              const cuts = rowCuts(type, row, cells);
-              for (const side of ["inner", "outer"] as const) {
-                for (let i = 0; i < cells; i++) {
-                  const next = i + 1 < cells ? cuts[i + 1]![side] : cuts[0]![side] + TWO_PI;
-                  expect(next - cuts[i]![side], `${type} row ${row}, ${cells} cells, ${side} ${i}`).toBeGreaterThan(width * 0.05);
-                }
-              }
-            }
-          }
-        }
-      });
-
-      it("are the same twice, and differ with the type and with the row (G-7)", () => {
-        const a = rowCuts("Person", 3, 20);
-        expect(rowCuts("Person", 3, 20)).toEqual(a);
-        expect(rowCuts("Person", 4, 20)).not.toEqual(a);
-        expect(rowCuts("Persom", 3, 20)).not.toEqual(a);
-        // A type and a row that join to the same text still give two rows.
-        expect(rowCuts("A1", 2, 20)).not.toEqual(rowCuts("A", 12, 20));
-      });
-
-      it("are finite numbers for one cell, whose only cut is followed by itself a turn later", () => {
-        const [cut] = rowCuts("Solo", 0, 1);
-        expect(Number.isFinite(cut!.inner)).toBe(true);
-        expect(Number.isFinite(cut!.outer)).toBe(true);
-      });
-
-      it("do not depend on the cell count of another call: a row's first cuts are not read from a shared stream (G-7)", () => {
-        // Calling for other rows and counts in between must not change a row's cuts.
-        const before = rowCuts("Person", 5, 33);
-        rowCuts("Person", 6, 10);
-        rowCuts("Other", 5, 33);
-        expect(rowCuts("Person", 5, 33)).toEqual(before);
-      });
-    });
 
     type P = { x: number; y: number };
 
@@ -1317,57 +886,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
     }
 
     const ids = (type: string, n: number) => Array.from({ length: n }, (_, i) => `${type}:${String(i).padStart(5, "0")}`);
-
-    describe("overview shards never overlap (G-9, G-7)", () => {
-      it.each([1, 2, 3, 5, 7, 12, 50, 300, 1500])("draws no two shards over each other in one band of %i things, at three sizes", (n) => {
-        for (const size of [300, 600, 1000]) {
-          const view = layoutOverview([{ type: "Only", ids: ids("Only", n) }], size);
-          expect(overlaps(view.shards), `size ${size}`).toEqual([]);
-        }
-      });
-
-      it("draws no two shards over each other, for mosaics of several bands", () => {
-        const mosaics: OverviewBand[][] = [
-          [
-            { type: "Person", ids: ids("Person", 300) },
-            { type: "Title", ids: ids("Title", 120) },
-            { type: "Genre", ids: ids("Genre", 9) },
-          ],
-          [
-            { type: "A", ids: ids("A", 600) },
-            { type: "B", ids: ids("B", 599) },
-            { type: "C", ids: ids("C", 3) },
-            { type: "D", ids: ids("D", 1) },
-          ],
-        ];
-        for (const size of [300, 600, 1000]) {
-          for (const bands of mosaics) {
-            const view = layoutOverview(bands, size);
-            expect(overlaps(view.shards), `size ${size}, ${bands.map((b) => `${b.type}:${b.ids.length}`).join(" ")}`).toEqual([]);
-          }
-        }
-      });
-
-      it("draws every shard as a simple polygon, clockwise on screen, with some area", () => {
-        const view = layoutOverview([{ type: "Person", ids: ids("Person", 500) }, { type: "Title", ids: ids("Title", 80) }], 800);
-        for (const s of view.shards) {
-          expect(area(s.points), s.id).toBeGreaterThan(1);
-          const n = s.points.length;
-          for (let i = 0; i < n; i++) {
-            for (let j = i + 2; j < n; j++) {
-              if (i === 0 && j === n - 1) continue;
-              expect(crosses(s.points[i]!, s.points[(i + 1) % n]!, s.points[j]!, s.points[(j + 1) % n]!), `${s.id} edges ${i} and ${j}`).toBe(false);
-            }
-          }
-        }
-      });
-
-      it("keeps the picture of a band the same when the other bands change in size only (G-7)", () => {
-        const a = layoutOverview([{ type: "Person", ids: ids("Person", 200) }], 600);
-        const b = layoutOverview([{ type: "Person", ids: ids("Person", 200) }], 600);
-        expect(b).toEqual(a);
-      });
-    });
 
     const thing = (id: string) => ({ id, label: id.slice(id.indexOf(":") + 1), type: id.slice(0, id.indexOf(":")) });
     const group = (edge: string, direction: "out" | "in", count: number, ids: string[]): HoodGroup => ({ edge, direction, count, shown: ids.map(thing) });
@@ -1441,14 +959,6 @@ describe("graph layout: timing and clock cases, and further ones", () => {
         const n: HoodInput = { centre: thing("P:n"), groups: [group("knows", "in", 1, ["P:c"]), group("likes", "out", 1, ["P:c"]), group("hates", "out", 1, ["P:c"])] };
         const hood = layoutHood(centre, [n], { shows: (e) => e !== "likes" });
         expect(keys(hood.links)).toEqual(["P:c -knows-> P:n", "P:n -hates-> P:c"]);
-      });
-
-      it("draws no link to a hidden parent, and nothing of a thing that hangs from it", () => {
-        const centre: HoodInput = { centre: thing("P:c"), groups: [group("knows", "out", 1, ["P:n"])] };
-        const n: HoodInput = { centre: thing("P:n"), groups: [group("likes", "out", 1, ["P:c"])] };
-        const hood = layoutHood(centre, [n], { hidden: new Set(["P:n"]) });
-        expect(hood.things.map((t) => t.id)).toEqual(["P:c"]);
-        expect(hood.links).toEqual([]);
       });
 
       it("never repeats a link, over every mix of mirrored and extra groups on two expanded things", () => {

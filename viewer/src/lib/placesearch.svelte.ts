@@ -12,6 +12,7 @@ import type { Chain } from "./chain.js";
 /** A thing a search found. */
 export interface Found {
   readonly id: string;
+  readonly type: string;
   readonly label: string | null;
 }
 
@@ -66,11 +67,11 @@ export function slotsFrom(chain: Chain, index: number): string[] {
 }
 
 /**
- * Things of `type` named like `query` (the kit's `find`, at most 10), or why the kit could not
+ * Things of `type` (of any type when null) named like `query` (the kit's `find`, at most 10), or why the kit could not
  * search: a search it could not answer is not the same as nothing found.
  */
-export async function findThings(file: Pick<SealedFile, "find">, type: string, query: string): Promise<Answer> {
-  const found = await file.find({ query, type, limit: 10 });
+export async function findThings(file: Pick<SealedFile, "find">, type: string | null, query: string): Promise<Answer> {
+  const found = await file.find(type === null ? { query, limit: 10 } : { query, type, limit: 10 });
   if ("error" in found) return { error: found.error.message };
-  return found.data.results.map((r) => ({ id: r.id, label: r.label }));
+  return found.data.results.map((r) => ({ id: r.id, type: r.type, label: r.label }));
 }

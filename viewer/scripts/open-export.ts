@@ -43,30 +43,33 @@ try {
     { timeout: 120_000 },
   );
   const readyMs = Math.round(performance.now() - started);
-  const header = (await page.locator("header").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
+  const header = (await page.locator("header.top").innerText()).split("\n").map((s) => s.trim()).filter(Boolean);
   const alerts = await banner.allInnerTexts();
   if (alerts.length > 0) {
     console.log(JSON.stringify({ header, alerts, readyMs, blocked, errors }));
     process.exit(0);
   }
+  const found = page.getByRole("listbox").locator('[role="option"][data-id]');
   const search = async (q: string) => {
+    // Results drop down under the field as it is typed in; emptied first, so they are this query's.
+    await box.fill("");
+    await page.getByRole("listbox").waitFor({ state: "hidden" });
     await box.fill(q);
-    await box.press("Enter");
-    const rows = page.locator('nav[aria-label="Results"] a[data-id]');
-    await rows.first().waitFor();
-    return rows.evaluateAll((as) => as.map((a) => ({ id: a.getAttribute("data-id"), match: a.getAttribute("data-match") })));
+    await found.first().waitFor();
+    return found.evaluateAll((as) => as.map((a) => ({ id: a.getAttribute("data-id"), match: a.getAttribute("data-match") })));
   };
   const results = await search(query);
-  await page.locator(`nav[aria-label="Results"] a[data-id="${nodeId}"]`).click();
+  await found.and(page.locator(`[data-id="${nodeId}"]`)).click();
   const card = page.locator(`article[aria-label="${nodeId}"]`);
   await card.waitFor();
   const cardText = await card.innerText();
-  const links = await page.locator('aside[aria-label="Links and sources"] a[data-id]').evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
+  const links = await card.locator('section[aria-label="Links"] a[data-id]').evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
   const textResults = textQuery ? await search(textQuery) : [];
-  await page.locator(`nav[aria-label="Results"] a[data-type="${type}"]`).click();
+  await page.locator('nav[aria-label="Places"] a[data-place-link="tables"]').click();
+  await page.locator(`nav[aria-label="Types"] a[data-type="${type}"]`).click();
   const table = page.locator(`section[aria-label="Table ${type}"]`);
-  await table.locator("tbody a[data-id]").first().waitFor();
-  const rows = await table.locator("tbody a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
+  await table.locator("tbody td.name a[data-id]").first().waitFor();
+  const rows = await table.locator("tbody td.name a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
   const mode = await page.locator('[data-mode][aria-pressed="true"]').getAttribute("data-mode");
   console.log(JSON.stringify({ header, alerts, readyMs, results, card: cardText, links, textResults, textId, rows, mode, blocked, errors }));
 } finally {

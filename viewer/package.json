@@ -10,13 +10,19 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "bun --bun vitest run --passWithNoTests",
     "build": "bun --bun vite build",
+    "test:browser": "bun --bun vitest run --config vitest.browser.config.ts",
     "lint": "stylelint \"src/**/*.{css,svelte}\""
   },
   "dependencies": {
-    "@mosaic/kit": "0.0.0"
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@mosaic/kit": "0.0.0",
+    "bits-ui": "2.21.0",
+    "d3-force": "3.0.1"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/d3-force": "3.0.10",
     "postcss-html": "^2.0.0",
     "stylelint": "~17.16.0",
     "stylelint-config-html": "^2.0.0",

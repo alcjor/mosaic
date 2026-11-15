@@ -23,6 +23,9 @@ types:                  # Which node types appear, in the order written here.
     describe: A movie or TV show in the catalogue
                                    # Its description on the graph explorer's map.
                                    # Default: none, and the map shows no description.
+    colour: cobalt                 # Its colour: cobalt, turquoise, terracotta, plum, slate,
+                                   # rose, sky or umber, or a second step of one (cobalt-2).
+                                   # Default: the types take these colours in the order written.
   Person: {}
   Genre: {}
 

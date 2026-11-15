@@ -60,6 +60,15 @@ jobs:
       - run: bun run typecheck
       - run: bun run test
       - run: bun run build
+      # The browser tests of the built viewer save screenshots for people to review.
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run --cwd viewer test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: viewer-screenshots
+          path: viewer/screenshots/
+          if-no-files-found: ignore
 
   slow:
     if: github.event_name != 'pull_request'

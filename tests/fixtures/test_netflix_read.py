@@ -166,9 +166,9 @@ def test_mosaic_view_lists_a_title_by_meaning_and_opens_its_page_links_sources_a
     assert walk["links"] and walk["opened"] == walk["links"][0]
     assert walk["sources"]
     # The table of its type, filled by `table`.
-    assert table["headers"][:2] == ["id", "label"]
+    assert table["headers"][0] == "Name"
     assert table["rows"] and all(r.startswith("Title:") for r in table["rows"])
-    assert f"{titles} rows" in table["pager"]
+    assert table["pager"]["total"] == titles
     assert (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns) == before
 
 

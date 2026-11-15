@@ -1,6 +1,6 @@
 /**
- * A link to a chain (need V-17): the chain view's address holds the chain, its pins,
- * the view (cards or table), the place in the results and the table's sort and filters
+ * A link to a chain (need V-17): the Trails address holds the chain, its pins,
+ * the view (columns or table), the table's page and the table's sort and filters
  * (lib/route.ts writes and reads them), so a colleague lands on exactly the same results.
  *
  * A link's chain is read as the view file's chains are (V-18): one naming a type, an edge
@@ -25,7 +25,7 @@ export interface TableChoices {
 }
 
 /** The link to `chain` shown as `show`, at `place` (from 0), with the table's `choices`. */
-export function linkOf(chain: Chain, show: "cards" | "table", place: number, columns: readonly Column[], choices: TableChoices): ChainLinkRoute {
+export function linkOf(chain: Chain, show: ChainLinkRoute["show"], place: number, columns: readonly Column[], choices: TableChoices): ChainLinkRoute {
   const name = (i: number) => ({ place: columns[i]!.place + 1, column: columns[i]!.key });
   const sort = choices.sort === null || columns[choices.sort.column] === undefined ? null : { ...name(choices.sort.column), desc: choices.sort.descending };
   return {

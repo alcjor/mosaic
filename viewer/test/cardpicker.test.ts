@@ -38,7 +38,7 @@ describe("the card picker, drawn", () => {
     const { body } = render(CardPicker, { props: props() });
     expect(body).toMatch(/<textarea[^>]*readonly/);
     expect(body).toContain("show: [rating, summary]");
-    expect(body).toContain(">Copy the text</button>");
+    expect(body).toMatch(/<button[^>]*>(?:<!--[^>]*-->)*Copy the text(?:<!--[^>]*-->)*<\/button>/);
     expect(body).toMatch(/role="status"/);
   });
 
