@@ -42,7 +42,7 @@
       "file": "airports.dat",
       "url": "https://raw.githubusercontent.com/jpatokal/openflights/cd163fa17710f3135540651626ad719dd5322a05/data/airports.dat",
       "sha256": "9387cdb38df5bd664da823f8ccb69fdd9b33a1888f5b7cca09c34a3cd9ff59f9",
-      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases; 1,127,225 bytes)",
+      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 1,127,225 bytes)",
       "licence_confirmed": false,
       "milestone": "M7"
     },
@@ -51,7 +51,7 @@
       "file": "airlines.dat",
       "url": "https://raw.githubusercontent.com/jpatokal/openflights/cd163fa17710f3135540651626ad719dd5322a05/data/airlines.dat",
       "sha256": "39be1a432e8b04ebc12860c29281c974a9cb52169c82b2456a835d66ab1548a1",
-      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases; 396,896 bytes)",
+      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 396,896 bytes)",
       "licence_confirmed": false,
       "milestone": "M7"
     },
@@ -60,7 +60,7 @@
       "file": "routes.dat",
       "url": "https://raw.githubusercontent.com/jpatokal/openflights/cd163fa17710f3135540651626ad719dd5322a05/data/routes.dat",
       "sha256": "bd373706238134f619c624c606dccc74c05c2582a977c489c81de501735f2390",
-      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases; 2,377,148 bytes)",
+      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 2,377,148 bytes)",
       "licence_confirmed": false,
       "milestone": "M7"
     },
