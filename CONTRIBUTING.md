@@ -27,7 +27,7 @@ uv run python scripts/fetch_fixtures.py
 uv run python scripts/fetch_model.py
 ```
 
-Some of them open the viewer in a real browser, so they also need Playwright with a Chromium
+Some of them open the viewer in a real browser, so they also need a Chromium for Playwright
 (`bunx playwright install chromium`).
 
 Run the gate before you push. A change in behaviour comes with a test.
