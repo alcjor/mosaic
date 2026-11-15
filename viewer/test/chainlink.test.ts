@@ -1,6 +1,6 @@
 // Link to a chain (docs/design.md V-17): the viewer can link to one chain, with its pinned
 // steps and filters, so a colleague lands on exactly the same results. The address holds the
-// chain, its pins, the view (cards or table), the place in the results and the table's filters
+// chain, its pins, the view (columns or table), the table's page and the table's filters
 // and sort; a link naming what the mosaic lacks opens and reports it (V-18).
 import { describe, expect, it } from "vitest";
 import { buildMosaic } from "../../kit/test/build-mosaic.js";
@@ -58,9 +58,8 @@ async function seen(v: Viewer) {
   return {
     chain: v.chain,
     show: v.chainShow,
-    // In the table, the place is the table's: the cards show it when shown again.
     columns: v.chainColumns?.columns.map((c) => c.things.map((t) => t.id)) ?? null,
-    current: table.current,
+    at: table.page,
     filters: table.filters,
     sort: table.sort,
     rows: (await table.arrangedRows()).map((r) => r.ids),
@@ -140,9 +139,8 @@ describe("the page writes its chain into the address, and the address opens the 
     const v = await withChain({ ...CHAIN, steps: [CHAIN.steps[0]!] });
     await v.showChainAs("table");
     await v.chainTable!.show(2);
-    v.chainTable!.pick(43);
     const link = v.chainLink()!;
-    expect(link).toMatchObject({ show: "table", at: 44, sort: null, filters: [] });
+    expect(link).toMatchObject({ show: "table", at: 41, sort: null, filters: [] });
     const w = await follow(routeHash({ query: "", node: null, view: "trails", chain: link }));
     expect(w.chainShow).toBe("table");
     expect(w.chainTable!.page).toBe(2);
@@ -151,7 +149,6 @@ describe("the page writes its chain into the address, and the address opens the 
 
   it("a place beyond the last result opens the last one", async () => {
     const t = await follow("#v=trails&c=Hub&p0=Hub:h&k=has&at=999&show=table");
-    expect(t.chainTable!.current).toBe(N - 1);
     expect(t.chainTable!.page).toBe(2);
   });
 
@@ -284,12 +281,10 @@ describe("chainlink: further cases", () => {
       chain: v.chain,
       show: v.chainShow,
       columns: v.chainColumns?.columns.map((c) => c.things.map((t) => t.id)) ?? null,
-      current: table?.current ?? null,
+      at: table?.page ?? null,
       filters: table?.filters ?? null,
       sort: table?.sort ?? null,
       rows: table ? (await table.arrangedRows()).map((r) => r.ids) : null,
-      // The page the table shows is not in the address (only the place is): it is compared where
-      // the place is on it.
       count: v.chainCount,
     };
   }
@@ -459,7 +454,6 @@ describe("chainlink: further cases", () => {
       await v.chainTable!.sortBy(column(v, 1, "property:rank"));
       await v.chainTable!.filter(column(v, 1, "label"), "leaf");
       await v.chainTable!.show(1);
-      v.chainTable!.pick(21);
       const link = v.chainLink()!;
       const w = await follow(hashOf(link));
       expect(w.linkNotices).toEqual([]);
@@ -588,14 +582,13 @@ describe("chainlink: further cases", () => {
       w.setChain(OUT);
       await Promise.all([w.shown, w.counted]);
       expect(w.chain).toEqual(OUT);
-      expect(w.chainRow).not.toBeNull();
+      expect(w.chainColumns).not.toBeNull();
     });
 
     it("a link with a good chain and a table choice on an absent column keeps the chain and its place", async () => {
       const w = await follow('#v=trails&c=Hub&p0=Hub:h&k=has&show=table&at=5&cf=[[2,"property:nope","x"]]');
       expect(w.chain).not.toBeNull();
       expect(w.chainShow).toBe("table");
-      expect(w.chainTable!.current).toBe(4);
       expect(w.linkNotices.join("\n")).toContain("property:nope");
       expect(w.chainTable!.filters.filter((f) => f !== "")).toEqual([]);
     });

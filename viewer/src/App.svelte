@@ -169,7 +169,8 @@
     const route = parseRoute(location.hash);
     viewer.place = route.view ?? "home";
     hoodAddress = route.hood ?? null;
-    pickedTab = null;
+    // A new search shows its results, also where the open thing's card would take the tab.
+    pickedTab = viewer.results !== null && route.query !== viewer.query && route.query !== "" ? "results" : null;
     if (route.query !== viewer.query || viewer.results === null) void viewer.search(route.query);
     if (route.node !== viewer.nodeId || viewer.page === null) void viewer.show(route.node);
     // Another place's address does not name the table: Tables keeps the one it had.
@@ -451,7 +452,7 @@
         <Button pressed={viewer.chainShow === "table"} onclick={() => void viewer.showChainAs("table")}>Table</Button>
       </div>
       {#if viewer.chainShow === "table" && viewer.chainTable !== null}
-        <ResultTableView table={viewer.chainTable} count={viewer.chainCount} {hrefFor} onclear={() => void viewer.clearChainFilters()} />
+        <ResultTableView table={viewer.chainTable} count={viewer.chainCount} {hrefFor} />
       {:else if viewer.chainFailure !== null}
         <p class="banner body-screen" role="alert">{viewer.chainFailure}</p>
       {:else if viewer.chainColumns !== null}

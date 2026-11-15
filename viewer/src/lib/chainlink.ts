@@ -1,6 +1,6 @@
 /**
  * A link to a chain (need V-17): the Trails address holds the chain, its pins,
- * the view (columns or table), the table's current row and the table's sort and filters
+ * the view (columns or table), the table's page and the table's sort and filters
  * (lib/route.ts writes and reads them), so a colleague lands on exactly the same results.
  *
  * A link's chain is read as the view file's chains are (V-18): one naming a type, an edge

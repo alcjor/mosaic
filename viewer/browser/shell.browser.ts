@@ -63,6 +63,11 @@ test("below 960px a place's side panes are tabs", async () => {
   await page.locator('nav[aria-label="Results"] a[data-id="Place:harbor"]').waitFor();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await shot("narrow-results");
+  // A new search shows its results, though a thing's card is open.
+  await tabs.filter({ hasText: "Card" }).click();
+  await page.getByRole("searchbox").fill("fair");
+  await page.getByRole("searchbox").press("Enter");
+  await page.locator('nav[aria-label="Results"] a[data-id="Event:fair"]').waitFor();
   // The other places fit the width too.
   for (const [hash, ready] of [
     ["#", 'main[data-place="home"] .list'],

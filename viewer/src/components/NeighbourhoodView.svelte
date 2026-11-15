@@ -731,8 +731,11 @@
     <aside class="panel" aria-label="Selection" aria-live="polite" hidden={only === "graph"}>
       {#if selectedThing}
         <h3 class="section-label heading">{selectedThing.parent === null ? "At the centre" : "Selected thing"}</h3>
-        <p class="panel-title name">{nameOf(selectedThing)}</p>
-        <p class="caption muted">{typeLabel(selectedThing.type)} · <span class="code">{selectedThing.id}</span></p>
+        <!-- Its card names it; until the card is read, this does. -->
+        {#if selectedCard === null || "message" in selectedCard}
+          <p class="panel-title name">{nameOf(selectedThing)}</p>
+          <p class="caption muted">{typeLabel(selectedThing.type)} · <span class="code">{selectedThing.id}</span></p>
+        {/if}
         {#if selectedThing.parent !== null}
           {@const id = selectedThing.id}
           {@const fullExpanded = !isExpanded(id) && (choices?.expanded.length ?? 0) >= MOST_EXPANDED}

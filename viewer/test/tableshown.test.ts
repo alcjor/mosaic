@@ -63,23 +63,6 @@ describe("while another page is read, the table still says and numbers the page 
       expect(drawn(v)).toContain(`Rows ${page * 20 + 1}–`);
     }
   });
-
-  it("the row marked current is marked by its place among the rows shown", async () => {
-    const v = await table();
-    const t = v.chainTable!;
-    t.pick(3);
-    const moving = t.show(1);
-    // Moving to page 2 makes its first row the place; the rows still shown are page 1's:
-    // none of them is marked until page 2's rows are there.
-    const during = drawn(v);
-    const marked = [...during.matchAll(/<tr data-row="(\d+)"[^>]*aria-current="true"/g)].map((m) => Number(m[1]));
-    expect(marked.every((row) => t.rows!.some((r) => r.index === row))).toBe(true);
-    expect(t.shownPage).toBe(0);
-    expect(marked).toEqual([]);
-    await moving;
-    const after = [...drawn(v).matchAll(/<tr data-row="(\d+)"[^>]*aria-current="true"/g)].map((m) => Number(m[1]));
-    expect(after).toEqual([20]);
-  });
 });
 
 describe("tableshown: further cases", () => {

@@ -6,9 +6,8 @@
    * holds its text; the pager moves through pages of 20 rows; and the rows the sort and filters
    * keep are saved as a CSV file. It says which rows are shown, of how many: the chain's count,
    * or how many rows the filters keep. While every row is read to sort or filter, it says how
-   * many are read so far. A thing's name opens it in Explore. The table's current row is
-   * marked. When a filter drops the row that was current, one line says so; when the filters
-   * keep nothing, a button clears them.
+   * many are read so far. A thing's name opens it in Explore. When the filters keep
+   * nothing, a button clears them.
    */
   import Button from "./ui/Button.svelte";
   import { TABLE_ROWS, type ChainTable } from "../lib/chaintable.svelte.js";
@@ -19,13 +18,10 @@
     table,
     count,
     hrefFor = null,
-    onclear = null,
   }: {
     table: ChainTable;
     count: ChainCount | null;
     hrefFor?: ((id: string) => string) | null;
-    /** Clear every filter (the empty state's action); by default the table's own. */
-    onclear?: (() => void) | null;
   } = $props();
 
   const id = $props.id();
@@ -89,8 +85,7 @@
     <Button onclick={save} aria-describedby="{id}-save-note">Save as CSV</Button>
     <p class="said caption" id="{id}-save-note">Text that starts with = + - @ gets a leading ' so spreadsheets don't run it.</p>
     {#if saving !== ""}<p class="said caption" role="status">{saving}</p>{/if}
-    {#if table.moved}<p class="said caption" role="status">The result you were on no longer matches.</p>{/if}
-    {#if none}<Button onclick={() => (onclear ?? (() => table.clearFilters()))()}>Clear filters</Button>{/if}
+    {#if none}<Button onclick={() => table.clearFilters()}>Clear filters</Button>{/if}
   </div>
   {#if table.error !== null}
     <p class="problem caption" role="alert">The rows could not be read: {table.error}</p>
@@ -132,7 +127,7 @@
       <tbody>
         {#each table.rows ?? [] as row, i (row.index)}
           {@const place = first + i}
-          <tr data-row={row.index} aria-current={place === table.current ? "true" : undefined} class:current={place === table.current}>
+          <tr data-row={row.index}>
             <td class="num mono">
               {figure(place + 1)}
             </td>
@@ -268,10 +263,6 @@
     color: var(--ink-muted);
     text-align: end;
     white-space: nowrap;
-  }
-
-  tr.current td {
-    background: var(--surface-tint);
   }
 
   .sort:focus-visible,

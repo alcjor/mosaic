@@ -21,7 +21,7 @@
  * `c=<type>`, each step's link as `k=<link>` spelled as in the view file (an edge type alone is
  * followed out; `<edge> in` is followed in), and the thing each place is pinned to as
  * `p<place>=<id>`, the start being place 0. Then, beside the defaults, the view as `show=table`,
- * the table's current row as `at=<n>` from 1, the table's sort as `co=<place> <column>` with
+ * the table's page as `at=<n>`, its first row from 1, the table's sort as `co=<place> <column>` with
  * `cd=1` for descending, and its filters as `cf=<JSON list of [place, column, text]>`, places from
  * 1 as the table numbers them. lib/chainlink.ts applies them to a mosaic.
  *
@@ -66,7 +66,7 @@ export interface ChainLinkRoute {
   /** Each step: its link as the view file spells it, and the thing it is pinned to. */
   readonly steps: readonly { readonly link: string; readonly pin: string | null }[];
   readonly show: "columns" | "table";
-  /** The table's current row, from 1. */
+  /** The table's page, as its first row, from 1. */
   readonly at: number;
   /** The table's sort: a column by its place (from 1) and its key. */
   readonly sort: { readonly place: number; readonly column: string; readonly desc: boolean } | null;

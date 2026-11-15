@@ -12,7 +12,7 @@ import { cardFacts, type Fact } from "./cards.js";
 import type { Chain } from "./chain.js";
 import { LinkReader } from "./links.js";
 import { PlaceSearches } from "./placesearch.svelte.js";
-import { ChainTable } from "./chaintable.svelte.js";
+import { ChainTable, TABLE_ROWS } from "./chaintable.svelte.js";
 import { ResultTable } from "./resulttable.js";
 import { ChainResults, type Count } from "./results.js";
 import { COLUMN_RESULTS, columnsOf, type TrailColumns } from "./trailcolumns.js";
@@ -24,6 +24,9 @@ import { chooseCard } from "./cardpick.js";
 import { checkChains, checkOne, type SavedChain } from "./viewchains.js";
 import { DEFAULT_VIEW, Shape, type CardSettings, type SearchMode, type ViewSettings } from "./view.js";
 import type { PlaceId } from "./places.js";
+
+/** The places of `chain` and the links between them, without its pins. */
+const linksOf = (chain: Chain): string => JSON.stringify([chain.start, chain.steps.map((s) => [s.edge, s.direction, s.type])]);
 
 /** A chain's count as the page shows it: the count so far, and whether it is done. */
 export interface ChainCount extends Count {
@@ -133,6 +136,8 @@ export class Viewer {
   setChain(chain: Chain | null): void {
     this.#counting?.abort();
     this.#counting = null;
+    // Columns of a chain with other places are not this chain's: only its pins may differ.
+    if (chain === null || this.chain === null || linksOf(chain) !== linksOf(this.chain)) this.chainColumns = null;
     this.chain = chain;
     const file = this.file;
     if (chain === null || file === null) {
@@ -256,15 +261,14 @@ export class Viewer {
   }
 
   /**
-   * The link to the chain shown (V-17): the chain, its pins, the view, the table's current
-   * row and the table's sort and filters;
-   * null without a chain.
+   * The link to the chain shown (V-17): the chain, its pins, the view, the table's page (by
+   * its first row) and the table's sort and filters; null without a chain.
    */
   chainLink(): ChainLinkRoute | null {
     const chain = this.chain;
     const table = this.chainTable;
     if (chain === null || table === null) return null;
-    const place = this.chainShow === "table" ? table.current : 0;
+    const place = this.chainShow === "table" ? table.page * TABLE_ROWS : 0;
     return linkOf(chain, this.chainShow, place, table.table.columns, { sort: table.sort, filters: table.filters });
   }
 
@@ -314,25 +318,20 @@ export class Viewer {
       if (!live()) return;
       if (link.show === "table") {
         this.chainShow = "table";
-        // A row beyond the last opens the last one there is.
+        // A row beyond the last opens the last page there is (a sorted or filtered table finds it itself).
         let at = link.at - 1;
-        if (at > 0) {
-          const rows = table.arranged ? (await table.arrangedRows()).length : (await this.counted, this.chainCount?.total ?? at + 1);
+        if (at > 0 && !table.arranged) {
+          await this.counted;
           if (!live()) return;
-          at = Math.max(0, Math.min(at, rows - 1));
+          at = Math.max(0, Math.min(at, (this.chainCount?.total ?? at + 1) - 1));
         }
-        await table.showAt(at);
+        await table.show(Math.floor(at / TABLE_ROWS));
         if (!live()) return;
       }
       this.linkNotices = [...notices, ...chosen.notices];
     } finally {
       if (mine === this.#linkings) this.linking = false;
     }
-  }
-
-  /** Clear the table's filters (the empty state's action). */
-  async clearChainFilters(): Promise<void> {
-    await this.chainTable?.clearFilters();
   }
 
   /**

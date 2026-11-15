@@ -28,6 +28,8 @@ test("a search result opens in Explore, with the graph and its card", async () =
   const card = page.locator(`${selection} article[aria-label="Place:harbor"]`);
   await card.waitFor();
   expect(await card.innerText()).toContain("Old Harbor");
+  // The card names the thing: the pane does not say its name a second time.
+  expect(await page.locator(selection).getByText("Old Harbor", { exact: true }).count()).toBe(1);
   const context = page.locator(`${selection} aside[aria-label="Links and sources"]`);
   expect(await context.locator("a[data-id]").evaluateAll((links) => links.map((a) => a.getAttribute("data-id")).sort())).toEqual([
     "Event:regatta",
