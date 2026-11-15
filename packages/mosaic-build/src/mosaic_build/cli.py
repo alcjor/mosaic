@@ -73,7 +73,7 @@ from mosaic_format.check import check_file
 from mosaic_format.file import SIDECARS
 from mosaic_format.pattern import check_pattern
 from mosaic_format.writer import seal
-from mosaic_format.yaml_core import YamlError, load
+from mosaic_format.yaml_read import YamlError, load
 
 from mosaic_build import __version__
 from mosaic_build import export as exporter

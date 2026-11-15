@@ -213,7 +213,7 @@ A rule-based tessera builder MUST produce the same knowledge hash from the same 
 
 ### 5. Pattern and proposals
 
-A pattern is one YAML file, `pattern.yaml`, valid against `pattern.schema.json`. An optional `proposals.yaml` beside it, valid against `proposals.schema.json`, holds AI proposals and the user's decisions. Both are read as YAML 1.2 core schema; a reader MUST reject duplicate keys. The pattern has four sections; a complete example is in Part 2 (Pattern schemas).
+A pattern is one YAML file, `pattern.yaml`, valid against `pattern.schema.json`. An optional `proposals.yaml` beside it, valid against `proposals.schema.json`, holds AI proposals and the user's decisions. Both are read as YAML 1.2 that holds JSON data: every mapping key is text and every value is text, a number, `true`, `false`, `null`, a list or a mapping, so a date is quoted. A reader MUST reject duplicate keys. The pattern has four sections; a complete example is in Part 2 (Pattern schemas).
 
 #### 5.1 `pieces`
 

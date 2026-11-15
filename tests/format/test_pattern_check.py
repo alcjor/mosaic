@@ -310,13 +310,14 @@ def test_text_that_is_not_utf8_is_a_yaml_violation(tmp_path: Path) -> None:
     assert "UTF-8" in report.violations[0].message
 
 
-DEEP_BY_ALIASES = "x:\n" + "\n".join(
-    ["  - &a0 [x]"] + [f"  - &a{k} [*a{k - 1}]" for k in range(1, 400)]
+LARGE_BY_ALIASES = "\n".join(
+    ["a0: &a0 [x, x, x, x, x, x, x, x, x, x]"]
+    + [f"a{k}: &a{k} [{', '.join([f'*a{k - 1}'] * 10)}]" for k in range(1, 9)]
 )
 
 
 @pytest.mark.parametrize(
-    "text", ["format: " + "1" * 5000 + "\n", "[" * 2000, DEEP_BY_ALIASES + "\n"]
+    "text", ["format: " + "1" * 5000 + "\n", "[" * 2000, LARGE_BY_ALIASES + "\n"]
 )
 def test_hostile_yaml_is_a_violation_not_a_crash(text: str, tmp_path: Path) -> None:
     report = check_pattern(write(tmp_path / "p.yaml", text))

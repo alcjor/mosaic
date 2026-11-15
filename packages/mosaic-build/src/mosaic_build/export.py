@@ -30,7 +30,7 @@ import os
 import re
 from pathlib import Path
 
-from mosaic_format.yaml_core import load
+from mosaic_format.yaml_read import load
 
 from mosaic_build import cut as cutter
 from mosaic_build import view as viewer

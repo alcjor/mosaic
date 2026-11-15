@@ -37,7 +37,7 @@ of ``views/example.yaml``; ``views/view.schema.json`` is their JSON Schema.
   default, the mosaic as it is.
 
 Every key is optional, so an empty view file, or none (``read(None)``), gives M2's viewer. The
-file is read as YAML 1.2 core schema with duplicate keys refused. An unknown key and a value of
+file is read as YAML 1.2 with duplicate keys refused. An unknown key and a value of
 the wrong kind are errors naming the file, the line and the setting. Whether the named types and
 properties are in the mosaic is not checked here: the page does that, against the mosaic it
 opens.
@@ -52,7 +52,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from mosaic_format.yaml_core import load
+from mosaic_format.yaml_read import load
 
 __all__ = [
     "SEARCH",

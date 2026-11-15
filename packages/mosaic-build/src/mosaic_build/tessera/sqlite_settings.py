@@ -11,7 +11,7 @@ key is two foreign keys takes ``edge`` alone, the name of the edge type each of 
 The tables keep the file's order. So the ``header.settings`` of a tessera, as a
 file, rebuilds that tessera from the same database.
 
-The file is read as YAML 1.2 core schema, which holds JSON, with duplicate keys refused. A key
+The file is read as YAML 1.2 that holds JSON, with duplicate keys refused. A key
 the settings do not have, a value of the wrong kind and settings the builder refuses, alone or
 for the database (:func:`read_database`: a table or column it does not have, a foreign key it
 does not declare), are errors naming the file, the line and the setting. Nothing is guessed.
@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from mosaic_format.writer import Content
-from mosaic_format.yaml_core import Document, load
+from mosaic_format.yaml_read import Document, load
 
 from mosaic_build.tessera import sqlite
 from mosaic_build.tessera.settings import SettingsError, conversion

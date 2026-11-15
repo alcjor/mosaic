@@ -30,7 +30,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.protocols import Validator
 from mosaic_format.reader import Limits, SealedFile
 from mosaic_format.reader import open as open_sealed
-from mosaic_format.yaml_core import load
+from mosaic_format.yaml_read import load
 
 from tests.conftest import MODEL, REPO, SPEC
 from tests.fixtures.expected import built_vectors, differences, load_expected

@@ -382,7 +382,7 @@ def test_a_repeated_column_is_an_error(tmp_path: Path) -> None:
         read(path)
 
 
-# YAML 1.2 core schema (the spec's reading of YAML).
+# YAML 1.2 (the spec's reading of YAML).
 
 
 def test_an_unknown_tag_is_an_error_not_code(tmp_path: Path) -> None:

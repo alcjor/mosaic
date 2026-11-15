@@ -11,7 +11,7 @@ per cell). So the ``header.settings`` of a tessera, as a file, rebuilds that tes
 same source. In YAML a boolean conversion's keys are quoted, ``"true"`` and ``"false"``: bare,
 they are booleans, and a key must be text.
 
-The file is read as YAML 1.2 core schema, which holds JSON, with duplicate keys refused. A key
+The file is read as YAML 1.2 that holds JSON, with duplicate keys refused. A key
 the settings do not have, a value of the wrong kind and settings the builder refuses are errors
 naming the file, the line and the setting. Nothing is guessed.
 """
@@ -21,7 +21,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from mosaic_format.yaml_core import load
+from mosaic_format.yaml_read import load
 
 from mosaic_build.tessera.convert import Boolean, Conversion, Date, Integer, Number, Quantity
 from mosaic_build.tessera.csv import Link, LinkError, Settings, check_link, check_settings

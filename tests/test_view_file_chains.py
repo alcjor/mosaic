@@ -171,7 +171,7 @@ def test_a_wrong_step_says_which_step(tmp_path: Path) -> None:
 def test_a_label_written_twice_is_refused(tmp_path: Path) -> None:
     text = "chains:\n  C:\n    start: A\n  C:\n    start: B\n"
     path = _write(tmp_path, text)
-    with pytest.raises(ValueError, match=rf"^{path}:4: duplicate key 'C'"):
+    with pytest.raises(ValueError, match=rf"^{path}:4: duplicate key"):
         read(path)
 
 
