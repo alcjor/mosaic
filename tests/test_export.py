@@ -296,6 +296,7 @@ def test_an_unbuilt_viewer_exits_1_saying_how_to_build_it(
         == 1
     )
     assert not out.exists()
+    assert str(tmp_path / "nowhere") in capsys.readouterr().err
 
 
 def test_text_from_the_file_name_cannot_break_out_of_the_page(tmp_path: Path, dist: Path) -> None:

@@ -271,7 +271,7 @@ def test_a_linked_column_missing_from_the_header_is_named(tmp_path: Path) -> Non
 def test_a_linked_column_whose_name_cannot_be_a_locator_value_is_refused(tmp_path: Path) -> None:
     text = "code,a;b\nB1,x\n"
     settings = Settings(type="Book", key="code", links={"a;b": Link("Thing", "has")})
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"links\.a;b"):
         _build(tmp_path, settings, text)
 
 

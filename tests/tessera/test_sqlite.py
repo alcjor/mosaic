@@ -508,7 +508,7 @@ def test_a_table_whose_primary_key_has_two_columns_is_refused(tmp_path: Path) ->
         "CREATE TABLE T (A INTEGER, B INTEGER, PRIMARY KEY (A, B));",
         "INSERT INTO T VALUES (1, 2);",
     )
-    _refused(tmp_path, db, Settings(tables={"T": Table()}), r"pair\.db: table 'T'")
+    _refused(tmp_path, db, Settings(tables={"T": Table()}), r"pair\.db: table 'T'.*2 columns")
 
 
 def test_a_null_or_empty_key_is_refused(tmp_path: Path) -> None:
@@ -827,7 +827,7 @@ def test_a_tessera_given_as_the_source_is_refused(tmp_path: Path) -> None:
         tmp_path,
         source,
         Settings(tables={"node": Table(type="Node")}),
-        "",
+        r"x\.db.*tessera",
     )
 
 

@@ -188,8 +188,9 @@ def test_built_from_must_be_the_mosaic_the_proposals_name(tmp_path: Path) -> Non
 
 def test_built_from_must_be_a_mosaic(tmp_path: Path) -> None:
     pattern, proposals, piece, _ = valid_case(tmp_path)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as error:
         check_pattern(pattern, proposals=proposals, built_from=piece)
+    assert piece.name in str(error.value)
 
 
 def test_built_from_needs_proposals(tmp_path: Path) -> None:

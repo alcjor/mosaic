@@ -250,7 +250,7 @@ def test_invariant_4_an_edge_type_used_as_a_node_type(tmp_path: Path) -> None:
     nodes = [replace(n, type="in_group") if n.id == "Row:2" else n for n in content.nodes]
     path = tmp_path / "x.tessera"
     seal(path, replace(content, types=types, nodes=nodes))
-    only(check(path), "inv-4")
+    assert len(only(check(path), "inv-4")) == 1
 
 
 def test_invariant_6_evidence_ties_are_broken_by_confidence(tmp_path: Path) -> None:

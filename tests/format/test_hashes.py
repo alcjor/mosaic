@@ -530,5 +530,5 @@ def test_vector_hash_does_not_change_the_knowledge_hash(golden: sqlite3.Connecti
 def test_vector_hash_refuses_a_short_vector_naming_the_node(golden: sqlite3.Connection) -> None:
     golden.execute("PRAGMA ignore_check_constraints = ON")
     golden.execute("INSERT INTO vector VALUES (2, zeroblob(47))")
-    with pytest.raises(ValueError, match=r"'Thing:t1'"):
+    with pytest.raises(ValueError, match=r"'Thing:t1'.*47"):
         vector_hash(golden)

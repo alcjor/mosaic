@@ -260,26 +260,26 @@ def test_two_rows_that_name_the_same_two_rows_are_refused(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize(
-    "schema",
+    ("schema", "columns"),
     [
         # two columns, one of them no foreign key
         ("CREATE TABLE W (Id INTEGER PRIMARY KEY);"
-         "CREATE TABLE T (A INTEGER REFERENCES W, B INTEGER, PRIMARY KEY (A, B));"),
+         "CREATE TABLE T (A INTEGER REFERENCES W, B INTEGER, PRIMARY KEY (A, B));", 2),
         # three columns, each a foreign key
         ("CREATE TABLE W (Id INTEGER PRIMARY KEY);"
          "CREATE TABLE T (A INTEGER REFERENCES W, B INTEGER REFERENCES W,"
-         " C INTEGER REFERENCES W, PRIMARY KEY (A, B, C));"),
+         " C INTEGER REFERENCES W, PRIMARY KEY (A, B, C));", 3),
         # two columns that are one foreign key of two columns
         ("CREATE TABLE W (X INTEGER, Y INTEGER, PRIMARY KEY (X, Y));"
          "CREATE TABLE T (A INTEGER, B INTEGER, PRIMARY KEY (A, B),"
-         " FOREIGN KEY (A, B) REFERENCES W (X, Y));"),
+         " FOREIGN KEY (A, B) REFERENCES W (X, Y));", 2),
         # two columns with no foreign key at all
         ("CREATE TABLE W (Id INTEGER PRIMARY KEY);"
-         "CREATE TABLE T (A INTEGER, B INTEGER, PRIMARY KEY (A, B));"),
+         "CREATE TABLE T (A INTEGER, B INTEGER, PRIMARY KEY (A, B));", 2),
     ],
 )  # fmt: skip
 def test_a_key_of_several_columns_that_is_not_two_foreign_keys_is_still_refused(
-    tmp_path: Path, schema: str
+    tmp_path: Path, schema: str, columns: int
 ) -> None:
     db = _database(tmp_path / "keys.db", schema, "")
     for t in (Table(), Table(edge="t")):
@@ -287,7 +287,7 @@ def test_a_key_of_several_columns_that_is_not_two_foreign_keys_is_still_refused(
             tmp_path,
             db,
             Settings(tables={"W": Table(), "T": t}) if "W (Id" in schema else Settings({"T": t}),
-            r"keys\.db: table 'T'",
+            rf"keys\.db: table 'T'.*{columns} columns",
         )
 
 
