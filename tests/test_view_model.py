@@ -336,14 +336,6 @@ def test_a_file_the_reading_rules_accept_opens_with_a_model_of_another_vector_mo
     assert code == 0 and len(visitor.urls) == 1
 
 
-def test_a_changed_vector_is_refused_naming_the_vector_hash_with_a_good_model(
-    model: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    no_page(monkeypatch)
-    assert main(["view", str(READING / "vector-changed.mosaic"), "--model", str(model)]) == 1
-    assert "vector" in capsys.readouterr().err
-
-
 # --- what the server hands out (section 10: nothing beyond the pinned files) ------------------
 
 

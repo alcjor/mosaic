@@ -5,7 +5,20 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { FileRefusedError, encodeKnowledge, knowledgeHash, openFile, vectorHash } from "../src/index.js";
+import {
+  FileRefusedError,
+  encodeKnowledge,
+  knowledgeHash,
+  openFile,
+  vectorHash,
+  type OpenOptions,
+  type SealedFile,
+} from "../src/index.js";
+
+/** Open as a reader that also checks the hashes before it returns the file (section 3.8). */
+function openChecked(bytes: Uint8Array, name: string, options: OpenOptions = {}): Promise<SealedFile> {
+  return openFile(bytes, name, { ...options, verify: true });
+}
 
 const conformance = (path: string): string =>
   fileURLToPath(new URL(`../../conformance/${path}`, import.meta.url));
@@ -53,7 +66,7 @@ function changed(path: string, ...statements: string[]): Uint8Array {
 
 async function refusal(bytes: Uint8Array, name: string): Promise<FileRefusedError> {
   try {
-    (await openFile(bytes, name)).close();
+    (await openChecked(bytes, name)).close();
   } catch (e) {
     expect(e).toBeInstanceOf(FileRefusedError);
     return e as FileRefusedError;
@@ -87,7 +100,7 @@ describe("conformance/reading/hashes.json: the kit's hashes are those of mosaic_
 
     if (expected.opens) {
       it(`opens ${key}, whose header holds the hashes its content gives`, async () => {
-        const file = await openFile(read(key), key);
+        const file = await openChecked(read(key), key);
         try {
           expect(file.header.knowledge_hash).toBe(expected.knowledge_hash);
           expect(file.header.vector_hash).toBe(expected.vector_hash);
@@ -146,7 +159,7 @@ describe("one changed row is refused on open, naming the hash that differs (3.8 
 
   it("opens a confidence changed below the sixth decimal, which the hash rounds away (3.6)", async () => {
     const bytes = changed(MOSAIC, "UPDATE evidence SET confidence = 0.5000001 WHERE confidence IS NOT NULL");
-    (await openFile(bytes, "rounded.mosaic")).close();
+    (await openChecked(bytes, "rounded.mosaic")).close();
   });
 
   const vector: Record<string, string> = {
@@ -203,7 +216,7 @@ describe("canonical order compares text by UTF-8 bytes (3.6)", () => {
   });
 
   it("gives the header's hash for that file, and another once its two aliases trade nodes", async () => {
-    const file = await openFile(read("reading/non-ascii.mosaic"), "non-ascii.mosaic");
+    const file = await openChecked(read("reading/non-ascii.mosaic"), "non-ascii.mosaic");
     file.close();
     const swapped = changed(
       "reading/non-ascii.mosaic",
@@ -308,7 +321,7 @@ async function opensWithOracleHash(bytes: Uint8Array, name: string): Promise<voi
   const db = database(bytes);
   const expected = oracleKnowledge(db);
   db.close();
-  const file = await openFile(bytes, name);
+  const file = await openChecked(bytes, name);
   try {
     expect(file.header.knowledge_hash).toBe(expected);
   } finally {
@@ -503,7 +516,7 @@ describe("text that is not valid UTF-8 is untrusted data (3.8 step 4) and still 
         if (got !== undefined) expect(got).toBe(expected);
         const bytes = sealedBytes(db);
         try {
-          const file = await openFile(bytes, "bad-utf8.mosaic");
+          const file = await openChecked(bytes, "bad-utf8.mosaic");
           file.close();
         } catch (e) {
           expect(e).toBeInstanceOf(FileRefusedError);
@@ -565,7 +578,7 @@ describe("the vector hash is SHA-256 of the bits in nid order (3.7)", () => {
 
   it("opens vectors rewritten and resealed, with the header's new vector hash", async () => {
     const bytes = resealed(MOSAIC, `UPDATE vector SET bits = X'${"0f".repeat(48)}' WHERE nid = 2`);
-    const file = await openFile(bytes, "vectors.mosaic");
+    const file = await openChecked(bytes, "vectors.mosaic");
     try {
       expect(file.header.vector_hash).toBe(
         sha256(
@@ -609,11 +622,11 @@ describe("a changed or added row is refused on open, whichever table it is in (3
 
   it("opens a file whose header says producer, settings or target are something else: they are not hashed", async () => {
     const bytes = resealed(MOSAIC, "UPDATE header SET producer = 'other/9', target = 'elsewhere'");
-    (await openFile(bytes, "producer.mosaic")).close();
+    (await openChecked(bytes, "producer.mosaic")).close();
     const unsealed = edit(MOSAIC, "UPDATE header SET producer = 'other/9'");
     const raw = sqlite3.capi.sqlite3_js_db_export(unsealed);
     unsealed.close();
-    (await openFile(raw, "producer-only.mosaic")).close();
+    (await openChecked(raw, "producer-only.mosaic")).close();
   });
 });
 
@@ -659,13 +672,14 @@ describe("only the header's own hashes decide, written exactly (3.3, 3.8 step 3)
 
   it("opens the file and leaves a changed derived table and search index unread (3.6: not hashed)", async () => {
     const bytes = header("DELETE FROM link_count");
-    (await openFile(bytes, "derived.mosaic")).close();
+    (await openChecked(bytes, "derived.mosaic")).close();
   });
 });
 
 describe("a 10,000-node mosaic: the kit's hash matches the oracle and opens in under 3 s (ADR-007)", () => {
-  it("hashes 12,000 nodes, their evidence and vectors, as the oracle does", async () => {
-    const db = edit(
+  /** The conforming mosaic with 12,000 more nodes, each with evidence and a vector, not yet sealed. */
+  function big(): Database {
+    return edit(
       MOSAIC,
       `INSERT INTO node (nid, id, type, key, label, summary, props)
          WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 12000)
@@ -678,12 +692,33 @@ describe("a 10,000-node mosaic: the kit's hash matches the oracle and opens in u
          WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 12000)
          SELECT 1000 + i, NULL, NULL, 1, 'row=' || i, 'inferred', 'p/1', (i % 1000) / 1000.0, NULL FROM n`,
     );
+  }
+
+  it("verify() works in steps: a tool answers before it ends, and closing the file stops it", async () => {
+    const db = big();
+    const bytes = sealedBytes(db);
+    db.close();
+    const file = await openFile(bytes, "big.mosaic");
+    let ended = false;
+    const checking = file.verify().finally(() => (ended = true));
+    const found = await file.find({ query: "Label 7" });
+    expect("error" in found).toBe(false);
+    expect(ended).toBe(false);
+    await expect(checking).resolves.toBeUndefined();
+    const stopped = file.verify();
+    file.close();
+    await expect(stopped).rejects.toThrow(Error);
+    await expect(stopped).rejects.not.toBeInstanceOf(FileRefusedError);
+  }, 60_000);
+
+  it("hashes 12,000 nodes, their evidence and vectors, as the oracle does", async () => {
+    const db = big();
     const bytes = sealedBytes(db);
     const expected = oracleKnowledge(db);
     const expectedVectors = oracleVector(db);
     db.close();
     const start = performance.now();
-    const file = await openFile(bytes, "big.mosaic");
+    const file = await openChecked(bytes, "big.mosaic");
     const ms = performance.now() - start;
     console.log(`open with both hashes, 12,003 nodes, ${(bytes.length / 1048576).toFixed(1)} MB: ${ms.toFixed(0)} ms`);
     try {

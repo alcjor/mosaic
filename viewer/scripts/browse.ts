@@ -99,8 +99,12 @@ async function walk(page: Page, started: number = performance.now()) {
     await page.locator(`article[aria-label="${first}"]`).waitFor();
     opened = first;
   }
+  // The page checks the file's hashes while it is used: wait for what it found.
+  const sealMark = page.locator('header [data-seal]:not([data-seal="checking"])');
+  await sealMark.waitFor({ timeout: 120_000 });
+  const seal = await sealMark.getAttribute("data-seal");
   const banners = await page.locator('[role="alert"]').allInnerTexts();
-  return { header, results, card: cardText, links, sources, opened, hash: new URL(page.url()).hash, banners, ms };
+  return { header, results, card: cardText, links, sources, opened, hash: new URL(page.url()).hash, banners, seal, ms };
 }
 
 /** The first page of the table of `type`: its column headers, row ids, pager, and time to fill. */

@@ -7,7 +7,7 @@
  * searches names and full text only; in *Semantic* mode it is opened with the embedder, when
  * the page has one (section 3.8). Switching the mode opens the same bytes again.
  */
-import type { QueryEmbedder, SealedFile } from "@mosaic/kit";
+import { FileRefusedError, type QueryEmbedder, type SealedFile } from "@mosaic/kit";
 import { cardFacts, type Fact } from "./cards.js";
 import type { Chain } from "./chain.js";
 import { LinkReader } from "./links.js";
@@ -32,10 +32,19 @@ export interface ChainCount extends Count {
 
 export type Status = "empty" | "loading" | "ready" | "error";
 
+/**
+ * Whether the open file is what was sealed: its hashes are checked after it shows, so the page
+ * opens at once. A file that fails the check stays open, with a warning.
+ */
+export type Seal = "checking" | "verified" | "not verified";
+
 export class Viewer {
   /** The open mosaic, or null before one is opened. */
   file = $state.raw<SealedFile | null>(null);
   status = $state<Status>("empty");
+  /** The hash check of the open file, and what it found when the hashes differ. */
+  seal = $state<Seal | null>(null);
+  sealFailure = $state<string | null>(null);
   /** Why the last file could not be opened. */
   error = $state<string | null>(null);
   /** What embeds queries for `find`'s vector tier, when the page was given the model. */
@@ -476,6 +485,22 @@ export class Viewer {
     await Promise.all([this.search(query), this.show(nodeId), this.showTable(tableRoute)]);
   }
 
+  /** Check `file`'s hashes while the page is used, and say what was found if it is still open. */
+  #verify(file: SealedFile): void {
+    this.seal = "checking";
+    this.sealFailure = null;
+    file.verify().then(
+      () => {
+        if (this.file === file) this.seal = "verified";
+      },
+      (e: unknown) => {
+        if (this.file !== file) return; // closed for another file: nothing to say about this one
+        this.seal = "not verified";
+        this.sealFailure = e instanceof FileRefusedError ? e.message : String(e);
+      },
+    );
+  }
+
   /** Open `bytes` as the mosaic `name`, closing the one before; a refused file is an error. */
   async open(bytes: Uint8Array, name: string): Promise<void> {
     this.status = "loading";
@@ -492,6 +517,8 @@ export class Viewer {
       const same = this.#opened?.bytes === bytes;
       this.file?.close();
       this.file = file;
+      // The same bytes opened again (another search mode) keep what the check found.
+      if (!same || this.seal === null || this.seal === "checking") this.#verify(file);
       this.#opened = { bytes, name };
       this.shape = new Shape(this.view, file);
       this.#checkChains();

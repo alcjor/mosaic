@@ -130,7 +130,7 @@ def _open_all(paths: Sequence[Path]) -> list[SealedFile]:
                 continue
             seen.add(resolved)
             try:
-                opened.append(open_sealed(path, limits=READ_ALL))
+                opened.append(open_sealed(path, limits=READ_ALL, verify=True))
             except FileRefusedError as e:
                 raise BuildError(
                     "invalid_input", f"available file refused by the reading rules: {e}"
@@ -145,7 +145,7 @@ def _open_all(paths: Sequence[Path]) -> list[SealedFile]:
 def _previous_hash(previous: Path) -> str:
     """The knowledge hash of the previous mosaic, opened by the reading rules (section 3.8)."""
     try:
-        with open_sealed(previous, limits=READ_ALL) as f:
+        with open_sealed(previous, limits=READ_ALL, verify=True) as f:
             return f.knowledge_hash
     except FileRefusedError as e:
         raise BuildError(

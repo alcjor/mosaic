@@ -43,7 +43,8 @@ import { DIMENSIONS, type QueryEmbedder } from "./embed.js";
 import { find, findArgs, hasWords } from "./find.js";
 import { FORMAT_SQL } from "./format-sql.js";
 import { get } from "./get.js";
-import { UnhashableError, knowledgeHash, vectorHash } from "./hashes.js";
+import { UnhashableError, knowledgeBytes, vectorBytes } from "./hashes.js";
+import { Sha256 } from "./sha256.js";
 import { neighbors } from "./neighbors.js";
 import { table } from "./table.js";
 
@@ -105,6 +106,9 @@ export interface Header {
   readonly ai_model: string | null;
 }
 
+/** How long {@link SealedFile.verify} works before it lets other work run, in milliseconds. */
+const VERIFY_SLICE_MS = 12;
+
 /** How a file is opened. */
 export interface OpenOptions {
   /** The time bound of one tool call, in milliseconds; {@link TIME_LIMIT_MS} by default. */
@@ -115,6 +119,12 @@ export interface OpenOptions {
    * names and full text only (section 3.8).
    */
   readonly embedder?: QueryEmbedder;
+  /**
+   * Also recompute both hashes before the file is returned, and refuse a file they do not
+   * match (section 3.8). Off by default: opening checks the file's structure only, and
+   * {@link SealedFile.verify} checks the hashes when the caller chooses.
+   */
+  readonly verify?: boolean;
 }
 
 /** A node type the file declares, with how many nodes it has (section 3.4). */
@@ -202,6 +212,13 @@ export interface SealedFile {
    * `args.type`, `args.to`, or an error answer.
    */
   cite(args: unknown): Promise<CiteAnswer | ErrorAnswer>;
+  /**
+   * Recompute both hashes and compare them with the header's (section 3.8): resolves when the
+   * content is what was sealed, rejects with a {@link FileRefusedError} (rule `knowledge_hash`
+   * or `vector_hash`) when it is not. It works in short steps, so a page stays responsive and
+   * tools can be called meanwhile.
+   */
+  verify(): Promise<void>;
   /** Free the file's memory. Closing twice is harmless. */
   close(): void;
 }
@@ -250,6 +267,7 @@ export async function openFile(bytes: Uint8Array, name: string, options: OpenOpt
   }
   try {
     const header = verify(db, name, expected);
+    if (options.verify === true) for (const _ of hashing(db, name, header));
     return sealedFile(db, name, header, new Deadline(s, db, timeLimitMs), options.embedder);
   } catch (e) {
     db.close();
@@ -354,9 +372,7 @@ function verify(db: Database, name: string, expected: Schema): Header {
   }
   checkVersion(db, name);
   checkSchema(db, name, expected);
-  const header = readHeader(db, name);
-  checkHashes(db, name, header);
-  return header;
+  return readHeader(db, name);
 }
 
 /** A header value as the messages show it. */
@@ -364,18 +380,25 @@ function shown(value: string | null): string {
   return value === null ? "null" : `'${value}'`;
 }
 
-/** Recompute both hashes and compare them with the header's (section 3.8 step 3). */
-function checkHashes(db: Database, name: string, header: Header): void {
-  const knowledge = hashed(name, "knowledge_hash", "3.6", () => knowledgeHash(db));
-  if (knowledge !== header.knowledge_hash) {
+/**
+ * Recompute both hashes and compare them with the header's (section 3.8), a few rows at a time:
+ * each step of the iteration is a little of the work, and the last one throws on a mismatch.
+ */
+function* hashing(db: Database, name: string, header: Header): Generator<void, void> {
+  const knowledge = new Sha256();
+  yield* fed(knowledge, knowledgeBytes(db), name, "knowledge_hash", "3.6");
+  const found = knowledge.hex();
+  if (found !== header.knowledge_hash) {
     throw new FileRefusedError(
       name,
       "knowledge_hash",
       `knowledge hash mismatch: the header says ${shown(header.knowledge_hash)}, ` +
-        `the content gives ${shown(knowledge)} (section 3.6)`,
+        `the content gives ${shown(found)} (section 3.6)`,
     );
   }
-  const vectors = hashed(name, "vector_hash", "3.7", () => vectorHash(db));
+  const digest = new Sha256();
+  const count = yield* fed(digest, vectorBytes(db), name, "vector_hash", "3.7");
+  const vectors = count > 0 ? digest.hex() : null;
   if (vectors !== header.vector_hash) {
     throw new FileRefusedError(
       name,
@@ -386,16 +409,28 @@ function checkHashes(db: Database, name: string, header: Header): void {
   }
 }
 
-/** `compute()`, with a value the hash cannot take refused for `rule`. */
-function hashed<T>(name: string, rule: RefusalRule, section: string, compute: () => T): T {
+/** Feed `digest` from `bytes`, one step per piece; a value the hash cannot take is refused for `rule`. */
+function* fed(
+  digest: Sha256,
+  bytes: Generator<Uint8Array, void>,
+  name: string,
+  rule: RefusalRule,
+  section: string,
+): Generator<void, number> {
+  let count = 0;
   try {
-    return compute();
+    for (const piece of bytes) {
+      digest.update(piece);
+      count++;
+      yield;
+    }
   } catch (e) {
     if (e instanceof UnhashableError) {
       throw new FileRefusedError(name, rule, `${e.message} (section ${section})`);
     }
     throw e;
   }
+  return count;
 }
 
 function implemented(): string {
@@ -648,9 +683,33 @@ function sealedFile(db: Database, name: string, header: Header, deadline: Deadli
       throw e;
     }
   }
+  /** Check the hashes in slices of about {@link VERIFY_SLICE_MS}, letting other work run between. */
+  async function verified(): Promise<void> {
+    const steps = hashing(db, name, header);
+    let since = performance.now();
+    try {
+      for (;;) {
+        if (!open) throw new Error(`${name} is closed`);
+        let done: boolean | undefined;
+        try {
+          done = steps.next().done;
+        } catch (e) {
+          throw refused(name, e); // as on open: SQLite's own error means an unreadable file
+        }
+        if (done === true) return;
+        if (performance.now() - since >= VERIFY_SLICE_MS) {
+          await new Promise((resume) => setTimeout(resume, 0));
+          since = performance.now();
+        }
+      }
+    } finally {
+      if (open) steps.return();
+    }
+  }
   return {
     name,
     header,
+    verify: verified,
     nodeTypes: types,
     edgeTypes: edges,
     propsOf: (type) => declared.get(type) ?? [],

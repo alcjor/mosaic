@@ -3,7 +3,20 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { FORMAT_SQL } from "../src/format-sql.js";
-import { FileRefusedError, IMPLEMENTED_VERSIONS, REFUSAL_RULES, openFile, type RefusalRule } from "../src/index.js";
+import {
+  FileRefusedError,
+  IMPLEMENTED_VERSIONS,
+  REFUSAL_RULES,
+  openFile,
+  type OpenOptions,
+  type RefusalRule,
+  type SealedFile,
+} from "../src/index.js";
+
+/** Open as a reader that also checks the hashes before it returns the file (section 3.8). */
+function openChecked(bytes: Uint8Array, name: string, options: OpenOptions = {}): Promise<SealedFile> {
+  return openFile(bytes, name, { ...options, verify: true });
+}
 
 const conformance = (path: string): string =>
   fileURLToPath(new URL(`../../conformance/${path}`, import.meta.url));
@@ -36,7 +49,7 @@ const NAMES: Record<RefusalRule, string> = {
 
 async function refusal(bytes: Uint8Array, name: string): Promise<FileRefusedError> {
   try {
-    (await openFile(bytes, name)).close();
+    (await openChecked(bytes, name)).close();
   } catch (e) {
     expect(e).toBeInstanceOf(FileRefusedError);
     return e as FileRefusedError;
@@ -63,7 +76,7 @@ describe("conformance/reading: the kit opens or refuses each file as cases.json 
     const c = CASES[name]!;
     if (c.opens) {
       it(`opens ${name} and returns its header (3.3)`, async () => {
-        const file = await openFile(read(`reading/${name}`), name);
+        const file = await openChecked(read(`reading/${name}`), name);
         try {
           expect(file.name).toBe(name);
           expect({ ...file.header }).toEqual(c.header);
@@ -110,7 +123,7 @@ describe("SQLite header settings that section 3.8 step 2 does not check", () => 
     const bytes = read("reading/wal.mosaic");
     expect([bytes[18], bytes[19]]).toEqual([2, 2]);
     const before = bytes.slice();
-    const file = await openFile(bytes, "wal.mosaic");
+    const file = await openChecked(bytes, "wal.mosaic");
     expect({ ...file.header }).toEqual(CASES["mosaic.mosaic"]!.header);
     file.close();
     expect(bytes).toEqual(before);
@@ -171,18 +184,18 @@ describe("opening is read-only (3.8 step 1)", () => {
   it("leaves the given bytes as they were and opens them again the same way", async () => {
     const bytes = read("reading/mosaic.mosaic");
     const before = bytes.slice();
-    const first = await openFile(bytes, "mosaic.mosaic");
+    const first = await openChecked(bytes, "mosaic.mosaic");
     const header = { ...first.header };
     first.close();
     expect(bytes).toEqual(before);
-    const second = await openFile(bytes, "mosaic.mosaic");
+    const second = await openChecked(bytes, "mosaic.mosaic");
     expect({ ...second.header }).toEqual(header);
     second.close();
     expect(bytes).toEqual(before);
   });
 
   it("gives a header that cannot be changed", async () => {
-    const file = await openFile(read("reading/tessera.tessera"), "tessera.tessera");
+    const file = await openChecked(read("reading/tessera.tessera"), "tessera.tessera");
     try {
       expect(Object.isFrozen(file.header)).toBe(true);
     } finally {
@@ -191,7 +204,7 @@ describe("opening is read-only (3.8 step 1)", () => {
   });
 
   it("keeps its header after it is closed, and closing twice is harmless", async () => {
-    const file = await openFile(read("reading/tessera.tessera"), "tessera.tessera");
+    const file = await openChecked(read("reading/tessera.tessera"), "tessera.tessera");
     file.close();
     expect(file.header.kind).toBe("tessera");
     expect(() => file.close()).not.toThrow();
@@ -229,7 +242,7 @@ async function expectRule(bytes: Uint8Array, name: string, rule: RefusalRule): P
 /** Opens, or is refused cleanly; any other failure is a bug (3.8 step 4: untrusted input). */
 async function opensOrRefused(bytes: Uint8Array, name: string): Promise<"opened" | "refused"> {
   try {
-    (await openFile(bytes, name)).close();
+    (await openChecked(bytes, name)).close();
     return "opened";
   } catch (e) {
     expect(e, `${name}: ${String(e)}`).toBeInstanceOf(FileRefusedError);
@@ -308,7 +321,7 @@ describe("the schema is exactly 3.1's (3.8 step 2)", () => {
 
   it("opens a file that holds sqlite_stat1, which format.sql allows", async () => {
     const bytes = await mutate(MOSAIC, "ANALYZE");
-    const file = await openFile(bytes, "stat.mosaic");
+    const file = await openChecked(bytes, "stat.mosaic");
     try {
       expect(file.header.kind).toBe("mosaic");
     } finally {
@@ -345,7 +358,7 @@ describe("the header is exactly one row of a known kind (3.3)", () => {
       TESSERA,
       `UPDATE header SET producer = '${producer}', ai_model = '${aiModel}'`,
     );
-    const file = await openFile(bytes, "utf8.tessera");
+    const file = await openChecked(bytes, "utf8.tessera");
     try {
       expect(file.header.producer).toBe(producer);
       expect(file.header.ai_model).toBe(aiModel);
@@ -358,7 +371,7 @@ describe("the header is exactly one row of a known kind (3.3)", () => {
   it("returns a long settings value whole", async () => {
     const settings = JSON.stringify({ k: "x".repeat(100_000) });
     const bytes = await mutate(TESSERA, `UPDATE header SET settings = '${settings}'`);
-    const file = await openFile(bytes, "long.tessera");
+    const file = await openChecked(bytes, "long.tessera");
     try {
       expect(file.header.settings).toBe(settings);
     } finally {
@@ -439,7 +452,7 @@ describe("what a caller gives and gets back (3.8 step 1, 3.3)", () => {
     big.set(whole, 17);
     const view = big.subarray(17, 17 + whole.length);
     expect(view.byteOffset).toBe(17);
-    const file = await openFile(view, "view.mosaic");
+    const file = await openChecked(view, "view.mosaic");
     try {
       const expected = JSON.parse(readFileSync(conformance("reading/cases.json"), "utf8"))[
         "mosaic.mosaic"
@@ -469,7 +482,7 @@ describe("what a caller gives and gets back (3.8 step 1, 3.3)", () => {
 
   it("keeps the header after the caller changes the given bytes", async () => {
     const bytes = read(TESSERA);
-    const file = await openFile(bytes, "t.tessera");
+    const file = await openChecked(bytes, "t.tessera");
     const before = { ...file.header };
     bytes.fill(0);
     expect({ ...file.header }).toEqual(before);
@@ -478,7 +491,7 @@ describe("what a caller gives and gets back (3.8 step 1, 3.3)", () => {
 
   it("opens the same bytes twice at once, and closing one leaves the other", async () => {
     const bytes = read(MOSAIC);
-    const [a, b] = await Promise.all([openFile(bytes, "a.mosaic"), openFile(bytes, "b.mosaic")]);
+    const [a, b] = await Promise.all([openChecked(bytes, "a.mosaic"), openChecked(bytes, "b.mosaic")]);
     expect(a.name).toBe("a.mosaic");
     expect(b.name).toBe("b.mosaic");
     expect({ ...a.header }).toEqual({ ...b.header });
@@ -567,7 +580,7 @@ const addStat4 = (): string[] => [
 ];
 
 async function opensAs(bytes: Uint8Array, name: string, kind: string): Promise<void> {
-  const file = await openFile(bytes, name);
+  const file = await openChecked(bytes, name);
   try {
     expect(file.header.kind).toBe(kind);
   } finally {
@@ -592,9 +605,9 @@ describe("text is stored as UTF-8 (3.1", () => {
 describe("sqlite_stat4 may be present (3.1", () => {
   it("opens a mosaic holding sqlite_stat4 and returns the same header as without it", async () => {
     const bytes = await mutate(MOSAIC, ...addStat4());
-    const file = await openFile(bytes, "s4.mosaic");
+    const file = await openChecked(bytes, "s4.mosaic");
     try {
-      const plain = await openFile(read(MOSAIC), "plain.mosaic");
+      const plain = await openChecked(read(MOSAIC), "plain.mosaic");
       try {
         expect({ ...file.header }).toEqual({ ...plain.header });
       } finally {
@@ -726,5 +739,36 @@ describe("a header value stored as the wrong type is not the value it looks like
     const bytes = await mutate(TESSERA, "UPDATE header SET format_version = CAST('0.1' AS BLOB)");
     const error = await refusal(bytes, "blobversion.tessera");
     expect(REFUSAL_RULES).toContain(error.rule);
+  });
+});
+
+describe("opening checks the structure; verify() checks the hashes (3.8)", () => {
+  const changed: [string, RefusalRule][] = [
+    ["node-changed.mosaic", "knowledge_hash"],
+    ["vector-changed.mosaic", "vector_hash"],
+  ];
+
+  for (const [name, rule] of changed) {
+    it(`opens ${name} and answers from it, and verify() refuses it for ${rule}`, async () => {
+      const file = await openFile(read(`reading/${name}`), name);
+      try {
+        expect(file.nodeTypes.length).toBeGreaterThan(0);
+        const error: unknown = await file.verify().catch((e: unknown) => e);
+        expect(error).toBeInstanceOf(FileRefusedError);
+        expect((error as FileRefusedError).rule).toBe(rule);
+        expect((error as FileRefusedError).file).toBe(name);
+      } finally {
+        file.close();
+      }
+    });
+  }
+
+  it("verify() resolves for a file that is what was sealed, as often as it is asked", async () => {
+    const file = await openFile(read("reading/mosaic.mosaic"), "mosaic.mosaic");
+    try {
+      await expect(Promise.all([file.verify(), file.verify()])).resolves.toEqual([undefined, undefined]);
+    } finally {
+      file.close();
+    }
   });
 });

@@ -115,22 +115,6 @@ def test_a_tessera_opens_with_the_real_model(bun: str, tmp_path: Path) -> None:
     assert all(r["match"] != "vector" for r in seen["results"])
 
 
-def test_a_mosaic_with_a_changed_vector_is_refused_by_the_command_with_the_real_model(
-    tmp_path: Path,
-) -> None:
-    run = subprocess.run(
-        [str(entry_point()), "view", str(READING / "vector-changed.mosaic"), "--model", str(MODEL)],
-        capture_output=True,
-        text=True,
-        timeout=120,
-        check=False,
-        env={**os.environ, "BROWSER": "false"},
-    )
-    assert run.returncode == 1
-    assert "vector" in run.stderr and "vector-changed.mosaic" in run.stderr
-    assert run.stdout == ""
-
-
 def test_the_real_model_directory_is_accepted_as_fetched_and_left_unchanged(tmp_path: Path) -> None:
     """The directory `scripts/fetch_model.py` makes passes the pinned hashes as it is."""
     before = {

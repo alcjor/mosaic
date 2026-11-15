@@ -737,7 +737,7 @@ class _Checker:
         checked: set[str] = set()
         for piece_path in sorted(given, key=lambda p: os.fsencode(p)):
             try:
-                with open_sealed(piece_path) as piece:
+                with open_sealed(piece_path, verify=True) as piece:
                     name = by_hash.get(piece.knowledge_hash)
                     if name is None:
                         self.skipped.append(

@@ -265,7 +265,8 @@ def _check_encoding(path: Path, con: sqlite3.Connection) -> None:
         )
 
 
-def _verify(path: Path, con: sqlite3.Connection) -> dict[str, object]:
+def _check_structure(path: Path, con: sqlite3.Connection) -> dict[str, object]:
+    """Everything section 3.8 asks of a file except its hashes; the header it carries."""
     _check_encoding(path, con)
     (application_id,) = con.execute("PRAGMA application_id").fetchone()
     if application_id != APPLICATION_ID:
@@ -276,9 +277,7 @@ def _verify(path: Path, con: sqlite3.Connection) -> dict[str, object]:
         )
     _check_version(path, con)
     _check_schema(path, con)
-    header = _read_header(path, con)
-    _check_hashes(path, con, header)
-    return header
+    return _read_header(path, con)
 
 
 class SealedFile:
@@ -291,6 +290,21 @@ class SealedFile:
         self.header: Mapping[str, object] = MappingProxyType(dict(header))
         self.limits = limits
         self._con = con
+
+    def verify(self) -> None:
+        """Recompute both hashes and compare them with the header's (section 3.8 step 3).
+
+        Raises :class:`FileRefusedError` when the content is not what was sealed. Opening checks
+        the file's structure only, unless it is asked to verify too.
+        """
+        try:
+            _check_hashes(self.path, self._con, self.header)
+        except sqlite3.ProgrammingError:
+            raise  # a closed file: the caller's mistake, not the file's
+        except sqlite3.DatabaseError as e:
+            raise _refuse(
+                self.path, f"not a readable SQLite 3 database ({e}) (section 3.1)"
+            ) from None
 
     @property
     def kind(self) -> str:
@@ -374,8 +388,12 @@ class SealedFile:
         self.close()
 
 
-def open(path: str | Path, *, limits: Limits | None = None) -> SealedFile:
+def open(path: str | Path, *, limits: Limits | None = None, verify: bool = False) -> SealedFile:
     """Open a tessera or mosaic by the reading rules of section 3.8, or refuse it.
+
+    Opening checks the file's structure. With ``verify`` it also recomputes both hashes, as
+    :meth:`SealedFile.verify` does later: ``mosaic build`` and ``mosaic check`` do, a viewer
+    checks in the background.
 
     Raises :class:`FileNotFoundError` when there is no file at ``path`` and
     :class:`FileRefusedError` when the file breaks a rule; the message names the file and the
@@ -395,7 +413,9 @@ def open(path: str | Path, *, limits: Limits | None = None) -> SealedFile:
     _check_encoding_bytes(target)
     con = _connect(target)
     try:
-        header = _verify(target, con)
+        header = _check_structure(target, con)
+        if verify:
+            _check_hashes(target, con, header)
     except FileRefusedError:
         con.close()
         raise

@@ -62,12 +62,12 @@ try {
         const kit = await import("/kit.js");
         const bytes = new Uint8Array(await (await fetch("/file.bin")).arrayBuffer());
         // Load SQLite WebAssembly once, as a page does before its first file.
-        (await kit.openFile(bytes, name)).close();
+        (await kit.openFile(bytes, name, { verify: true })).close();
         const times: number[] = [];
         let header: { knowledge_hash: string; vector_hash: string | null } | undefined;
         for (let i = 0; i < runs; i++) {
           const start = performance.now();
-          const opened = await kit.openFile(bytes, name);
+          const opened = await kit.openFile(bytes, name, { verify: true });
           times.push(performance.now() - start);
           header = opened.header;
           opened.close();

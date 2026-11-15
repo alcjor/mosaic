@@ -153,7 +153,7 @@ A kit or viewer opening a file MUST:
 
 1. open it read-only and immutable;
 2. check `application_id`, `user_version`, the schema (section 3.1) and the header; refuse a file whose format version the reader does not implement, a newer minor version included (section 9);
-3. recompute the knowledge hash and, if present, the vector hash, on every open, and refuse the file on a mismatch;
+3. be able to verify it: recompute the knowledge hash and, if present, the vector hash, and report a mismatch as a refusal. A reader MAY verify when it opens the file or later, so that a large file shows at once. A builder or checker MUST verify every file it reads before it uses it. A viewer MUST verify the file it shows, MUST say whether it is verified, and MUST warn when the hashes do not match; it MAY keep showing the file. No reader may describe a file as verified before the hashes have been compared;
 4. treat every value in the file as untrusted data (section 10), and bound query time and result size.
 
 A reader that does not support the file's embedding model MUST still open it and MUST fall back to names and full-text search.
@@ -442,7 +442,7 @@ The format version is `major.minor`. A minor version MAY add optional tables, co
 
 ### 10. Security considerations
 
-- **Every file is untrusted input.** Names, descriptions, snippets and properties can be written by anyone who made a piece. Readers MUST open files read-only, verify hashes on every open and bound query time and result size (section 3.8).
+- **Every file is untrusted input.** Names, descriptions, snippets and properties can be written by anyone who made a piece. Readers MUST open files read-only, verify hashes before they describe a file as verified, and bound query time and result size (section 3.8).
 - **Hashes prove integrity, not authorship.** A matching hash shows a file is intact and is the file a citation refers to; it does not show who made it. Signatures are left to a later version.
 - **Prompt injection.** The generated card (section 8.3) keeps file content out of instructions, and marked data (section 8.2) tells the model that tool content is data. Marked data reduces but does not prevent injection through content; the benchmark measures how much for each supported model.
 - **AI output** enters a mosaic only as pinned tesserae, marked `inferred` with a confidence and filtered by each target's trust policy, or as proposals a person accepted, which become extracted facts sourced to that decision.

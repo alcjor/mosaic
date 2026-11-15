@@ -22,11 +22,18 @@ import pytest
 from tests.conftest import REPO
 from tests.test_cli import entry_point
 
-MOSAIC = REPO / "conformance" / "reading" / "mosaic.mosaic"
+READING = REPO / "conformance" / "reading"
 
 
 @pytest.mark.slow
-def test_mosaic_view_opens_the_page_with_the_mosaic_loaded(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("source", "seal"), [("mosaic.mosaic", "verified"), ("node-changed.mosaic", "not verified")]
+)
+def test_mosaic_view_opens_the_page_with_the_mosaic_loaded(
+    tmp_path: Path, source: str, seal: str
+) -> None:
+    # The page opens on the file's structure and checks its hashes while it is used: a file
+    # changed after it was sealed still shows, marked and with a warning (section 3.8).
     bun = shutil.which("bun")
     assert bun, "bun is needed to build the viewer (README, Development)"
     build = subprocess.run(
@@ -34,7 +41,7 @@ def test_mosaic_view_opens_the_page_with_the_mosaic_loaded(tmp_path: Path) -> No
     )
     assert build.returncode == 0, build.stdout + build.stderr
     path = tmp_path / "loaded.mosaic"
-    shutil.copyfile(MOSAIC, path)
+    shutil.copyfile(READING / source, path)
     before = (hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mtime_ns)
     address = tmp_path / "address.txt"
     recorder = tmp_path / "browser.py"
@@ -69,8 +76,11 @@ def test_mosaic_view_opens_the_page_with_the_mosaic_loaded(tmp_path: Path) -> No
     assert url in out
     assert seen["errors"] == []
     walk = seen["named"]
-    assert walk["header"][0] == "loaded.mosaic"
-    assert walk["header"][1] == "8adae50b32ad"
+    assert walk["header"][:2] == ["loaded.mosaic", "8adae50b32ad"]
+    assert walk["seal"] == seal and seal in walk["header"]
+    assert [("changed after it was sealed" in b) for b in walk["banners"]] == (
+        [] if seal == "verified" else [True]
+    )
     assert {r["id"] for r in walk["results"]} >= {"Item:a", "Item:b"}
     assert walk["card"].startswith("Item A")
     assert walk["opened"] == "Group:x"

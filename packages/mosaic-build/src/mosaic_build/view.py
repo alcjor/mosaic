@@ -81,13 +81,18 @@ class ViewError(Exception):
     """``mosaic view`` cannot open the page; the message names the file and what failed."""
 
 
-def checked_bytes(path: Path) -> bytes:
-    """The bytes of ``path`` once the reading rules (section 3.8, steps 1 to 3) accept it."""
+def checked_bytes(path: Path, *, verify: bool = False) -> bytes:
+    """The bytes of ``path`` once the reading rules of section 3.8 accept its structure.
+
+    ``mosaic view`` stops there: the page checks the hashes once the mosaic shows, and warns
+    when they differ. ``verify`` checks them here too, as ``mosaic export`` does before it
+    writes a page to share.
+    """
     if not path.is_file():
         raise ViewError(f"{path}: no such file")
     data = path.read_bytes()
     try:
-        with open_sealed(path):
+        with open_sealed(path, verify=verify):
             pass
     except FileRefusedError as e:
         raise ViewError(str(e)) from None

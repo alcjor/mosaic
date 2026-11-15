@@ -105,10 +105,10 @@ const QUERIES: readonly string[] = PARTS.map(partQuery);
 
 const encoder = new TextEncoder();
 
-/** Stream the canonical byte string of section 3.6 into `sink`, part by part. */
-export function encodeKnowledge(db: Database, sink: (bytes: Uint8Array) => void): void {
-  PARTS.forEach((part, i) => {
-    sink(encoder.encode(`#${part.name}\n`));
+/** The canonical byte string of section 3.6, piece by piece: a part's name line, then its rows. */
+export function* knowledgeBytes(db: Database): Generator<Uint8Array, void> {
+  for (const [i, part] of PARTS.entries()) {
+    yield encoder.encode(`#${part.name}\n`);
     const stmt = db.prepare(QUERIES[i]!);
     try {
       for (let row = 1; stmt.step(); row++) {
@@ -121,12 +121,17 @@ export function encodeKnowledge(db: Database, sink: (bytes: Uint8Array) => void)
               : `${where}: a REAL value has no portable quote() form; only confidence may be REAL`,
           );
         }
-        sink(stmt.get(0) as Uint8Array);
+        yield stmt.get(0) as Uint8Array;
       }
     } finally {
       stmt.finalize();
     }
-  });
+  }
+}
+
+/** Stream the canonical byte string of section 3.6 into `sink`, part by part. */
+export function encodeKnowledge(db: Database, sink: (bytes: Uint8Array) => void): void {
+  for (const bytes of knowledgeBytes(db)) sink(bytes);
 }
 
 /** The knowledge hash of the open file (section 3.6): SHA-256 as 64 lowercase hex characters. */
@@ -137,12 +142,10 @@ export function knowledgeHash(db: Database): string {
 }
 
 /**
- * The vector hash of section 3.7, or null when the file holds no vectors: SHA-256 of the
- * 48-byte `bits` values concatenated in `nid` order. A value that is not a 48-byte blob is
- * refused, naming the node it belongs to.
+ * The 48-byte `bits` values of section 3.7 in `nid` order, one at a time. A value that is not a
+ * 48-byte blob is refused, naming the node it belongs to.
  */
-export function vectorHash(db: Database): string | null {
-  const digest = new Sha256();
+export function* vectorBytes(db: Database): Generator<Uint8Array, void> {
   const stmt = db.prepare(
     "SELECT n.id, typeof(v.bits), length(v.bits), v.bits " +
       "FROM vector AS v LEFT JOIN node AS n ON n.nid = v.nid ORDER BY v.nid",
@@ -160,10 +163,23 @@ export function vectorHash(db: Database): string | null {
             `bits is a ${shown}, not a ${VECTOR_BYTES}-byte blob`,
         );
       }
-      digest.update(stmt.get(3) as Uint8Array);
+      yield stmt.get(3) as Uint8Array;
     }
   } finally {
     stmt.finalize();
+  }
+}
+
+/**
+ * The vector hash of section 3.7, or null when the file holds no vectors: SHA-256 of the
+ * 48-byte `bits` values concatenated in `nid` order.
+ */
+export function vectorHash(db: Database): string | null {
+  const digest = new Sha256();
+  let count = 0;
+  for (const bits of vectorBytes(db)) {
+    digest.update(bits);
+    count++;
   }
   return count > 0 ? digest.hex() : null;
 }

@@ -20,10 +20,17 @@ import time
 from pathlib import Path
 
 import pytest
-from mosaic_format import APPLICATION_ID, FORMAT_VERSION, USER_VERSION, open, seal
+from mosaic_format import APPLICATION_ID, FORMAT_VERSION, USER_VERSION, seal
+from mosaic_format import open as open_fast
 from mosaic_format.reader import FileRefusedError, Limits, QueryLimitError, SealedFile
 
 from tests.format.test_writer import sample
+
+
+def open(path: Path, *, limits: Limits | None = None) -> SealedFile:
+    """Open as ``mosaic build`` and ``mosaic check`` do: structure, then both hashes (3.8)."""
+    return open_fast(path, limits=limits, verify=True)
+
 
 SIDECARS = ("-journal", "-wal", "-shm")
 
@@ -575,3 +582,19 @@ def test_limits_can_be_switched_off(tmp_path: Path) -> None:
     """A trusted caller, such as the builder reading its own pieces, may lift the bounds."""
     with open(sealed(tmp_path), limits=Limits(seconds=None, rows=None)) as f:
         assert len(f.query("SELECT id FROM node")) == 18
+
+
+def test_opening_checks_the_structure_and_verify_checks_the_hashes(tmp_path: Path) -> None:
+    path = sealed(tmp_path)
+    with open_fast(path) as f:
+        f.verify()
+    con = sqlite3.connect(path)
+    con.execute("UPDATE node SET label = label || '!' WHERE nid = (SELECT min(nid) FROM node)")
+    con.commit()
+    con.close()
+    with open_fast(path) as f:
+        assert f.query("SELECT count(*) FROM node") != [(0,)]
+        with pytest.raises(FileRefusedError, match="knowledge hash mismatch"):
+            f.verify()
+    with pytest.raises(FileRefusedError, match="knowledge hash mismatch"):
+        open_fast(path, verify=True)

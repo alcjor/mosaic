@@ -170,7 +170,7 @@ def _pieces(candidates: Iterable[str | os.PathLike[str]]) -> tuple[list[_Piece],
             continue
         seen.add(resolved)
         try:
-            sealed = open_sealed(path)
+            sealed = open_sealed(path, verify=True)
         except FileRefusedError as e:
             refusals.append(str(e))
             continue
@@ -407,7 +407,7 @@ def _order(v: Violation) -> tuple[int, str, str, str]:
 
 
 def _built_from(path: Path, named: str) -> SealedFile:
-    sealed = open_sealed(path)
+    sealed = open_sealed(path, verify=True)
     if sealed.kind != "mosaic" or not sealed.knowledge_hash.startswith(named):
         what = sealed.kind if sealed.kind != "mosaic" else f"mosaic {sealed.knowledge_hash}"
         sealed.close()

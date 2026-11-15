@@ -85,7 +85,7 @@ describe("the header band", () => {
     const { body } = render(App, { props: { viewer, exported: true, cutHash } });
     const band = body.slice(body.indexOf("<header"), body.indexOf("</header>"));
     const texts = [...band.replace(/<form[\s\S]*<\/form>/, "<form></form>").matchAll(/>([^<>]+)</g)].map((m) => m[1]!.trim()).filter(Boolean);
-    expect(texts).toEqual(["cut.mosaic", cutHash.slice(0, 12), "Read-only export", "from netflix 1a2b3c4d5e6f", "Open a mosaic"]);
+    expect(texts).toEqual(["cut.mosaic", cutHash.slice(0, 12), "verified", "Read-only export", "from netflix 1a2b3c4d5e6f", "Open a mosaic"]);
     expect(band.match(/<form/g)).toHaveLength(1);
     expect(band.match(/type="search"/g)).toHaveLength(1);
   });

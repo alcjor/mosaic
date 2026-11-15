@@ -98,13 +98,21 @@ function nodeView(view: NodeView | ToolFailure | null): NodeView {
 
 describe("opening: every file of conformance/reading follows section 3.8", () => {
   for (const [name, expected] of Object.entries(cases)) {
-    it(`the viewer ${expected.opens ? "opens" : `refuses, for ${expected.rule},`} ${name}`, async () => {
+    // The hash rules are found after the file shows: it stays open, marked and with a warning.
+    const changed = expected.rule === "knowledge_hash" || expected.rule === "vector_hash";
+    const does = expected.opens ? "opens" : changed ? `warns, for ${expected.rule}, about` : `refuses, for ${expected.rule},`;
+    it(`the viewer ${does} ${name}`, async () => {
       const viewer = new Viewer();
       await viewer.open(reading(name), name);
-      if (expected.opens) {
+      if (expected.opens || changed) {
         expect(viewer.status).toBe("ready");
         expect(viewer.error).toBeNull();
         expect(viewer.file?.header.knowledge_hash).toHaveLength(64);
+        await vi.waitFor(() => expect(viewer.seal).not.toBe("checking"));
+        expect(viewer.seal).toBe(changed ? "not verified" : "verified");
+        if (changed) expect(viewer.sealFailure).toContain(name);
+        const page = render(App, { props: { viewer } }).body;
+        expect(page.includes("changed after it was sealed")).toBe(changed);
       } else {
         expect(viewer.status).toBe("error");
         expect(viewer.error).toContain(name); // section 3.8: an error that names the file
@@ -113,16 +121,16 @@ describe("opening: every file of conformance/reading follows section 3.8", () =>
     });
   }
 
-  it("the viewer's error carries what failed, as the kit words it", async () => {
+  it("the viewer's warning carries what failed, as the kit words it", async () => {
     const bytes = reading("node-changed.mosaic");
     const viewer = new Viewer();
     await viewer.open(bytes, "node-changed.mosaic");
-    const kit = await openFile(bytes, "node-changed.mosaic").then(
+    const kit = await openFile(bytes, "node-changed.mosaic", { verify: true }).then(
       () => "",
       (e: Error) => e.message,
     );
     expect(kit).not.toBe("");
-    expect(viewer.error).toContain(kit);
+    await vi.waitFor(() => expect(viewer.sealFailure).toBe(kit));
   });
 
   it("a refused file after a good one is an error the page shows, naming the new file", async () => {

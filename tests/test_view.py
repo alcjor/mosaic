@@ -36,8 +36,11 @@ from tests.conftest import REPO
 
 READING = REPO / "conformance" / "reading"
 CASES = json.loads((READING / "cases.json").read_text(encoding="utf-8"))
-REFUSED = sorted(name for name, case in CASES.items() if not case["opens"])
-OPENS = sorted(name for name, case in CASES.items() if case["opens"])
+HASHES = {"knowledge_hash", "vector_hash"}
+"""The rules ``mosaic view`` leaves to the page: it checks the hashes once the mosaic shows, and
+warns when they differ."""
+OPENS = sorted(name for name, case in CASES.items() if case["opens"] or case["rule"] in HASHES)
+REFUSED = sorted(set(CASES) - set(OPENS))
 
 
 @pytest.fixture
@@ -156,8 +159,6 @@ def test_view_names_the_rule_a_file_breaks(dist: Path, capsys: pytest.CaptureFix
         "user-version.mosaic": "user_version",
         "format-version.mosaic": "0.2",
         "newer-minor.mosaic": "format version",
-        "node-changed.mosaic": "knowledge hash",
-        "vector-changed.mosaic": "vector hash",
         "schema-extra-table.mosaic": "schema",
     }
     for name, word in words.items():

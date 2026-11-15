@@ -196,7 +196,7 @@ def export(
     missing or wrong model, an existing ``output`` or an unbuilt viewer.
     """
     try:
-        data = viewer.checked_bytes(source)
+        data = viewer.checked_bytes(source, verify=True)
         settings = view_file.read(None).as_json() if view is None else viewer.checked_view(view)
         built = viewer.viewer_dist(dist)
     except viewer.ViewError as e:  # a view file's names the file, the line and the setting

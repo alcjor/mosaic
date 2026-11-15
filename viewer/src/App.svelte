@@ -311,6 +311,11 @@
   {#if viewer.file}
     <span class="name code">{viewer.file.name}</span>
     <span class="hash code" title={viewer.file.header.knowledge_hash}>{shortHash(viewer.file.header.knowledge_hash)}</span>
+    {#if viewer.seal}
+      <span class="seal caption" data-seal={viewer.seal} role="status">
+        {viewer.seal === "checking" ? "checking…" : viewer.seal}
+      </span>
+    {/if}
   {:else}
     <span class="name code">Mosaic viewer</span>
   {/if}
@@ -340,6 +345,12 @@
 {/if}
 {#if viewer.file}
   <ViewBar view={viewer.viewId} {thing} {viewHref} {thingHref} {thingNote} />
+{/if}
+{#if viewer.seal === "not verified"}
+  <p class="banner body-screen" role="alert" data-seal-warning>
+    This file was changed after it was sealed, so it is not the mosaic its hash names. You can
+    still browse it. {viewer.sealFailure}
+  </p>
 {/if}
 {#if viewer.error}
   <p class="banner body-screen" role="alert">{viewer.error}</p>
@@ -557,6 +568,16 @@
   .hash {
     color: var(--shard-4);
     opacity: 0.8;
+  }
+
+  .seal {
+    color: var(--shard-4);
+    opacity: 0.8;
+  }
+
+  .seal[data-seal="not verified"] {
+    color: var(--status-warning);
+    opacity: 1;
   }
 
   .export {

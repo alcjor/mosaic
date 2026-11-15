@@ -95,7 +95,7 @@ def _as_key(value: object) -> str | None:
 def read_source(path: Path) -> Source:
     """The source mosaic's knowledge hash, declared types and ``text`` setting."""
     apart: set[str] = set()
-    with open_sealed(path) as sealed:
+    with open_sealed(path, verify=True) as sealed:
         nodes: dict[str, tuple[str | None, list[str], str | None]] = {}
         for name, key, props, describe in sealed.query(
             "SELECT name, key_prop, props, description FROM type WHERE kind = 'node' "

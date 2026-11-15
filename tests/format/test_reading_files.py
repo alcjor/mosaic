@@ -13,8 +13,8 @@ from types import ModuleType
 
 import pytest
 from mosaic_format.check import check_file
-from mosaic_format.reader import FileRefusedError
-from mosaic_format.reader import open as open_sealed
+from mosaic_format.reader import FileRefusedError, SealedFile
+from mosaic_format.reader import open as open_fast
 
 from tests.conftest import REPO
 
@@ -33,6 +33,11 @@ MESSAGE = {
     "vector_hash": "vector hash mismatch",
 }
 """What the Python reader's message says for each rule of ``cases.json``."""
+
+
+def open_sealed(path: Path) -> SealedFile:
+    """Open as a reader that checks the hashes too: what ``cases.json`` describes (3.8)."""
+    return open_fast(path, verify=True)
 
 
 def _load() -> ModuleType:
