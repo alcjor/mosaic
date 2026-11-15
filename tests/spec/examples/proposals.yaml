@@ -1,0 +1,21 @@
+# The proposals example from docs/design.md, Part 2, with a full-length hash.
+format: "0.1"
+built_from: 3f6c0b1e00000000000000000000000000000000000000000000000000000000
+assistant: pattern-assistant/0.1
+proposals:
+  - id: p1
+    kind: identity
+    node: Sculpture:T-1889
+    same_as: [T1889]
+    confidence: 0.86
+    evidence: [{source: guide, locator: page=12, quote: "T1889, bronze"}]
+    decision: open
+  - id: p2
+    kind: edge
+    by: alice
+    type: describes
+    from: Section:GUIDE-19C/2
+    to: Sculpture:T-1889
+    evidence: [{source: guide, locator: line=14}]
+    decision: accepted
+    decided_by: alice

@@ -1,0 +1,26 @@
+{
+  "name": "@mosaic/kit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The mosaic kit: opens one mosaic read-only and answers find, get, neighbors, path, table and cite.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun --bun vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "ajv": "8.20.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@sqlite.org/sqlite-wasm": "3.54.1-build1",
+    "onnxruntime-web": "1.30.0"
+  }
+}

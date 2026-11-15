@@ -1,0 +1,68 @@
+# View file for the Chinook fixture (docs/design.md, Implementation plan, "View file").
+# Schema: views/view.schema.json.
+# mosaic view chinook.mosaic --view view.yaml
+search: semantic
+types:
+  Track:
+    label: Track
+    describe: A track on an album, with its composer, length, size and price
+    columns: [composer, milliseconds, unit_price]
+    page: [composer, milliseconds, bytes, unit_price, on_album, in_genre, encoded_as]
+    names:
+      milliseconds: Length (ms)
+      unit_price: Price
+      on_album: Album
+      in_genre: Genre
+      encoded_as: Media type
+  Album:
+    label: Album
+    describe: An album by one artist
+    page: [title, by]
+    names:
+      by: Artist
+  Artist:
+    label: Artist
+    describe: A performer or band whose albums are in the catalogue
+  Playlist:
+    label: Playlist
+    describe: A named list of tracks
+    page: [name, contains]
+    names:
+      contains: Tracks
+  Genre:
+    label: Genre
+    describe: A musical genre a track belongs to
+  Employee:
+    label: Employee
+    describe: A member of staff, with the manager they report to
+    columns: [first_name, title, city, country]
+    page: [first_name, last_name, title, city, country, hire_date, reports_to]
+    names:
+      first_name: First name
+      last_name: Last name
+      hire_date: Hired
+      reports_to: Reports to
+  Customer:
+    label: Customer
+    describe: A customer and the member of staff who supports them
+    columns: [first_name, company, country]
+    page: [first_name, last_name, company, city, country, supported_by]
+    names:
+      first_name: First name
+      last_name: Last name
+      supported_by: Support
+edges:
+  by:
+    describe: An album is by an artist
+  on_album:
+    describe: A track is on an album
+  in_genre:
+    describe: A track belongs to a genre
+  encoded_as:
+    describe: A track is sold in a media type
+  contains:
+    describe: A playlist contains a track
+  reports_to:
+    describe: A member of staff reports to their manager
+  supported_by:
+    describe: A customer is supported by a member of staff

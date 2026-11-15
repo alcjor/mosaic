@@ -1,0 +1,18 @@
+{
+  "format": "0.1",
+  "outcome": "built",
+  "reason": null,
+  "target": "curators",
+  "pattern_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+  "knowledge_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+  "vector_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+  "file_size": 16300000,
+  "counts": {"nodes": {"Sculpture": 412}, "edges": {"describes": 1290}},
+  "conflicts": [{"node": "Sculpture:T-1889", "property": "date", "winner": {"value": "1889", "piece": "catalogue"}, "losers": [{"value": "c. 1890", "piece": "guide"}]}],
+  "alias_conflicts": [{"node": "Sculpture:T-1889", "winner": {"value": "T-1889", "piece": "catalogue"}, "losers": [{"value": "t-1889", "piece": "guide"}]}],
+  "stale_references": [{"name": "T_01889", "type": "Sculpture", "piece": "loans", "locator": "file=loans.csv;row=88"}],
+  "mentions": [{"status": "unmatched", "role": "caption.number", "text": "T1889", "piece": "guide", "locator": "line=14", "candidates": []}],
+  "weak_ids": [{"type": "Section", "count": 935}],
+  "proposals": [{"id": "p1", "status": "outdated"}],
+  "notices": [{"piece": "guide", "text": "Images: all rights reserved"}]
+}

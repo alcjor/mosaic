@@ -1,0 +1,30 @@
+# The museum example from docs/design.md, Part 2 (Pattern schemas). Informative.
+format: "0.1"
+pieces:              # order = priority when values conflict
+  - catalogue@9f2c41d0
+  - loans@7ab1e93c
+  - guide@41c0aa27
+
+types:
+  Sculpture:
+    key: number
+    describe: A work in the museum's collection
+    normalise: [trim, upper]
+    from:
+      catalogue.Row: {number: Number, title: Title, date: Date}
+      loans.Item:    {number: ref, strip: LOAN_}
+  Section:
+    key: id
+    describe: One section of the gallery guide
+    from:
+      guide.Section: {id: id, title: title}
+
+edges:
+  describes:
+    from: Section
+    to: Sculpture
+    mentions: caption.number
+
+mosaics:
+  curators: {types: all, text: snippets, budget: 20 MB}
+  public:   {types: [Sculpture], text: none, vectors: false}

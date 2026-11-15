@@ -1,0 +1,40 @@
+# View file for the Netflix titles fixture (docs/design.md, Implementation plan, "View file").
+# Schema: views/view.schema.json.
+# mosaic view netflix.mosaic --view view.yaml
+search: semantic
+types:
+  Title:
+    label: Title
+    describe: A movie or TV show in the catalogue
+    columns: [type, release_year, rating, duration, duration_unit]
+    page: [type, release_year, date_added, rating, duration, duration_unit,
+           directed_by, features, listed_in, made_in]
+    names:
+      type: Kind
+      release_year: Released
+      date_added: Added
+      duration_unit: Unit
+      directed_by: Directed by
+      features: Cast
+      listed_in: Genres
+      made_in: Countries
+  Person:
+    label: Person
+    describe: A director or cast member of a title
+  Genre:
+    label: Genre
+    describe: A category a title is listed in
+  Country:
+    label: Country
+    describe: A country where a title was produced
+edges:
+  directed_by:
+    describe: A title is directed by a person
+  features:
+    describe: A title features a person in its cast
+  made_in:
+    describe: A title was produced in a country
+  listed_in:
+    describe: A title is listed in a genre
+  released_in:
+    describe: A title was released in a year

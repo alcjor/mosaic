@@ -1,0 +1,73 @@
+name: CI
+
+# The fast gate, once per pull request update and on main. The slow tests (fixtures, hashes,
+# vectors) run on main only; the fixture downloads are cached by the manifest's hash.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install 3.14
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run ty check
+      - run: uv run lint-imports
+      - run: uv run pytest -m "not slow" -n auto
+
+  js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+
+  slow:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/cache@v4
+        with:
+          path: conformance/fixtures/downloads
+          key: fixtures-${{ hashFiles('conformance/fixtures/manifest.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: .cache/model
+          key: model-${{ hashFiles('scripts/fetch_model.py') }}
+      - run: uv python install 3.14
+      - run: uv sync --locked
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: uv run python scripts/fetch_fixtures.py
+      - run: uv run python scripts/fetch_model.py
+      - run: uv run pytest -q -m slow

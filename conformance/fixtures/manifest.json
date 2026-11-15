@@ -1,0 +1,50 @@
+{
+  "comment": "Fixture sources, pinned by SHA-256 and downloaded by scripts/fetch_fixtures.py. The files themselves are never committed to main: a source that cannot be downloaded from its origin lives on the fixtures branch, linked by commit. A change to a url or hash here needs a reason.",
+  "fixtures": [
+    {
+      "name": "netflix-titles",
+      "file": "netflix_titles.csv",
+      "url": "https://raw.githubusercontent.com/alcjor/mosaic/a4e66a97b670ea11e0340d4d92044d76a8ab6692/netflix-titles/netflix_titles.csv",
+      "sha256": "df1f4ad2027a5a14c3a33932ef0d4054565ff88adf92b7f263601b70fdc6f3f3",
+      "licence": "CC0-1.0 (Netflix Movies and TV Shows, Shivam Bansal, Kaggle; confirmed by the maintainer, 2026-11-06)",
+      "licence_confirmed": true,
+      "milestone": "M1"
+    },
+    {
+      "name": "chinook",
+      "file": "Chinook_Sqlite.sqlite",
+      "url": "https://github.com/lerocha/chinook-database/releases/download/v1.4.5/Chinook_Sqlite.sqlite",
+      "sha256": "bdf635be69850bd3be09c9a2dbeef7ddfb80036bd3ef3381383cd03b61e4a61a",
+      "licence": "MIT (Copyright (c) 2008-2024 Luis Rocha; confirmed by the maintainer, 2026-11-05)",
+      "licence_confirmed": true,
+      "milestone": "M3"
+    },
+    {
+      "name": "museums",
+      "file": "museums.zip",
+      "url": null,
+      "sha256": null,
+      "licence": "CC0-1.0 (open-access collection data of two museums)",
+      "licence_confirmed": false,
+      "milestone": "M7"
+    },
+    {
+      "name": "openflights",
+      "file": "openflights.zip",
+      "url": null,
+      "sha256": null,
+      "licence": "ODbL (notice carried)",
+      "licence_confirmed": false,
+      "milestone": "M7"
+    },
+    {
+      "name": "marlin",
+      "file": "marlin.tar.gz",
+      "url": null,
+      "sha256": null,
+      "licence": "GPL-3.0 (source and documentation; downloaded by hash, never redistributed here)",
+      "licence_confirmed": false,
+      "milestone": "M8"
+    }
+  ]
+}

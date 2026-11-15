@@ -1,0 +1,220 @@
+{
+  "about": "The settings each view file gives the page, as mosaic_build.view_file ViewSettings.as_json() writes them. view null: no view file. tests/test_view_file.py checks the Python side; viewer/test/view.test.ts reads them.",
+  "cases": [
+    {
+      "view": "views/example.yaml",
+      "settings": {
+        "search": "semantic",
+        "theme": "auto",
+        "types": [
+          {
+            "name": "Title",
+            "label": "Film or show",
+            "columns": [
+              "release_year",
+              "rating"
+            ],
+            "page": [
+              "release_year",
+              "directed_by",
+              "features",
+              "listed_in"
+            ],
+            "names": {
+              "release_year": "Year",
+              "directed_by": "Directed by"
+            },
+            "describe": "A movie or TV show in the catalogue"
+          },
+          {
+            "name": "Person",
+            "label": null,
+            "columns": null,
+            "page": null,
+            "names": {},
+            "describe": null
+          },
+          {
+            "name": "Genre",
+            "label": null,
+            "columns": null,
+            "page": null,
+            "names": {},
+            "describe": null
+          }
+        ],
+        "edges": [
+          {
+            "name": "features",
+            "describe": "A title features a person in its cast"
+          }
+        ],
+        "cards": [
+          {
+            "name": "Title",
+            "show": [
+              "summary",
+              "release_year",
+              "rating",
+              "duration"
+            ],
+            "links": [
+              "directed_by",
+              "listed_in"
+            ],
+            "counts": []
+          },
+          {
+            "name": "Person",
+            "show": [],
+            "links": [],
+            "counts": [
+              "features in",
+              "directed_by in"
+            ]
+          }
+        ],
+        "chains": [
+          {
+            "name": "US documentaries and their directors",
+            "start": "Country",
+            "pin": "Country:United States",
+            "steps": [
+              {
+                "link": "made_in in",
+                "pin": null
+              },
+              {
+                "link": "listed_in",
+                "pin": "Genre:Documentaries"
+              },
+              {
+                "link": "listed_in in",
+                "pin": null
+              },
+              {
+                "link": "directed_by",
+                "pin": null
+              }
+            ]
+          }
+        ],
+        "export": {
+          "types": [
+            "Title",
+            "Person",
+            "Genre"
+          ]
+        }
+      }
+    },
+    {
+      "view": "conformance/fixtures/netflix/view.yaml",
+      "settings": {
+        "search": "semantic",
+        "theme": "auto",
+        "types": [
+          {
+            "name": "Title",
+            "label": "Title",
+            "columns": [
+              "type",
+              "release_year",
+              "rating",
+              "duration",
+              "duration_unit"
+            ],
+            "page": [
+              "type",
+              "release_year",
+              "date_added",
+              "rating",
+              "duration",
+              "duration_unit",
+              "directed_by",
+              "features",
+              "listed_in",
+              "made_in"
+            ],
+            "names": {
+              "type": "Kind",
+              "release_year": "Released",
+              "date_added": "Added",
+              "duration_unit": "Unit",
+              "directed_by": "Directed by",
+              "features": "Cast",
+              "listed_in": "Genres",
+              "made_in": "Countries"
+            },
+            "describe": "A movie or TV show in the catalogue"
+          },
+          {
+            "name": "Person",
+            "label": "Person",
+            "columns": null,
+            "page": null,
+            "names": {},
+            "describe": "A director or cast member of a title"
+          },
+          {
+            "name": "Genre",
+            "label": "Genre",
+            "columns": null,
+            "page": null,
+            "names": {},
+            "describe": "A category a title is listed in"
+          },
+          {
+            "name": "Country",
+            "label": "Country",
+            "columns": null,
+            "page": null,
+            "names": {},
+            "describe": "A country where a title was produced"
+          }
+        ],
+        "edges": [
+          {
+            "name": "directed_by",
+            "describe": "A title is directed by a person"
+          },
+          {
+            "name": "features",
+            "describe": "A title features a person in its cast"
+          },
+          {
+            "name": "made_in",
+            "describe": "A title was produced in a country"
+          },
+          {
+            "name": "listed_in",
+            "describe": "A title is listed in a genre"
+          },
+          {
+            "name": "released_in",
+            "describe": "A title was released in a year"
+          }
+        ],
+        "cards": null,
+        "chains": null,
+        "export": {
+          "types": null
+        }
+      }
+    },
+    {
+      "view": null,
+      "settings": {
+        "search": "semantic",
+        "theme": "auto",
+        "types": null,
+        "edges": null,
+        "cards": null,
+        "chains": null,
+        "export": {
+          "types": null
+        }
+      }
+    }
+  ]
+}

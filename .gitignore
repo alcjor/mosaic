@@ -1,0 +1,39 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Node
+node_modules/
+viewer/dist/
+kit/dist/
+playwright-report/
+test-results/
+
+# Fixture sources are downloaded and pinned by hash, never committed
+conformance/fixtures/downloads/
+.cache/
+
+# Build outputs
+*.mosaic
+*.tessera
+build-report.json
+!tests/**/build-report.json
+!conformance/**/build-report.json
+# The invalid files of the conformance suite are committed (section 11)
+!conformance/invalid/files/*.mosaic
+!conformance/invalid/files/*.tessera
+# So are the reading cases, which the Python reader and the kit both read
+!conformance/reading/*.mosaic
+!conformance/reading/*.tessera
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+.import_linter_cache/

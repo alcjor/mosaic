@@ -1,0 +1,67 @@
+# Example view file, drawn for the Netflix titles mosaic (docs/design.md, Implementation plan,
+# "View file"; schema: view.schema.json).
+# Every key is optional; an empty file, or none, gives the viewer M2 has.
+# mosaic view netflix.mosaic --view example.yaml
+
+search: semantic        # semantic | text. Default: semantic.
+theme: auto             # auto | light | dark. Default: auto (follows the system).
+
+types:                  # Which node types appear, in the order written here.
+                        # Default: every node type, by name. A type left out is absent from
+                        # the type list and tables only: search and links still reach it.
+  Title:
+    label: Film or show            # Shown instead of the type name. Default: the type name.
+    columns: [release_year, rating]
+                                   # Its table: the node's name, then these properties.
+                                   # Default: every declared property.
+    page: [release_year, directed_by, features, listed_in]
+                                   # Its node page: these properties and edge types, in this
+                                   # order. Default: every property and every edge type.
+    names:                         # Labels for this type's property and edge type names
+      release_year: Year           # (label renames the type itself). Default: none.
+      directed_by: Directed by
+    describe: A movie or TV show in the catalogue
+                                   # Its description on the graph explorer's map.
+                                   # Default: none, and the map shows no description.
+  Person: {}
+  Genre: {}
+
+edges:                  # Edge types by name, each with its description on the map.
+                        # It describes them only: every edge type still appears.
+  features:
+    describe: A title features a person in its cast
+                                   # Default: none, and the map shows no description.
+
+cards:                  # Which facts each type's card shows, wherever the type appears (a node's
+                        # page, a chain). Set once per type, apart from `types`: a card never
+                        # changes which types are listed. A part left out shows nothing; a type
+                        # with no card shows a default drawn from the mosaic.
+  Title:
+    show: [summary, release_year, rating, duration]
+                                   # Properties, or the node's summary, in this order.
+    links: [directed_by, listed_in]
+                                   # The things it links to by these links.
+  Person:
+    counts: [features in, directed_by in]
+                                   # How many things it links to by these links. A link is an
+                                   # edge type, alone or with `in` or `out` for one direction.
+
+chains:                 # Named chains, by label, in the order written; the Chain view lists them.
+                        # Default: none.
+  US documentaries and their directors:
+    start: Country                 # The node type it starts from.
+    pin: Country:United States     # The one thing it starts from. Default: any thing.
+    steps:                         # Its steps, in order. Default: none.
+      - made_in in                 # A link, spelled as in cards: an edge type, alone (followed
+                                   # out) or with in or out. The step's type is the other end
+                                   # of the edge type.
+      - link: listed_in            # A link with a pin: the one thing this step reaches.
+        pin: Genre:Documentaries
+      - listed_in in
+      - directed_by
+
+export:
+  types: [Title, Person, Genre]    # Which node types an export carries: a mosaic built from
+                                   # this one with only these types, the edges between them and
+                                   # their evidence, saying where it comes from. A type
+                                   # the mosaic lacks is an error. Default: the mosaic as it is.
