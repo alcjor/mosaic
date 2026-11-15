@@ -24,8 +24,8 @@
       "file": "MetObjects.csv",
       "url": "https://media.githubusercontent.com/media/metmuseum/openaccess/d31d26fa333e1dd1b00cfbc04b162aa764e52ce8/MetObjects.csv",
       "sha256": "b872cf45d404819094b8b8d8552e7b1953d095babe68db13ddb339166ae7a195",
-      "licence": "CC0-1.0 (The Metropolitan Museum of Art Open Access, github.com/metmuseum/openaccess README and LICENSE, read 2026-11-15; data only, images excluded; 340,954,031 bytes)",
-      "licence_confirmed": false,
+      "licence": "CC0-1.0 (The Metropolitan Museum of Art Open Access, github.com/metmuseum/openaccess README and LICENSE, read 2026-11-15; data only, images excluded; 340,954,031 bytes; confirmed by the maintainer, 2026-11-15)",
+      "licence_confirmed": true,
       "milestone": "M7"
     },
     {
@@ -33,8 +33,8 @@
       "file": "Artists.csv",
       "url": "https://media.githubusercontent.com/media/MuseumofModernArt/collection/f11e0fecb7f534200f684e5ba1c0e99cea7dff2a/Artists.csv",
       "sha256": "55e598c30200d21b1cf2eaf2d8db516d1191fc0c26b5f71574ccd3a24acedbdd",
-      "licence": "CC0-1.0 (The Museum of Modern Art collection, github.com/MuseumofModernArt/collection README and LICENSE.md, read 2026-11-15; MoMA requests attribution; images excluded; 1,062,006 bytes)",
-      "licence_confirmed": false,
+      "licence": "CC0-1.0 (The Museum of Modern Art collection, github.com/MuseumofModernArt/collection README and LICENSE.md, read 2026-11-15; MoMA requests attribution; images excluded; 1,062,006 bytes; confirmed by the maintainer, 2026-11-15)",
+      "licence_confirmed": true,
       "milestone": "M7"
     },
     {
@@ -42,8 +42,8 @@
       "file": "airports.dat",
       "url": "https://raw.githubusercontent.com/jpatokal/openflights/cd163fa17710f3135540651626ad719dd5322a05/data/airports.dat",
       "sha256": "9387cdb38df5bd664da823f8ccb69fdd9b33a1888f5b7cca09c34a3cd9ff59f9",
-      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 1,127,225 bytes)",
-      "licence_confirmed": false,
+      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 1,127,225 bytes; confirmed by the maintainer, 2026-11-15)",
+      "licence_confirmed": true,
       "milestone": "M7"
     },
     {
@@ -51,8 +51,8 @@
       "file": "airlines.dat",
       "url": "https://raw.githubusercontent.com/jpatokal/openflights/cd163fa17710f3135540651626ad719dd5322a05/data/airlines.dat",
       "sha256": "39be1a432e8b04ebc12860c29281c974a9cb52169c82b2456a835d66ab1548a1",
-      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 396,896 bytes)",
-      "licence_confirmed": false,
+      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 396,896 bytes; confirmed by the maintainer, 2026-11-15)",
+      "licence_confirmed": true,
       "milestone": "M7"
     },
     {
@@ -60,26 +60,26 @@
       "file": "routes.dat",
       "url": "https://raw.githubusercontent.com/jpatokal/openflights/cd163fa17710f3135540651626ad719dd5322a05/data/routes.dat",
       "sha256": "bd373706238134f619c624c606dccc74c05c2582a977c489c81de501735f2390",
-      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 2,377,148 bytes)",
-      "licence_confirmed": false,
+      "licence": "ODbL-1.0 for the database, DbCL-1.0 for its contents (OpenFlights, openflights.org/data and data/LICENSE in github.com/jpatokal/openflights, read 2026-11-15; attribution to OpenFlights and the ODbL notice carried; share-alike on derived databases made public; airport and route data from OurAirports, DAFIF and Airline Route Mapper are public domain, airline and plane data derived from Wikipedia may be under GFDL; routes frozen June 2014; 2,377,148 bytes; confirmed by the maintainer, 2026-11-15)",
+      "licence_confirmed": true,
       "milestone": "M7"
     },
     {
       "name": "marlin",
       "file": "Marlin-2.1.2.10.tar.gz",
       "url": "https://github.com/MarlinFirmware/Marlin/archive/refs/tags/2.1.2.10.tar.gz",
-      "sha256": null,
-      "licence": "GPL-3.0 (Marlin firmware, tag 2.1.2.10 = commit 077b56cedf2bb4378077b52269b699da7849da5f, LICENSE and README, read 2026-11-15; some HAL, lcd and buildroot files carry their own MIT/BSD/LGPL notices; downloaded by hash, never redistributed here; hash not yet taken)",
-      "licence_confirmed": false,
+      "sha256": "a74217fa3dbbc4e59df265d2e47b40a1c102a6c5a406baa69fa1540efbdfea90",
+      "licence": "GPL-3.0 (Marlin firmware, tag 2.1.2.10 = commit 077b56cedf2bb4378077b52269b699da7849da5f, LICENSE and README, read 2026-11-15; some HAL, lcd and buildroot files carry their own MIT/BSD/LGPL notices; downloaded by hash, never redistributed here; 7,124,380 bytes; hash taken from the alcjor fork's archive of the same commit; confirmed by the maintainer, 2026-11-15)",
+      "licence_confirmed": true,
       "milestone": "M8"
     },
     {
       "name": "marlin-docs",
       "file": "MarlinDocumentation-c01d8ad.tar.gz",
       "url": "https://github.com/MarlinFirmware/MarlinDocumentation/archive/c01d8adedb58f03087f14c02fe370d1063fd9cb2.tar.gz",
-      "sha256": null,
-      "licence": "GPL-3.0 (MarlinDocumentation README 'This documentation is licensed under the GPLv3 license' and LICENSE, commit c01d8adedb58f03087f14c02fe370d1063fd9cb2, read 2026-11-15; downloaded by hash, never redistributed here; hash not yet taken)",
-      "licence_confirmed": false,
+      "sha256": "f78a083546757386be858dd5b0964728f846c820c6154fee3799cf7c929f380e",
+      "licence": "GPL-3.0 (MarlinDocumentation README 'This documentation is licensed under the GPLv3 license' and LICENSE, commit c01d8adedb58f03087f14c02fe370d1063fd9cb2, read 2026-11-15; downloaded by hash, never redistributed here; 50,013,969 bytes; hash taken from the alcjor fork's archive of the same commit; confirmed by the maintainer, 2026-11-15)",
+      "licence_confirmed": true,
       "milestone": "M8"
     }
   ]
