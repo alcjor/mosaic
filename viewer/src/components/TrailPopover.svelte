@@ -26,7 +26,7 @@
 </script>
 
 <Popover.Root bind:open>
-  <Popover.Trigger class="trail-trigger {look} {look === 'button' ? 'step-title' : 'body-app'}" aria-label={label}>
+  <Popover.Trigger class="trail-trigger {look} {look === 'button' ? 'control-app' : 'body-app'}" aria-label={label}>
     {@render trigger()}
   </Popover.Trigger>
   <Popover.Portal>

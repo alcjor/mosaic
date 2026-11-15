@@ -24,7 +24,7 @@
 <Place id="home" fill>
   <div class="home">
     <header class="intro">
-      <h1 class="title category">What is in this mosaic</h1>
+      <h1 class="title heading-app">What is in this mosaic</h1>
       <p class="line body-app">
         {number(kinds)}
         {kinds === 1 ? "kind" : "kinds"} of thing and how they connect. Each shard is sized by how many things it holds. Pick one to open its table.
@@ -52,7 +52,7 @@
             {/each}
           </ul>
         {/if}
-        <div><a class="build step-title" href={links.trail(null)} data-build-trail>Build a new trail</a></div>
+        <div><a class="build control-app" href={links.trail(null)} data-build-trail>Build a new trail</a></div>
         <section class="recent" aria-labelledby="home-recent">
           <h2 class="heading section-label" id="home-recent">Jump back in</h2>
           {#if recent.length === 0}

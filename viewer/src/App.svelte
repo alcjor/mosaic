@@ -29,7 +29,7 @@
    * document: the page opens them, fetches nothing, watches nothing, and says it is a read-only
    * export.
    *
-   * Below 960px a place is one scrolling column and its side parts become tabs.
+   * Below 960px a place is one scrolling column and its pane goes under its main part.
    */
   import { onMount } from "svelte";
   import ModeSwitch from "./components/ModeSwitch.svelte";
@@ -58,13 +58,10 @@
     viewer = new Viewer(),
     exported = false,
     cutHash = null,
-    narrow = false,
   }: {
     viewer?: Viewer;
     exported?: boolean;
     cutHash?: string | null;
-    /** Below 960px: one column at a time, chosen by tabs; followed from the window once mounted. */
-    narrow?: boolean;
   } = $props();
 
   /** Why the view file's settings could not be read; the page then uses the defaults. */
@@ -101,9 +98,6 @@
 
   provideTypeColours((type) => shape?.typeColour(type) ?? null);
 
-  /** The tab a person picked since the address last changed, if any. */
-  let pickedTab = $state<string | null>(null);
-
   /** The choices Explore's address holds (G-8), for the graph to open. */
   let hoodAddress = $state<HoodChoices | null>(null);
 
@@ -139,8 +133,6 @@
     const route = parseRoute(location.hash);
     viewer.place = route.view ?? "home";
     hoodAddress = route.hood ?? null;
-    // A new search shows its results, also where the open thing's card would take the tab.
-    pickedTab = viewer.results !== null && route.query !== viewer.query && route.query !== "" ? "results" : null;
     if (route.query !== viewer.query || viewer.results === null) void viewer.search(route.query);
     if (route.node !== viewer.nodeId || viewer.page === null) void viewer.show(route.node);
     // Another place's address does not name the table: Tables keeps the one it had.
@@ -210,12 +202,6 @@
   }
 
   onMount(() => {
-    const below = window.matchMedia("(width < 960px)");
-    const fit = (): void => {
-      narrow = below.matches;
-    };
-    fit();
-    below.addEventListener("change", fit);
     window.addEventListener("hashchange", follow);
     void (async () => {
       if (await openExport()) return;
@@ -249,7 +235,6 @@
       }
     })();
     return () => {
-      below.removeEventListener("change", fit);
       window.removeEventListener("hashchange", follow);
       stopWatching();
     };
@@ -346,13 +331,13 @@
       </EmptyState>
     </main>
   {:else if viewer.place === "home"}
-    <Home {viewer} {shape} {narrow} {links} />
+    <Home {viewer} {shape} {links} />
   {:else if viewer.place === "explore"}
-    <Explore {viewer} {shape} {narrow} {links} hood={hoodAddress} onhood={writeHood} picked={pickedTab} onpick={(tab) => (pickedTab = tab)} />
+    <Explore {viewer} {shape} {links} hood={hoodAddress} onhood={writeHood} />
   {:else if viewer.place === "trails"}
-    <Trails {viewer} {shape} {narrow} {links} />
+    <Trails {viewer} {shape} {links} />
   {:else}
-    <Tables {viewer} {shape} {narrow} {links} picked={pickedTab} onpick={(tab) => (pickedTab = tab)} />
+    <Tables {viewer} {shape} {links} />
   {/if}
 </div>
 

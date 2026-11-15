@@ -27,6 +27,8 @@ it("a picked thing lights up what the results through it hold, at its own place 
 it("a card's line holds the thing's first properties, as text", () => {
   expect(cardLine({ type: "Title", props: { rating: "R", released: 1995, seen: true, tags: ["x"] } }, null)).toBe("R · 1995 · true");
   expect(cardLine({ type: "Title", props: null }, null)).toBe("");
+  // A property that repeats the name the card already shows is left out.
+  expect(cardLine({ type: "Artist", label: "Ada", props: { name: "Ada", born: 1815 } }, null)).toBe("1815");
 });
 
 const N = COLUMN_RESULTS + 5;

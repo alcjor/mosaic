@@ -14,10 +14,9 @@
   import { factId, plainFacts, type Evidence, type Fact, type Linked } from "../lib/cards.js";
   import { typeOfId } from "../lib/graph/hood.js";
   import type { LinkGroup } from "../lib/mosaic.js";
-  import { typeColours } from "../lib/typecolour.context.js";
   import { inPageOrder, type Shape } from "../lib/view.js";
   import CitationChip from "./CitationChip.svelte";
-  import Shard from "./Shard.svelte";
+  import ThingChip from "./ThingChip.svelte";
   import TypeChip from "./TypeChip.svelte";
   import Button from "./ui/Button.svelte";
 
@@ -29,6 +28,7 @@
     links = null,
     sources = null,
     chip = true,
+    small = false,
     tableHref = null,
     trailHref = null,
     onpick,
@@ -45,6 +45,8 @@
     sources?: Evidence | null;
     /** Whether the card says its type (a pane that says it in its head does not). */
     chip?: boolean;
+    /** Among other cards side by side: the name one step smaller. */
+    small?: boolean;
     /** Where "Open in its table" and "Start a trail here" go; without them the card has no such buttons. */
     tableHref?: string | null;
     trailHref?: string | null;
@@ -52,8 +54,6 @@
     onpick?: (id: string) => boolean;
   } = $props();
 
-  const colourOf = typeColours();
-  const colour = (type: string | null) => (type === null ? undefined : (colourOf(type) ?? undefined));
 
   /** A property value as text: strings as they are, anything else as JSON. */
   function shown(value: unknown): string {
@@ -112,7 +112,7 @@
   {#if chip}
     <p class="kind"><TypeChip type={node.type} label={shape?.typeLabel(node.type) ?? null} /></p>
   {/if}
-  <h1 class="title category">{node.label ?? node.id}</h1>
+  <h1 class="title {small ? 'subheading-app' : 'heading-app'}">{node.label ?? node.id}</h1>
   <p class="id code">{node.id}</p>
   {#if plainSummary !== null}
     <p class="summary">{plainSummary}</p>
@@ -159,20 +159,14 @@
           <div class="edge">
             <h3 class="caption">{edgeName(group.edge, group.direction)} · {group.count}</h3>
             {#if group.cited.length > 0}
-              <CitationChip sections={group.cited.map((t) => ({ title: `${t.label ?? t.id}${t.qualifier ? ` · ${t.qualifier}` : ""}`, evidence: t.evidence }))} />
+              <CitationChip short sections={group.cited.map((t) => ({ title: `${t.label ?? t.id}${t.qualifier ? ` · ${t.qualifier}` : ""}`, evidence: t.evidence }))} />
             {/if}
           </div>
           <ul class="things">
             {#each group.things as thing, i (i)}
               {@const type = typeOfId(thing.id)}
               <li>
-                {#if hrefFor}
-                  <a class="thing" href={hrefFor(thing.id)} data-id={thing.id} data-type-colour={colour(type)} onclick={(e) => pick(e, thing.id)}>
-                    <Shard {type} />{thing.label ?? thing.id}
-                  </a>
-                {:else}
-                  <span class="thing" data-id={thing.id} data-type-colour={colour(type)}><Shard {type} />{thing.label ?? thing.id}</span>
-                {/if}
+                <ThingChip id={thing.id} label={thing.label} {type} href={hrefFor?.(thing.id)} onclick={(e) => pick(e, thing.id)} />
               </li>
             {/each}
           </ul>
@@ -317,7 +311,10 @@
 
   .cite :global(.chip) {
     justify-self: end;
-    max-inline-size: 12rem;
+    max-inline-size: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .cite :global(.rows) {
@@ -345,7 +342,10 @@
   }
 
   .edge :global(.chip) {
-    max-inline-size: 12rem;
+    max-inline-size: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .edge :global(.rows) {
@@ -361,36 +361,10 @@
     list-style: none;
   }
 
-  /* A linked thing: its type's shard and its name, on a tint of its type's colour. */
-  .thing {
-    position: relative;
-    isolation: isolate;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    color: var(--ink);
-    text-decoration: none;
-  }
-
-  .thing::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    border-radius: inherit;
-    background: var(--type-colour);
-    opacity: 0.15;
-  }
-
-  a.thing:hover::before {
-    opacity: 0.3;
-  }
-
-  a.thing:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+  .things li {
+    display: flex;
+    max-inline-size: 100%;
+    min-inline-size: 0;
   }
 
   .sources {

@@ -92,6 +92,7 @@
   --radius-none: 0;
   --radius-md: 6px;
   --radius-sm: 4px;
+  --radius-pill: 14px;
   --font-sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
 }
@@ -322,6 +323,27 @@
   font-size: 12px;
   line-height: 1.4;
   font-weight: 400;
+}
+
+.heading-app {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.subheading-app {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.control-app {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 600;
 }
 
 .code {

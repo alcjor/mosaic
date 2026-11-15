@@ -258,20 +258,21 @@ The Mosaic viewer (Svelte, running the kit in the page), the single-file HTML ex
 - **SearchField:** 34px, on the band: `band-field` ground, `band-field-line` outline (3:1), `radius-md`, placeholder in `band-muted`. Results drop down under it on `raised` as they are typed, grouped by tier, each with its type's shard; arrow keys move, Enter opens the marked result in Explore, Escape closes. The mode switch, *Semantic* / *Text*, from the view file's `search` setting, sits in the row of places.
 - **ResultRow:** label in `heading` (15px, 600), type and id in `mono` `caption`, and a tier tag on the right: **Exact**, **Text** or **Similar** (vector). Tiers group the list with a `section-label` per group; exact first.
 - **TypeChip:** type name with a 10px shard (irregular polygon, `radius-none`) in the type's colour (`type-1` to `type-16`, see Colour). The same shard element stands for the type wherever a thing is named.
-- **EntityCard:** the card template from the spec: label (`panel-title` at 22px), type chip, summary, then a properties table. Each value carries a **CitationChip**.
+- **EntityCard:** the card template from the spec: label (`heading-app`), type chip, summary, then a properties table. Each value carries a **CitationChip**.
 - **PropertyTable:** two columns, key in `ink-muted`, value in `ink`; identifiers and numbers in `mono`. Row hairlines in `border`; no zebra striping.
 - **CitationChip:** `mono` 12px, tessera name and row (`titles.csv:412`) on `page`, in `ink-muted`; hover shows the source row; click opens the source text. The kind of source (a document, an external reference) is said in the label, never by colour.
 - **NeighborList:** grouped by edge name (`section-label`), each item a compact ResultRow without the tier tag, with a count per group ("directed by · 2").
 - **PathView:** the steps of a `path` result as a horizontal chain of chips joined by edge labels in `caption`.
-- **TableView:** results of `table`: sticky header on `surface-tint`, `mono` for ids, sortable columns with a 2px `accent` underline on the sorted one.
+- **TableView:** results of `table`: sticky header on `page` in `heading` (13px, 600), `mono` for numbers, sortable columns with a 2px `accent` underline on the sorted one; the selected row on `selection`.
 - **ProposalRow:** saffron is the only "pending" signal. `saffron-tint` ground, a 12px `saffron` shard, the claim, `by` (who proposed it) in `caption`, and two buttons: **Accept** (secondary, with check) and **Reject** (ghost, with cross). Accepted: `olive-tint` and a check, labelled "Accepted by …"; rejected: `majolica-tint`, a cross, labelled "Rejected by …". Never colour alone.
 - **BuildReport panel:** one row per check: icon + label + count, in `status-*` colours with their tints; strict-only findings are tagged "strict".
 - **ColumnMapper** (building GUI): one row per CSV column: column name in `mono`, a select (*Property* / *Linked things* / *Ignore*), an optional split character, a type conversion, and a preview of the first three values.
-- **Buttons:** 32px high, `radius-md`, 14px 600. *Primary*: `accent` fill, white text (one per view). *Secondary*: `surface`, `accent` 1px border and text. *Ghost*: text only, `ink`.
+- **Buttons:** 32px high, `radius-md`, 13px 600 (`control-app`). *Primary*: `accent` fill, `accent-ink` text (one per view). *Secondary*: `surface`, a `border` hairline, `ink` text. *Ghost*: `accent` text only.
+- **Chips:** a 28px pill (`radius-pill`) on `surface` with a `border` hairline; on (a toggle) or set (a filter), `selection` with an `accent` outline. A linked thing's chip is its type's shard and its name on a tint of the type's colour, `radius-sm`.
 - **Empty, loading, error:** empty states are one `body-screen` line and the tessera icon, in `ink-muted`; loading uses a thin 2px `accent` bar under the header, never spinners over content; errors use a `majolica-tint` banner with icon.
 
 ### States
-- **Hover:** rows and chips on `surface-tint`; buttons darken one step (`shard-3` for primary).
+- **Hover:** chips and neutral buttons on `selection`, rows on `page`; the primary button darkens one step.
 - **Focus:** a 2px `accent` ring, 2px offset, on every control (3:1 on both themes). Never removed.
 - **Selected:** the row gets `surface-tint` and a 3px `accent` bar at its left edge, and its label turns `accent`.
 - **Disabled:** 40% opacity, no hover, `not-allowed` cursor; disabled buttons keep their label.

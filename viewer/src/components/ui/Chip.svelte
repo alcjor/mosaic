@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Chip: a small label. With `pressed` it is a toggle (`aria-pressed`) that calls `onclick`;
+   * Chip: a 28px pill. With `pressed` it is a toggle (`aria-pressed`) that calls `onclick`;
    * with `onremove` it carries a remove button named `removeLabel`.
    */
   import type { Snippet } from "svelte";
@@ -22,7 +22,7 @@
   } = $props();
 </script>
 
-<span class="chip caption" class:selected={pressed === true} class:disabled>
+<span class="chip control-app" class:selected={pressed === true} class:removable={onremove !== undefined} class:disabled>
   {#if pressed !== undefined}
     <button class="label" type="button" aria-pressed={pressed} {disabled} {onclick}>{@render children()}</button>
   {:else}
@@ -39,22 +39,31 @@
   .chip {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
-    padding: 0 var(--space-2);
+    gap: var(--space-2);
+    box-sizing: border-box;
+    block-size: 28px;
+    padding: 0 var(--space-3);
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     background: var(--surface);
     color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .chip:not(.selected) {
+    font-weight: normal;
   }
 
   .chip:hover:not(.disabled) {
-    background: var(--surface-tint);
+    background: var(--selection);
   }
 
-  .selected {
+  /* On (a toggle that is pressed) or set (a filter in force): the accent outlines it. */
+  .selected,
+  .removable {
     border-color: var(--accent);
-    background: var(--surface-tint);
-    color: var(--accent);
+    background: var(--selection);
+    color: var(--heading);
   }
 
   .disabled {
@@ -79,7 +88,15 @@
   button:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
+  }
+
+  /* A toggle is pressed anywhere on its pill. */
+  button.label {
+    display: inline-block;
+    align-self: stretch;
+    margin-inline: calc(-1 * var(--space-3));
+    padding-inline: var(--space-3);
   }
 
   .remove {

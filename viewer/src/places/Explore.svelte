@@ -29,9 +29,6 @@
     hood: HoodChoices | null;
     /** Each choice made in the graph, for the address to follow. */
     onhood: (state: HoodState) => void;
-    /** The shell's tabs for a narrow page: Explore has none, its card is under its graph. */
-    picked?: string | null;
-    onpick?: (tab: string) => void;
   } = $props();
 
   let graph = $state<NeighbourhoodView | null>(null);
@@ -100,7 +97,7 @@
   {/if}
   {#snippet pane()}
     {#if open && viewer.file !== null}
-      <Pane place="explore" label="Selection" strip={page === null ? selected : (page.node.label ?? page.node.id)} aria-live="polite">
+      <Pane place="explore" label="Selection" strip={page === null ? selected : (page.node.label ?? page.node.id)} stripType={type} aria-live="polite">
         {#snippet head()}
           {#if type !== null}
             <span class="kind"><TypeChip {type} label={shape.typeLabel(type)} /></span>

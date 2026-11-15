@@ -1,6 +1,7 @@
 <script lang="ts">
   /**
-   * Button (brand book, section 6): 32px, primary (one per view), secondary or ghost. With
+   * Button (brand book, section 6): 32px. Primary (one per view) is filled with the accent, secondary
+   * is neutral (a hairline and ink), ghost is accent text alone. With
    * `href` it is a link that looks like a button; a disabled link loses its href. With
    * `pressed` it is a toggle. Other attributes (`data-*`, `aria-*`) go to the element.
    */
@@ -34,14 +35,14 @@
 {#if href !== undefined}
   <a
     {...rest}
-    class="button step-title {variant}"
+    class="button control-app {variant}"
     href={disabled ? undefined : href}
     aria-disabled={disabled ? "true" : undefined}
     aria-label={label}
     onclick={disabled ? (e) => e.preventDefault() : onclick}>{@render children()}</a
   >
 {:else}
-  <button {...rest} class="button step-title {variant}" {type} {disabled} aria-label={label} aria-pressed={pressed} {onclick}>{@render children()}</button>
+  <button {...rest} class="button control-app {variant}" {type} {disabled} aria-label={label} aria-pressed={pressed} {onclick}>{@render children()}</button>
 {/if}
 
 <style>
@@ -62,33 +63,33 @@
 
   .primary {
     background: var(--accent);
-    color: var(--surface);
+    color: var(--accent-ink);
   }
 
   .secondary {
+    border-color: var(--border);
     background: var(--surface);
-    border-color: var(--accent);
-    color: var(--accent);
+    color: var(--ink);
   }
 
   .ghost {
     background: transparent;
-    color: var(--ink);
+    color: var(--accent);
   }
 
   .button[aria-pressed="true"] {
-    background: var(--accent);
-    color: var(--surface);
+    border-color: var(--accent);
+    background: var(--selection);
+    color: var(--heading);
   }
 
   .primary:hover:not(:disabled, [aria-disabled="true"]) {
-    background: var(--shard-3);
-    color: var(--ceramic);
+    filter: brightness(0.92);
   }
 
-  .secondary:hover:not(:disabled, [aria-disabled="true"], [aria-pressed="true"]),
-  .ghost:hover:not(:disabled, [aria-disabled="true"], [aria-pressed="true"]) {
-    background: var(--surface-tint);
+  .secondary:hover:not(:disabled, [aria-disabled="true"]),
+  .ghost:hover:not(:disabled, [aria-disabled="true"]) {
+    background: var(--selection);
   }
 
   .button:focus-visible {

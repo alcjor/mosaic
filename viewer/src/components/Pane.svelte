@@ -34,12 +34,14 @@
    * default the label). Other attributes (`hidden`, `aria-*`, `data-*`) go to the `<aside>`.
    */
   import { onMount, untrack, type Snippet } from "svelte";
+  import Shard from "./Shard.svelte";
   import { clampWidth, readPane, writePane } from "../lib/pane.js";
 
   let {
     place,
     label,
     strip = null,
+    stripType = null,
     head,
     children,
     ...rest
@@ -48,7 +50,9 @@
     place: string;
     /** Its accessible name. */
     label: string;
+    /** What the collapsed strip says (by default the label), and the type whose shard goes before it. */
     strip?: string | null;
+    stripType?: string | null;
     head?: Snippet;
     children: Snippet;
     [attribute: string]: unknown;
@@ -122,7 +126,10 @@
     <span class="icon">
       <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
     </span>
-    {#if collapsed}<span class="up caption">{strip ?? label}</span>{/if}
+    {#if collapsed}
+      {#if stripType !== null}<Shard type={stripType} />{/if}
+      <span class="up caption">{strip ?? label}</span>
+    {/if}
   </button>
   <div class="content">
     <div class="head">
@@ -291,6 +298,7 @@
 
     .up {
       writing-mode: vertical-rl;
+      font-weight: bold;
       overflow: hidden;
       color: var(--ink-muted);
       text-overflow: ellipsis;

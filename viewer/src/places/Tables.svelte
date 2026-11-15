@@ -19,11 +19,7 @@
     viewer,
     shape,
     links,
-  }: PlaceProps & {
-    /** Tabs the place once had below 960px; the shell still hands them over. */
-    picked?: string | null;
-    onpick?: (tab: string) => void;
-  } = $props();
+  }: PlaceProps = $props();
 
   seedPane("tables", { ...PANE_DEFAULT, collapsed: true });
 
@@ -83,7 +79,7 @@
     {/if}
   </div>
   {#snippet pane()}
-    <Pane place="tables" label="Selected row" strip={selected ? (selected.label ?? selected.id) : "Selected row"}>
+    <Pane place="tables" label="Selected row" strip={selected ? (selected.label ?? selected.id) : "Selected row"} stripType={selected?.type ?? null}>
       {#snippet head()}<h2 class="heading section-label">Selected row</h2>{/snippet}
       {#if selected === null}
         <p class="none caption">Pick a row to see its card here.</p>
@@ -92,7 +88,14 @@
       {:else if "message" in card}
         <p class="banner body-app" role="alert">Could not read its card: {card.message}</p>
       {:else}
-        <EntityCard node={card.page.node} {shape} facts={card.facts} hrefFor={links.thing} />
+        <EntityCard
+          node={card.page.node}
+          {shape}
+          facts={card.facts}
+          links={card.page.links}
+          sources={{ rows: card.page.sources, total: card.page.sourcesTotal }}
+          hrefFor={links.thing}
+        />
       {/if}
     </Pane>
   {/snippet}

@@ -1,5 +1,5 @@
 // The shell: four places, Home by default; the address names the place; the page fits the window;
-// one right pane, resized and collapsed; search results drop down; narrow pages use tabs.
+// one right pane, resized and collapsed; search results drop down; narrow pages are one column.
 import { expect, test } from "vitest";
 import { useViewer } from "./harness.js";
 import { TOWN } from "./town.js";
@@ -50,7 +50,7 @@ test("every style the page uses comes from a token it defines", async () => {
   expect(await page.locator("[style]:not(svg *)").count()).toBe(0);
 });
 
-test("below 960px a place's side panes are tabs", async () => {
+test("below 960px a place is one column that fits the width, its pane under it", async () => {
   const { page, shot } = await viewer.open("#v=explore&q=harbor&node=Place%3Aharbor", { width: 420, height: 800 });
   // Explore has no tabs: the selected thing's card is under the graph.
   await page.locator('svg.picture [data-thing="Person:ada"]').waitFor();

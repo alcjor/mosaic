@@ -30,7 +30,7 @@
 <Tabs.Root bind:value onValueChange={(v) => onchange?.(v)}>
   <Tabs.List class="ui-tab-list" aria-label={label}>
     {#each tabs as tab (tab.value)}
-      <Tabs.Trigger class="ui-tab step-title" value={tab.value} disabled={tab.disabled}>{tab.label}</Tabs.Trigger>
+      <Tabs.Trigger class="ui-tab control-app" value={tab.value} disabled={tab.disabled}>{tab.label}</Tabs.Trigger>
     {/each}
   </Tabs.List>
   {#if panel}

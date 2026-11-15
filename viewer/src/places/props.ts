@@ -25,7 +25,5 @@ export interface PlaceLinks {
 export interface PlaceProps {
   viewer: Viewer;
   shape: Shape;
-  /** Below 960px: one column at a time. */
-  narrow: boolean;
   links: PlaceLinks;
 }

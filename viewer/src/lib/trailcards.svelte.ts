@@ -7,12 +7,12 @@
 import type { GetData, SealedFile } from "@mosaic/kit";
 import { SvelteMap } from "svelte/reactivity";
 import { cardFacts, type Fact } from "./cards.js";
-import { nodePage } from "./mosaic.js";
+import { nodePage, type NodeView } from "./mosaic.js";
 import { cardLine } from "./trailcolumns.js";
 import type { Shape } from "./view.js";
 
 /** A full card: the thing, and its facts once their sources are read; or why it could not be read. */
-export type FullCard = { readonly node: GetData; readonly facts: readonly Fact[] | null } | { readonly error: string };
+export type FullCard = { readonly node: GetData; readonly links: NodeView["links"]; readonly facts: readonly Fact[] | null } | { readonly error: string };
 
 export class TrailCards {
   /** Each thing's line, by id, once read ("" when it has no property). */
@@ -48,8 +48,8 @@ export class TrailCards {
           this.full.set(id, { error: page.message });
           return;
         }
-        this.full.set(id, { node: page.node, facts: null });
-        this.full.set(id, { node: page.node, facts: await cardFacts(this.#file, page, this.#shape) });
+        this.full.set(id, { node: page.node, links: page.links, facts: null });
+        this.full.set(id, { node: page.node, links: page.links, facts: await cardFacts(this.#file, page, this.#shape) });
       } catch (e) {
         this.full.set(id, { error: e instanceof Error ? e.message : String(e) });
       }

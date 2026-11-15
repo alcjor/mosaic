@@ -68,8 +68,8 @@ try {
   await page.locator('nav[aria-label="Places"] a[data-place-link="tables"]').click();
   await page.locator(`nav[aria-label="Types"] a[data-type="${type}"]`).click();
   const table = page.locator(`section[aria-label="Table ${type}"]`);
-  await table.locator("tbody a[data-id]").first().waitFor();
-  const rows = await table.locator("tbody a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
+  await table.locator("tbody td.name a[data-id]").first().waitFor();
+  const rows = await table.locator("tbody td.name a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
   const mode = await page.locator('[data-mode][aria-pressed="true"]').getAttribute("data-mode");
   console.log(JSON.stringify({ header, alerts, readyMs, results, card: cardText, links, textResults, textId, rows, mode, blocked, errors }));
 } finally {

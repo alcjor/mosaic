@@ -46,6 +46,9 @@
 
   /** Under a shard: its name and its count. */
   const BELOW = 44;
+  /** Clear room kept to the stage's edge, and half the room a type's name may take. */
+  const EDGE = 16;
+  const NAME_HALF = 60;
   /** A pill: its height, the room each side of its text, and the width of one column of it. */
   const PILL = { height: 20, pad: 9, column: 6.3 };
 
@@ -59,12 +62,27 @@
       margin: 48,
       room: Math.min(150, Math.round(short * 0.22)),
     });
-    // Centred in the stage: the shards with the names under them.
-    const xs = placed.types.flatMap((t) => [t.x - t.r, t.x + t.r]);
-    const ys = placed.types.flatMap((t) => [t.y - t.r, t.y + t.r + BELOW]);
+    // Drawn inside the stage: the centres pulled together when the shards, with the names under
+    // them, would pass its edge, then the whole centred.
+    const span = (of: (t: (typeof placed.types)[number]) => [number, number]) => {
+      const ends = placed.types.map(of);
+      return ends.length === 0 ? { low: 0, high: 0 } : { low: Math.min(...ends.map((e) => e[0])), high: Math.max(...ends.map((e) => e[1])) };
+    };
+    const squeeze = (size: number, centres: { low: number; high: number }, drawn: { low: number; high: number }): number => {
+      const over = drawn.high - drawn.low - (centres.high - centres.low);
+      return centres.high === centres.low ? 1 : Math.min(1, Math.max(0.2, (size - 2 * EDGE - over) / (centres.high - centres.low)));
+    };
+    const sx = squeeze(box.width, span((t) => [t.x, t.x]), span((t) => [t.x - Math.max(t.r, NAME_HALF), t.x + Math.max(t.r, NAME_HALF)]));
+    // A type linked to itself carries that link's pill above it.
+    const looped = new Set(placed.edges.filter((e) => e.from === e.to).map((e) => e.from));
+    const above = (t: { name: string; r: number }): number => t.r + (looped.has(t.name) ? 2 * PILL.height : 0);
+    const sy = squeeze(box.height, span((t) => [t.y, t.y]), span((t) => [t.y - above(t), t.y + t.r + BELOW]));
+    const pulled = placed.types.map((t) => ({ ...t, x: t.x * sx, y: t.y * sy }));
+    const xs = pulled.flatMap((t) => [t.x - t.r, t.x + t.r]);
+    const ys = pulled.flatMap((t) => [t.y - above(t), t.y + t.r + BELOW]);
     const dx = xs.length === 0 ? 0 : Math.round(box.width / 2 - (Math.min(...xs) + Math.max(...xs)) / 2);
     const dy = ys.length === 0 ? 0 : Math.round(box.height / 2 - (Math.min(...ys) + Math.max(...ys)) / 2);
-    return { ...placed, types: placed.types.map((t) => ({ ...t, x: t.x + dx, y: t.y + dy })) };
+    return { ...placed, types: pulled.map((t) => ({ ...t, x: Math.round(t.x + dx), y: Math.round(t.y + dy) })) };
   });
 
   const edgeLabel = (e: { name: string; from: string }): string => shape.label(e.from, e.name) ?? e.name.replaceAll("_", " ");

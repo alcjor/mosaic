@@ -88,7 +88,7 @@
   {#if viewer.file}
     <div class="trails">
       <div class="head">
-        <h1 class="title category">{title}</h1>
+        <h1 class="title heading-app">{title}</h1>
         <p class="counts body-app" role="status" aria-live="polite">{counted}{counted !== "" && held !== "" ? " · " : ""}{held}</p>
         <span class="grow"></span>
         {#if viewer.chain !== null}

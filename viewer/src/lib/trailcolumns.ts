@@ -109,15 +109,17 @@ const shown = (value: unknown): string => (typeof value === "string" ? value : J
  * A small card's one line: the first `count` properties of the thing, those its type's card
  * shows when the view file sets one, else in the order of its page; "" when it has none.
  */
-export function cardLine(node: Pick<GetData, "type" | "props">, shape: Shape | null, count = 3): string {
+export function cardLine(node: Pick<GetData, "type" | "props"> & { readonly label?: string | null }, shape: Shape | null, count = 3): string {
   const props = node.props ?? {};
   const card = shape?.card(node.type) ?? null;
   const names =
     card !== null
       ? card.show.filter((name) => name !== "summary" && Object.hasOwn(props, name))
       : inPageOrder(Object.keys(props), shape?.page(node.type) ?? null, (name) => name);
+  // A property that only repeats the name above it says nothing.
   return names
-    .slice(0, count)
     .map((name) => shown(props[name]))
+    .filter((value) => value !== node.label)
+    .slice(0, count)
     .join(" · ");
 }

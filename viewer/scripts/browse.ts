@@ -111,69 +111,105 @@ async function toTables(page: Page) {
   await page.locator('main[data-place="tables"]').waitFor();
 }
 
+/** The ids of the rows shown: each row's own link, not the chips of the things it links to. */
+const rowIds = (table: import("playwright").Locator) =>
+  table.locator("tbody td.name a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
+
+/** Where the page is in the rows, as the footer says it: the text, and the page and total it carries. */
+async function pagerOf(table: import("playwright").Locator) {
+  const where = table.locator('nav[aria-label="Pages"] [data-page]');
+  return {
+    text: (await where.innerText()).trim(),
+    page: Number(await where.getAttribute("data-page")),
+    pages: Number(await where.getAttribute("data-pages")),
+    total: Number(await table.locator("[data-total]").getAttribute("data-total")),
+  };
+}
+
 /** The first page of the table of `type`: its column headers, row ids, pager, and time to fill. */
 async function glance(page: Page, type: string) {
   const started = performance.now();
   await toTables(page);
   await page.locator(`a[data-type="${type}"]`).click();
   const table = page.locator(`section[aria-label="Table ${type}"]`);
-  await table.locator("tbody a[data-id]").first().waitFor();
+  await table.locator("tbody td.name a[data-id]").first().waitFor();
   const ms = Math.round(performance.now() - started);
-  const headers = await table.locator("thead th").allInnerTexts();
-  const rows = await table.locator("tbody a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
-  const pager = await table.locator('nav[aria-label="Pages"]').innerText();
+  const headers = (await table.locator("thead th").allInnerTexts()).map((h) => h.trim());
+  const rows = await rowIds(table);
+  const pager = await pagerOf(table);
   return { type, headers, rows, pager, ms };
 }
 
-/** The tables: open a type's table, sort it both ways, filter it, then open a row's node page. */
+/** Open "Add a filter" on the table shown: the form drops down from it. */
+async function filterForm(page: Page, table: import("playwright").Locator) {
+  await table.getByRole("button", { name: "Add a filter" }).click();
+  const form = page.getByRole("form", { name: "Add a filter" });
+  await form.waitFor();
+  return form;
+}
+
+/** The tables: open a type's table, sort it both ways, filter it, pick a row, then open a row's thing. */
 async function tables(page: Page, type: string) {
-  const ids = (p: Page) => p.locator('section[aria-label^="Table"] tbody a[data-id]').evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
   await toTables(page);
   const listed = await page.locator("a[data-type]").evaluateAll((as) => as.map((a) => a.getAttribute("data-type")));
   await page.locator(`a[data-type="${type}"]`).click();
   const table = page.locator(`section[aria-label="Table ${type}"]`);
-  await table.locator("tbody a[data-id]").first().waitFor();
-  const headers = await table.locator("thead th").allInnerTexts();
-  const rows = await ids(page);
+  await table.locator("tbody td.name a[data-id]").first().waitFor();
+  const headers = (await table.locator("thead th").allInnerTexts()).map((h) => h.trim());
+  const rows = await rowIds(table);
+  // Every row's cell of a link column holds the things linked, as chips.
+  const linked = await table.locator("tbody td[data-link]").first().locator("a[data-id]").evaluateAll((as) => as.map((a) => a.getAttribute("data-id")));
   // The filter form shows the column it will use: the first one, before any choice.
-  const firstColumn = await table.getByLabel("Column", { exact: true }).inputValue();
-  const column = (await table.locator("thead button[data-column]").last().getAttribute("data-column"))!;
+  let form = await filterForm(page, table);
+  const firstColumn = await form.getByLabel("Column").inputValue();
+  await page.keyboard.press("Escape");
+  await form.waitFor({ state: "hidden" });
+  const column = "size";
   await table.locator(`thead button[data-column="${column}"]`).click();
   await table.locator('th[aria-sort="ascending"] button[data-column]').waitFor();
-  const ascending = await ids(page);
+  const ascending = await rowIds(table);
   await table.locator(`thead button[data-column="${column}"]`).click();
   await table.locator('th[aria-sort="descending"]').waitFor();
-  const descending = await ids(page);
-  await table.getByLabel("Column", { exact: true }).selectOption(column);
-  await table.getByLabel("Operator", { exact: true }).selectOption("<");
-  await table.getByLabel("Value kind", { exact: true }).selectOption("number");
-  await table.getByLabel("Value", { exact: true }).fill("2");
-  await table.getByRole("button", { name: "Filter" }).click();
+  const descending = await rowIds(table);
+  form = await filterForm(page, table);
+  await form.getByLabel("Column").selectOption(column);
+  await form.getByLabel("Operator").selectOption("<");
+  await form.getByLabel("Value").fill("2");
+  await form.getByRole("button", { name: "Add" }).click();
   await table.locator('ul[aria-label="Filters"]').waitFor();
   await page.waitForFunction(() => document.querySelectorAll('section[aria-label^="Table"] tbody tr').length === 1);
-  const filtered = await ids(page);
-  const pager = await table.locator('nav[aria-label="Pages"]').innerText();
+  const filtered = await rowIds(table);
+  const where = new URLSearchParams(new URL(page.url()).hash.slice(1)).get("w");
+  const pager = await pagerOf(table);
   const first = filtered[0]!;
-  await table.locator(`tbody a[data-id="${first}"]`).click();
+  // Picking a row, outside its links, shows its card in the pane and leaves the table where it is.
+  await table.locator("tbody tr").first().locator("td").nth(1).click();
+  const selected = await table.locator('tbody tr[aria-selected="true"] td.name a').getAttribute("data-id");
+  const pane = (await page.locator('aside[data-pane="tables"]').innerText()).trim();
+  await table.locator(`tbody td.name a[data-id="${first}"]`).click();
   await page.locator(`article[aria-label="${first}"]`).waitFor();
   const hash = new URL(page.url()).hash;
   // A column picked in one table never carries over to another type's table.
   await toTables(page);
   await page.locator(`a[data-type="${type}"]`).click();
-  await table.locator("tbody a[data-id]").first().waitFor();
-  await table.getByLabel("Column", { exact: true }).selectOption(column);
+  await table.locator("tbody td.name a[data-id]").first().waitFor();
+  form = await filterForm(page, table);
+  await form.getByLabel("Column").selectOption(column);
+  await page.keyboard.press("Escape");
+  await form.waitFor({ state: "hidden" });
   const other = listed.find((t) => t !== type)!;
   await page.locator(`a[data-type="${other}"]`).click();
   const otherTable = page.locator(`section[aria-label="Table ${other}"]`);
-  await otherTable.locator("tbody a[data-id]").first().waitFor();
-  const otherColumn = await otherTable.getByLabel("Column", { exact: true }).inputValue();
-  await otherTable.getByLabel("Value", { exact: true }).fill("x");
-  await otherTable.getByRole("button", { name: "Filter" }).click();
+  await otherTable.locator("tbody td.name a[data-id]").first().waitFor();
+  form = await filterForm(page, otherTable);
+  const otherColumn = await form.getByLabel("Column").inputValue();
+  await form.getByLabel("Value").fill("x");
+  await form.getByRole("button", { name: "Add" }).click();
   await otherTable.locator('ul[aria-label="Filters"]').waitFor();
   const otherWhere = new URLSearchParams(new URL(page.url()).hash.slice(1)).get("w");
   const otherError = await otherTable.locator('[role="alert"]').count();
   return {
-    listed, headers, rows, firstColumn, column, ascending, descending, filtered, pager, opened: first, hash,
+    listed, headers, rows, linked, firstColumn, column, ascending, descending, filtered, where, pager, selected, pane, opened: first, hash,
     other: { type: other, column: otherColumn, where: otherWhere, errors: otherError },
   };
 }

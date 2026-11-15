@@ -97,13 +97,11 @@
   // The filter being added: its column is one of the table's, the first until another is picked.
   let filterable = $derived([...(hasName ? ["label"] : []), ...names, ...links.map((e) => e.name)]);
   let open = $state(false);
-  let column = $state("");
+  let chosen = $state<string | null>(null);
+  let column = $derived(chosen !== null && filterable.includes(chosen) ? chosen : (filterable[0] ?? ""));
   let op = $state<Condition["op"]>("=");
   let text = $state("");
   let problem = $state<string | null>(null);
-  $effect(() => {
-    if (!filterable.includes(column)) column = filterable[0] ?? "";
-  });
 
   function submit(event: SubmitEvent): void {
     event.preventDefault();
@@ -141,13 +139,13 @@
     {/if}
     {#if filterable.length > 0}
       <Popover.Root bind:open>
-        <Popover.Trigger class="table-filter-add step-title">Add a filter</Popover.Trigger>
+        <Popover.Trigger class="table-filter-add control-app">Add a filter</Popover.Trigger>
         <Popover.Portal>
           <Popover.Content class="table-filter-pop body-app" align="start" sideOffset={4}>
             <form class="filter-form" aria-label="Add a filter" onsubmit={submit}>
               <label class="field caption"
                 >Column
-                <select class="control body-app" name="column" bind:value={column}>
+                <select class="control body-app" name="column" value={column} onchange={(e) => (chosen = e.currentTarget.value)}>
                   {#each filterable as name (name)}
                     <option value={name}>{named(name)}</option>
                   {/each}
@@ -368,8 +366,18 @@
     vertical-align: middle;
   }
 
+  /* A row's name stays on one line up to a width, then wraps; its chips never break inside. */
+  .name {
+    min-inline-size: 160px;
+    max-inline-size: 320px;
+  }
+
   .name a {
     color: var(--accent);
+  }
+
+  .frame :global(td:not(.name, .links)) {
+    white-space: nowrap;
   }
 
   .mono {
@@ -381,6 +389,8 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
+    inline-size: max-content;
+    max-inline-size: 280px;
   }
 
   .hint {

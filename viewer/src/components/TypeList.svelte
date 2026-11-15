@@ -28,7 +28,8 @@
   {#each types as type (type.name)}
     <li>
       <a
-        class="chip {type.name === selected ? 'label-app selected' : 'body-app'}"
+        class="chip control-app"
+        class:selected={type.name === selected}
         href={hrefFor(type.name)}
         aria-current={type.name === selected ? "page" : undefined}
         data-type={type.name}
@@ -63,11 +64,15 @@
     block-size: 28px;
     padding: 0 var(--space-3);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-pill);
     background: var(--surface);
     color: var(--ink);
     text-decoration: none;
     white-space: nowrap;
+  }
+
+  .chip:not(.selected) {
+    font-weight: normal;
   }
 
   .chip:hover {

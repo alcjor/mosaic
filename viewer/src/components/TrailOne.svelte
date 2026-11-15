@@ -93,10 +93,10 @@
         {/if}
         <div class="big" data-place={place} data-id={thing.id}>
           {#if card !== undefined && "node" in card}
-            <EntityCard node={card.node} {shape} facts={card.facts} {hrefFor} />
+            <div class="card"><EntityCard node={card.node} {shape} facts={card.facts} links={card.links} {hrefFor} small /></div>
           {:else}
             <div class="waiting">
-              <strong class="panel-title">{thing.label ?? thing.id}</strong>
+              <strong class="subheading-app">{thing.label ?? thing.id}</strong>
               <span class="hint caption">{card === undefined ? "Reading the card…" : `The card could not be read: ${card.error}`}</span>
             </div>
           {/if}
@@ -148,17 +148,20 @@
     color: var(--ink-muted);
   }
 
-  /* The cards take their own height, and scroll together when the place is shorter. */
+  /* The cards take their own height, up to the room there is; a longer card scrolls inside its frame. */
   .one {
+    display: flex;
     flex: 0 1 auto;
     min-block-size: 0;
-    overflow: auto;
+    overflow-x: auto;
   }
 
   .row {
     display: flex;
+    flex: 1;
     align-items: stretch;
     min-inline-size: min-content;
+    min-block-size: 0;
   }
 
   .big {
@@ -166,9 +169,17 @@
     flex: 1 0 280px;
     flex-direction: column;
     min-inline-size: 0;
+    min-block-size: 0;
+    overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--surface);
+  }
+
+  .card {
+    min-block-size: 0;
+    padding: var(--space-4);
+    overflow-y: auto;
   }
 
   .waiting {
@@ -182,7 +193,8 @@
   }
 
   .foot {
-    padding: 0 var(--space-3) var(--space-3);
+    flex: none;
+    padding: var(--space-1) var(--space-2) var(--space-2);
   }
 
   .via {
