@@ -1,97 +1,130 @@
 <script lang="ts">
-  /** Tables: the types, and the table of the one picked. Below 960px the two are tabs. */
+  /**
+   * Tables: the types as chips across the top, and the table of the one picked filling the rest.
+   * Picking a row shows its card in the pane, which starts collapsed to its rail.
+   */
+  import EntityCard from "../components/EntityCard.svelte";
+  import Pane from "../components/Pane.svelte";
   import Place from "../components/Place.svelte";
   import TableView from "../components/TableView.svelte";
   import TypeList from "../components/TypeList.svelte";
   import EmptyState from "../components/ui/EmptyState.svelte";
-  import Tabs from "../components/ui/Tabs.svelte";
+  import { cardFacts, type Fact } from "../lib/cards.js";
+  import { nodePage, type NodeView, type ToolFailure } from "../lib/mosaic.js";
+  import { PANE_DEFAULT, seedPane } from "../lib/pane.js";
   import type { Condition } from "../lib/route.js";
   import type { PlaceProps } from "./props.js";
 
   let {
     viewer,
     shape,
-    narrow,
     links,
-    picked,
-    onpick,
   }: PlaceProps & {
-    /** The tab a person picked since the address last changed, if any. */
-    picked: string | null;
-    onpick: (tab: string) => void;
+    /** Tabs the place once had below 960px; the shell still hands them over. */
+    picked?: string | null;
+    onpick?: (tab: string) => void;
   } = $props();
 
-  const tabs = [
-    { value: "types", label: "Types" },
-    { value: "table", label: "Table" },
-  ];
-  /** The tab shown below 960px: the one picked, else what the address opened. */
-  let tab = $derived(picked !== null && tabs.some((t) => t.value === picked) ? picked : viewer.tableRoute !== null ? "table" : "types");
+  seedPane("tables", { ...PANE_DEFAULT, collapsed: true });
 
   function filtered(condition: Condition): void {
     const table = viewer.tableRoute;
     if (table) location.hash = links.table({ ...table, page: 1, where: [...table.where, condition] });
   }
+
+  /** The row picked, and its card once read. */
+  let row = $state.raw<{ id: string; label: string | null; type: string } | null>(null);
+  let card = $state.raw<{ page: NodeView; facts: readonly Fact[] | null } | ToolFailure | null>(null);
+  const type = $derived(viewer.tableRoute?.type ?? null);
+  const selected = $derived(row !== null && row.type === type ? row : null);
+
+  $effect(() => {
+    const file = viewer.file;
+    const picked = selected;
+    card = null;
+    if (file === null || picked === null) return;
+    let live = true;
+    void (async () => {
+      const page = await nodePage(file, picked.id);
+      if (!live) return;
+      card = "message" in page ? page : { page, facts: null };
+      if ("message" in page) return;
+      const facts = await cardFacts(file, page, shape);
+      if (live) card = { page, facts };
+    })();
+    return () => {
+      live = false;
+    };
+  });
 </script>
 
 <Place id="tables" fill>
   <div class="tables">
-    {#if narrow}
-      <div class="tabs"><Tabs {tabs} value={tab} label="Tables" onchange={onpick} /></div>
-    {/if}
-    <nav class="types" aria-label="Types" hidden={narrow && tab !== "types"}>
-      <TypeList types={shape.types} selected={viewer.tableRoute?.type ?? null} hrefFor={links.type} labelFor={(type) => shape.typeLabel(type)} />
+    <nav class="types" aria-label="Types">
+      <TypeList types={shape.types} selected={type} hrefFor={links.type} labelFor={(name) => shape.typeLabel(name)} />
     </nav>
-    <div class="table" hidden={narrow && tab !== "table"}>
-      {#if viewer.tableRoute}
-        {#key viewer.tableRoute.type}
-          <TableView view={viewer.table} route={viewer.tableRoute} hrefFor={links.table} nodeHref={links.thing} onfilter={filtered} shape={viewer.shape} />
-        {/key}
-      {:else}
-        <EmptyState message="Pick a type to see its table." />
-      {/if}
-    </div>
+    {#if viewer.tableRoute}
+      {#key viewer.tableRoute.type}
+        <TableView
+          view={viewer.table}
+          route={viewer.tableRoute}
+          hrefFor={links.table}
+          nodeHref={links.thing}
+          onfilter={filtered}
+          shape={viewer.shape}
+          file={viewer.file}
+          count={shape.types.find((t) => t.name === type)?.count ?? null}
+          selected={selected?.id ?? null}
+          onselect={(picked) => (row = { ...picked, type: type! })}
+        />
+      {/key}
+    {:else}
+      <EmptyState message="Pick a type to see its table." />
+    {/if}
   </div>
+  {#snippet pane()}
+    <Pane place="tables" label="Selected row" strip={selected ? (selected.label ?? selected.id) : "Selected row"}>
+      {#snippet head()}<h2 class="heading section-label">Selected row</h2>{/snippet}
+      {#if selected === null}
+        <p class="none caption">Pick a row to see its card here.</p>
+      {:else if card === null}
+        <p class="none caption" role="status">Loading…</p>
+      {:else if "message" in card}
+        <p class="banner body-app" role="alert">Could not read its card: {card.message}</p>
+      {:else}
+        <EntityCard node={card.page.node} {shape} facts={card.facts} hrefFor={links.thing} />
+      {/if}
+    </Pane>
+  {/snippet}
 </Place>
 
 <style>
   .tables {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-content: start;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    box-sizing: border-box;
     min-inline-size: 0;
+    min-block-size: 0;
+    padding: var(--space-4);
   }
 
-  [hidden] {
-    display: none;
+  .heading {
+    margin: 0;
+    color: var(--ink-muted);
+    text-transform: uppercase;
   }
 
-  .tabs {
-    padding: var(--space-2) var(--space-4) 0;
+  .none {
+    margin: 0;
+    color: var(--ink-muted);
   }
 
-  .types,
-  .table {
-    min-inline-size: 0;
-    background: var(--surface);
-  }
-
-  /* From 960px: the types beside the table, each scrolling on its own. */
-  @media (width >= 960px) {
-    .tables {
-      grid-template-columns: 280px minmax(0, 1fr);
-      align-content: stretch;
-      min-block-size: 0;
-    }
-
-    .types,
-    .table {
-      min-block-size: 0;
-      overflow: auto;
-    }
-
-    .types {
-      border-inline-end: 1px solid var(--border);
-    }
+  .banner {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--majolica-tint);
+    color: var(--majolica-text);
   }
 </style>

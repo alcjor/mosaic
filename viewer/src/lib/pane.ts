@@ -55,3 +55,12 @@ export function writePane(place: string, state: PaneState, store: Storage | null
     // Storage is full or refused: the pane still works for this visit.
   }
 }
+
+/** Start the pane of `place` as `state` where a person has not left it any way yet. */
+export function seedPane(place: string, state: PaneState, store: Storage | null = storage()): void {
+  try {
+    if (store !== null && store.getItem(key(place)) === null) writePane(place, state, store);
+  } catch {
+    // Storage is refused: the pane starts as the default.
+  }
+}

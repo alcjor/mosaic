@@ -158,7 +158,7 @@ test("the pane is resized by its edge and collapsed to a rail, and both survive 
   expect(await width(selection)).toBe(340);
   await page.evaluate(() => (location.hash = "#"));
   await pane.getByRole("button", { name: "Show Saved trails" }).click();
-  await pane.getByRole("link", { name: "Build a trail" }).waitFor();
+  await pane.getByRole("link", { name: "Build a new trail" }).waitFor();
   expect(await width()).toBe(440);
 });
 

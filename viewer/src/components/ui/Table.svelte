@@ -3,7 +3,8 @@
    * Table (brand book, TableView): a sticky header on `surface-tint` and one row per item,
    * whose cells `row` renders. A click on a sortable header sets `sort` and reports it through
    * `onsort`; the caller sorts the rows. The sorted column has a 2px accent underline. A sortable
-   * header's button carries its column's key as `data-column`.
+   * header's button carries its column's key as `data-column`. With `onrow`, a row can be picked
+   * and `selected` says which one is.
    */
   import type { Snippet } from "svelte";
   import { nextSort, type Column, type Sort } from "./table.js";
@@ -15,6 +16,8 @@
     label,
     sort = $bindable(null),
     onsort,
+    selected,
+    onrow,
   }: {
     columns: Column[];
     rows: T[];
@@ -22,7 +25,16 @@
     label: string;
     sort?: Sort | null;
     onsort?: (sort: Sort) => void;
+    /** Which row is the selected one, if rows can be selected. */
+    selected?: ((item: T, index: number) => boolean) | undefined;
+    /** A row was picked: a click on it outside its links and buttons, or Enter on it. */
+    onrow?: ((item: T, index: number) => void) | undefined;
   } = $props();
+
+  function pick(event: Event, item: T, index: number) {
+    if (event instanceof KeyboardEvent ? event.key !== "Enter" || event.target !== event.currentTarget : (event.target as Element).closest("a, button") !== null) return;
+    onrow?.(item, index);
+  }
 
   function sortBy(key: string) {
     sort = nextSort(sort, key);
@@ -52,7 +64,13 @@
     </thead>
     <tbody>
       {#each rows as item, i (i)}
-        <tr>{@render row(item, i)}</tr>
+        {#if onrow}
+          <tr class:selected={selected?.(item, i)} aria-selected={selected?.(item, i) ?? false} tabindex="0" onclick={(e) => pick(e, item, i)} onkeydown={(e) => pick(e, item, i)}
+            >{@render row(item, i)}</tr
+          >
+        {:else}
+          <tr>{@render row(item, i)}</tr>
+        {/if}
       {/each}
     </tbody>
   </table>
@@ -117,6 +135,15 @@
 
   tbody tr:hover {
     background: var(--surface-tint);
+  }
+
+  tbody tr.selected {
+    background: var(--selection);
+  }
+
+  tbody tr:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
   }
 
   tbody :global(td) {

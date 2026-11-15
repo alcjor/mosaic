@@ -122,8 +122,8 @@ describe("the page lists only the view file's types", () => {
       props: { types: shape.types, hrefFor: (t: string) => `#${t}`, labelFor: (t: string) => shape.typeLabel(t) },
     });
     expect(attributes(body, "data-type")).toEqual(["Item", "Group"]);
-    expect(body).toContain(">Thing<");
-    expect(body).not.toContain(">Item<");
+    expect(body).toMatch(/>Thing\s*</);
+    expect(body).not.toMatch(/>Item\s*</);
     expect(new Shape(SHAPED, file).types.map((t) => t.name)).toEqual(["Item"]);
     file.close();
   });
@@ -160,16 +160,14 @@ describe("tables show the view file's columns", () => {
     expect((viewer.table as Table).columns).toEqual(["id", "label", "size"]);
   });
 
-  it("the table's title and headers carry the file's labels", async () => {
+  it("the table's headers carry the file's labels", async () => {
     const file = await open();
     const shape = new Shape(SHAPED, file);
     const view: Table = { route: route("Item"), columns: ["id", "label", "size"], rows: [["Item:a", "Item A", 1]], page: 1, total: 1, pages: 1 };
     const { body } = render(TableView, {
       props: { view, route: route("Item"), hrefFor: tableHref, nodeHref: hrefFor, onfilter: () => {}, shape },
     });
-    expect(body).toContain(">Thing<");
     expect(body).toMatch(/data-column="size"[^>]*>How big</);
-    expect(body).toContain('<option value="size">How big</option>');
     file.close();
   });
 

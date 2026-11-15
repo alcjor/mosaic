@@ -1,11 +1,12 @@
 <script lang="ts">
   /**
-   * The node types the page lists (all the mosaic declares, or the view file's, in its order),
-   * each opening its table, with its node count and its label.
+   * The node types the page lists (all the mosaic declares, or the view file's, in its order) as
+   * a row of chips that wraps: each has its type's shard, its label and its count, and opens its
+   * table.
    */
-  import EmptyState from "./ui/EmptyState.svelte";
   import type { NodeType } from "@mosaic/kit";
-  import TypeChip from "./TypeChip.svelte";
+  import { number } from "../lib/graph/mapview.js";
+  import Shard from "./Shard.svelte";
 
   let {
     types,
@@ -20,61 +21,68 @@
   } = $props();
 </script>
 
-<h2 class="heading section-label">Tables</h2>
 {#if types.length === 0}
-  <EmptyState message="This mosaic declares no node type." />
+  <p class="none caption">This mosaic declares no node type.</p>
 {/if}
-<ul class="rows">
+<ul class="chips">
   {#each types as type (type.name)}
     <li>
       <a
-        class="row"
-        class:selected={type.name === selected}
+        class="chip {type.name === selected ? 'label-app selected' : 'body-app'}"
         href={hrefFor(type.name)}
         aria-current={type.name === selected ? "page" : undefined}
         data-type={type.name}
       >
-        <TypeChip type={type.name} label={labelFor(type.name)} />
-        <span class="count caption">{type.count}</span>
+        <Shard type={type.name} />{labelFor(type.name)}
+        <span class="count caption">{number(type.count)}</span>
       </a>
     </li>
   {/each}
 </ul>
 
 <style>
-  .heading {
-    margin: var(--space-4) var(--space-3) var(--space-1);
-    color: var(--accent);
-    text-transform: uppercase;
+  .none {
+    margin: 0;
+    color: var(--ink-muted);
   }
 
-  .rows {
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .row {
-    display: flex;
-    justify-content: space-between;
-    padding: var(--space-2) var(--space-3);
-    border-inline-start: 3px solid transparent;
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    box-sizing: border-box;
+    block-size: 28px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
     color: var(--ink);
     text-decoration: none;
+    white-space: nowrap;
   }
 
-  .row:hover {
-    background: var(--surface-tint);
+  .chip:hover {
+    background: var(--selection);
   }
 
-  .row:focus-visible {
+  .chip:focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
-  .row.selected {
-    border-inline-start-color: var(--accent);
-    background: var(--surface-tint);
+  .selected {
+    border-color: var(--accent);
+    background: var(--selection);
+    color: var(--heading);
   }
 
   .count {

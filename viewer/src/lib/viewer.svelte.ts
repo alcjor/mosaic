@@ -19,6 +19,7 @@ import { COLUMN_RESULTS, columnsOf, type TrailColumns } from "./trailcolumns.js"
 import { nodePage, openMosaic, search, type NodeView, type SearchView, type ToolFailure } from "./mosaic.js";
 import type { ChainLinkRoute, TableRoute } from "./route.js";
 import { linkOf, linkSettings, tableChoices } from "./chainlink.js";
+import { remember } from "./recent.js";
 import { tableView, type TableView } from "./tables.js";
 import { chooseCard } from "./cardpick.js";
 import { checkChains, checkOne, type SavedChain } from "./viewchains.js";
@@ -459,6 +460,7 @@ export class Viewer {
     if (n !== this.#pages) return;
     this.page = view;
     this.facts = null;
+    if (!("message" in view)) remember(this.file.header.knowledge_hash, { id: view.node.id, label: view.node.label, type: view.node.type });
     await this.#cardFacts(n);
   }
 
