@@ -7,9 +7,10 @@
    * The view says when it shows only part. The Graph switch for the current thing opens it too.
    *
    * The data is the kit's, loaded by lib/graph/hood.ts with bounded calls (one `get` and one
-   * `neighbors` per group) and kept for the session; the layout is lib/graph/hood-layout.ts, the
-   * same picture for the same thing and choices (G-7). Below 960px the picture gives way to the
-   * same contents as a list (G-11).
+   * `neighbors` per group) and kept for the session; the layout is lib/graph/hood-layout.ts, laid
+   * out by forces, the same picture for the same thing and choices (G-7). A thing or bundle dragged
+   * stays where it is dropped; a new choice keeps what was drawn near where it was. Below 960px
+   * the picture gives way to the same contents as a list (G-11).
    *
    * The address holds the choices made (G-8): the view opens from an address's choices
    * (`address`), applying what the mosaic allows and saying what it could not, and tells the page
@@ -46,7 +47,8 @@
     type Limit,
     type Thing,
   } from "../lib/graph/hood.js";
-  import { layoutHood, type PlacedGroup, type PlacedThing } from "../lib/graph/hood-layout.js";
+  import { bundleId, layoutHood, placesOf, settleHood, type PlacedGroup, type PlacedThing } from "../lib/graph/hood-layout.js";
+  import type { Point } from "../lib/graph/force-layout.js";
   import { groupText, mustOpen, once, partNotes, placeThingNames, summary, viewBoxOf } from "../lib/graph/hoodview.js";
   import { COLUMN, columns, noun, number, type Rect } from "../lib/graph/mapview.js";
   import { hoodLoaderFor, sourcesFor } from "../lib/graph/session.js";
@@ -178,10 +180,74 @@
    */
   const shown = $derived(hood !== null && choices !== null && hood.state.centre === choices.centre ? hood : null);
   const busy = $derived(shown === null || JSON.stringify(shown.state) !== JSON.stringify(choices));
-  const layout = $derived(
-    shown === null ? null : layoutHood(shown.centre, shown.expanded, { hidden: new Set(shown.state.hidden), shows: (e) => shows(shown.state, e) }),
-  );
-  const box = $derived(layout === null ? null : viewBoxOf(layout));
+  /**
+   * Things and bundles the person dragged round a centre, where they were dropped: they stay
+   * there. A new centre is a new picture, with nothing pinned.
+   */
+  let pins = $state<{ centre: string; at: ReadonlyMap<string, Point> } | null>(null);
+  /** Where everything was last drawn, and round which centre: a new picture of it stays near there. */
+  let last: { centre: string; places: Map<string, Point> } | null = null;
+  /** Ticks per pointer move while dragging; the drop settles the picture fully. */
+  const DRAG_TICKS = 20;
+  const layout = $derived.by(() => {
+    if (shown === null) return null;
+    const id = shown.centre.centre.id;
+    const start = layoutHood(shown.centre, shown.expanded, { hidden: new Set(shown.state.hidden), shows: (e) => shows(shown.state, e) });
+    const before = untrack(() => last);
+    const pinned = pins?.centre === id ? pins.at : undefined;
+    const ticks = dragBox === null ? undefined : DRAG_TICKS;
+    const settled = settleHood(start, before?.centre === id ? { previous: before.places, ...(pinned ? { pinned } : {}), ...(ticks ? { ticks } : {}) } : {});
+    last = { centre: id, places: placesOf(settled) };
+    return settled;
+  });
+
+  /** The thing or bundle being dragged, and the picture's box while it is: the box holds still under the pointer. */
+  let drag: { id: string; pointer: number; moved: boolean; box: Rect } | null = null;
+  let dragBox = $state<Rect | null>(null);
+  /** Set when a drag ends, so the click it ends with does not also select. */
+  let dropped = false;
+  const box = $derived(dragBox ?? (layout === null ? null : viewBoxOf(layout)));
+
+  function svgPoint(e: PointerEvent): Point | null {
+    const svg = (e.currentTarget as Element).closest("svg");
+    const m = svg?.getScreenCTM?.();
+    if (!svg || !m) return null;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    return { x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100 };
+  }
+
+  function grab(e: PointerEvent, id: string): void {
+    dropped = false;
+    if (e.button !== 0 || box === null) return;
+    drag = { id, pointer: e.pointerId, moved: false, box };
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  }
+
+  function pull(e: PointerEvent): void {
+    if (drag === null || e.pointerId !== drag.pointer) return;
+    const p = svgPoint(e);
+    if (p === null) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      dragBox = drag.box;
+    }
+    const centre = shown?.centre.centre.id;
+    if (centre === undefined) return;
+    pins = { centre, at: new Map(pins?.centre === centre ? pins.at : []).set(drag.id, p) };
+  }
+
+  function drop(e: PointerEvent): void {
+    if (drag === null || e.pointerId !== drag.pointer) return;
+    dropped = drag.moved;
+    drag = null;
+    dragBox = null;
+  }
+
+  /** A click on a thing or bundle selects it, unless it ends a drag. */
+  function pick(next: Selection): void {
+    if (dropped) dropped = false;
+    else select(next);
+  }
   const at = $derived(new Map((layout?.things ?? []).map((t) => [t.id, t])));
   const notes = $derived(shown === null || layout === null ? [] : partNotes(shown, layout));
 
@@ -552,8 +618,12 @@
               data-expanded={isExpanded(t.id) ? t.id : undefined}
               aria-pressed={isThing(t.id)}
               aria-label={spoken(t)}
-              onclick={() => select({ kind: "thing", id: t.id })}
+              onclick={() => pick({ kind: "thing", id: t.id })}
               onkeydown={(e) => key(e, { kind: "thing", id: t.id })}
+              onpointerdown={(e) => grab(e, t.id)}
+              onpointermove={pull}
+              onpointerup={drop}
+              onpointercancel={drop}
             >
               <polygon class="shard" points={svgPoints(shardPoints(t.id, t.x, t.y, r))} />
               {#if placed === null}
@@ -577,8 +647,12 @@
                 data-more={g.bundle.count}
                 aria-pressed={isBundle(g)}
                 aria-label="{name}: {number(g.bundle.count)} more {noun(g.bundle.count, 'link', 'links')}, not drawn. Open the bundle to list {g.bundle.count === 1 ? 'it' : 'them'}"
-                onclick={() => select({ kind: "bundle", owner: g.owner, edge: g.edge, direction: g.direction })}
+                onclick={() => pick({ kind: "bundle", owner: g.owner, edge: g.edge, direction: g.direction })}
                 onkeydown={(e) => key(e, { kind: "bundle", owner: g.owner, edge: g.edge, direction: g.direction })}
+                onpointerdown={(e) => grab(e, bundleId(g))}
+                onpointermove={pull}
+                onpointerup={drop}
+                onpointercancel={drop}
               >
                 <polygon class="stack" points={svgPoints(shardPoints(`${g.owner} ${groupKey(g)} 2`, g.bundle.x + 6, g.bundle.y - 6, R_BUNDLE))} />
                 <polygon class="stack" points={svgPoints(shardPoints(`${g.owner} ${groupKey(g)} 1`, g.bundle.x + 3, g.bundle.y - 3, R_BUNDLE))} />
@@ -945,9 +1019,11 @@
     stroke-width: 3;
   }
 
+  /* Things and bundles are dragged: the pointer moves them, not the page. */
   .thing,
   .bundle {
     cursor: pointer;
+    touch-action: none;
   }
 
   .thing:focus-visible,

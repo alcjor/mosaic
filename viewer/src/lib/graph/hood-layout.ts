@@ -9,8 +9,14 @@
  * crowded group staggers its shards on two rings. Each thing is drawn once, where it first
  * appears; a link to it from another group is drawn to that place. An expanded thing's groups
  * open in a fan pointing away from the thing it hangs from. Nothing depends on time or chance.
+ *
+ * That is where things start: `settleHood` then lets forces (lib/graph/force-layout.ts) push
+ * them apart and pull links to length. Things the person dragged stay where they were dropped,
+ * and things drawn before stay near where they were, so expanding one adds its neighbours round
+ * it and leaves the rest of the picture in place.
  */
 import { byBytes } from "./bytes.js";
+import { settle, type ForceLink, type ForceNode, type Point } from "./force-layout.js";
 import { round } from "./seed.js";
 
 export interface HoodThing {
@@ -66,6 +72,15 @@ export interface HoodLayout {
   readonly things: readonly PlacedThing[];
   readonly groups: readonly PlacedGroup[];
   readonly links: readonly PlacedLink[];
+}
+
+export interface SettleOptions {
+  /** Things the person dropped somewhere: they stay exactly there. */
+  readonly pinned?: ReadonlyMap<string, Point>;
+  /** Where things and bundles were last drawn (`placesOf`): they stay near there. */
+  readonly previous?: ReadonlyMap<string, Point>;
+  /** How many ticks to run: fewer while a thing is dragged, so the picture keeps up. */
+  readonly ticks?: number;
 }
 
 export interface HoodOptions {
@@ -186,4 +201,93 @@ export function layoutHood(centre: HoodInput, expanded: readonly HoodInput[] = [
     waiting = still;
   }
   return { things: [...things.values()], groups, links };
+}
+
+/** How far a shard keeps others from its middle, with room for its name. */
+const KEEP_THING = 34;
+const KEEP_CENTRE = 48;
+const KEEP_BUNDLE = 40;
+
+/** The name a bundle goes by among the places of things: no thing id starts with a NUL. */
+export function bundleId(g: Pick<PlacedGroup, "owner" | "edge" | "direction">): string {
+  return `\u0000${g.owner}\u0000${g.edge}\u0000${g.direction}`;
+}
+
+/** Where each thing and bundle of `layout` is, to give `settleHood` as `previous`. */
+export function placesOf(layout: HoodLayout): Map<string, Point> {
+  const out = new Map<string, Point>();
+  for (const t of layout.things) out.set(t.id, { x: t.x, y: t.y });
+  for (const g of layout.groups) if (g.bundle) out.set(bundleId(g), { x: g.bundle.x, y: g.bundle.y });
+  return out;
+}
+
+/**
+ * Let forces settle `start` (from `layoutHood`). The centre stays at the origin unless pinned
+ * elsewhere. A thing or bundle drawn before starts where it was and is pulled back there; a new
+ * one starts where `start` puts it beside the thing it hangs from, wherever that thing now is.
+ * Each group's name goes beyond the middle of its shards, away from its owner.
+ */
+export function settleHood(start: HoodLayout, options: SettleOptions = {}): HoodLayout {
+  const pinned = options.pinned ?? new Map<string, Point>();
+  const previous = options.previous ?? new Map<string, Point>();
+  const seed = placesOf(start);
+  const centre = start.things.find((t) => t.parent === null)!.id;
+  const hangs = new Map<string, string>();
+  for (const t of start.things) if (t.parent !== null) hangs.set(t.id, t.parent);
+  for (const g of start.groups) if (g.bundle) hangs.set(bundleId(g), g.owner);
+
+  // Where a node starts: where it was, else its place in `start` moved with what it hangs from.
+  const begun = new Map<string, Point>();
+  const begin = (id: string): Point => {
+    const known = begun.get(id) ?? pinned.get(id) ?? previous.get(id);
+    if (known !== undefined) return known;
+    const own = seed.get(id)!;
+    const parent = hangs.get(id);
+    const p = parent === undefined ? own : begin(parent);
+    const q = parent === undefined ? own : seed.get(parent)!;
+    const at = { x: p.x + own.x - q.x, y: p.y + own.y - q.y };
+    begun.set(id, at);
+    return at;
+  };
+  const node = (id: string, radius: number): ForceNode => {
+    const at = begin(id);
+    const pin = pinned.get(id) ?? (id === centre ? { x: 0, y: 0 } : undefined);
+    const home = previous.get(id);
+    return { id, x: at.x, y: at.y, radius, ...(pin ? { pinned: pin } : {}), ...(home ? { home } : {}) };
+  };
+  const length = (a: string, b: string) => (a === centre || b === centre ? RING : RING * FAN_RING);
+  const nodes: ForceNode[] = start.things.map((t) => node(t.id, t.parent === null ? KEEP_CENTRE : KEEP_THING));
+  const links: ForceLink[] = start.links.map((l) => ({ source: l.from, target: l.to, length: length(l.from, l.to) }));
+  for (const g of start.groups) {
+    if (!g.bundle) continue;
+    nodes.push(node(bundleId(g), KEEP_BUNDLE));
+    links.push({ source: g.owner, target: bundleId(g), length: length(g.owner, bundleId(g)) });
+  }
+  // Known things start near rest: a cooler, shorter run moves them less.
+  const known = previous.size > 0;
+  const placed = settle(nodes, links, { heat: known ? 0.3 : 1, ticks: options.ticks ?? (known ? 150 : 300) });
+
+  const things = start.things.map((t) => ({ ...t, ...placed.get(t.id)! }));
+  const groups = start.groups.map((g) => {
+    const owner = placed.get(g.owner)!;
+    const members = start.links
+      .filter((l) => l.edge === g.edge && (g.direction === "out" ? l.from === g.owner : l.to === g.owner))
+      .map((l) => placed.get(g.direction === "out" ? l.to : l.from)!);
+    const bundle = g.bundle ? { ...placed.get(bundleId(g))!, count: g.bundle.count } : null;
+    if (bundle) members.push(bundle);
+    if (members.length === 0) return g;
+    const mid = { x: members.reduce((s, p) => s + p.x, 0) / members.length, y: members.reduce((s, p) => s + p.y, 0) / members.length };
+    // Away from the owner; for shards that ring their owner evenly, the way `start` gave.
+    let dx = mid.x - owner.x;
+    let dy = mid.y - owner.y;
+    if (Math.hypot(dx, dy) < 1) {
+      const from = seed.get(g.owner)!;
+      dx = g.labelAt.x - from.x;
+      dy = g.labelAt.y - from.y;
+    }
+    const d = Math.max(1e-9, Math.hypot(dx, dy));
+    const labelAt = { x: round(mid.x + (dx / d) * LABEL_GAP), y: round(mid.y + (dy / d) * LABEL_GAP) };
+    return { ...g, labelAt, bundle };
+  });
+  return { things, groups, links: start.links };
 }
