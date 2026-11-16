@@ -1268,3 +1268,23 @@ describe("cite with an optional qualifier (sections 3.4, 8.1)", () => {
     file.close();
   });
 });
+
+// Section 7.3: with `around`, `cite` adds the passage around a `chars` range from `source_text`.
+// The cases and their mosaic of the full text tier are in `conformance/tools`.
+describe("cite with around", () => {
+  const file = JSON.parse(readFileSync(repo("conformance/tools/expected-passages.json"), "utf8")) as {
+    fixture: string;
+    cases: Record<string, { arguments: unknown; answer: Answer }>;
+  };
+
+  it.each(Object.entries(file.cases))("%s", async (_, c) => {
+    const sealed = await openFile(read(`conformance/tools/${file.fixture}`), file.fixture);
+    try {
+      const answer = valid(await sealed.cite(c.arguments));
+      if ("error" in c.answer) expect("error" in answer && answer.error.code).toBe(c.answer.error.code);
+      else expect(answer).toEqual(c.answer);
+    } finally {
+      sealed.close();
+    }
+  });
+});

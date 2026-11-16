@@ -71,6 +71,11 @@ export interface CiteEvidence {
   readonly snippet: string | null;
   /** The knowledge hashes of the mosaics the evidence passed through, innermost first. */
   readonly via?: readonly string[];
+  /**
+   * Only when `cite` was given `around` and the file holds the source's text: the text around
+   * the locator's `chars` range, with the code-point offsets it covers, end exclusive.
+   */
+  readonly passage?: { readonly text: string; readonly start: number; readonly end: number };
 }
 
 export interface CiteAnswer {

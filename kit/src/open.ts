@@ -209,7 +209,8 @@ export interface SealedFile {
   table(args: unknown): Promise<TableAnswer | ErrorAnswer>;
   /**
    * `cite` (section 8.1): the evidence of the node `args.id`, or of the edge `args.from`,
-   * `args.type`, `args.to`, or an error answer.
+   * `args.type`, `args.to`, or an error answer. With `args.around`, 1 to 2000, each row whose
+   * source text the file holds also gives the passage that many characters around its range.
    */
   cite(args: unknown): Promise<CiteAnswer | ErrorAnswer>;
   /**

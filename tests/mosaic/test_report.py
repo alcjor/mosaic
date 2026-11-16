@@ -481,6 +481,12 @@ def test_a_key_from_another_field_is_not_weak(tmp_path: Path) -> None:
     assert report["weak_ids"] == []
 
 
+def test_a_key_built_from_the_piece_node_key_among_several_fields_is_weak(tmp_path: Path) -> None:
+    types = {"Sculpture": {"key": "tag", "from": {"list.Row": {"tag": ["room", "key"]}}}}
+    _, report = run(tmp_path, [("list", [node("Row:1", "1", room="A")], {})], types)
+    assert report["weak_ids"] == [{"type": "Sculpture", "count": 1}]
+
+
 def test_weak_count_is_nodes_after_step_6_that_a_weak_piece_node_maps_to(tmp_path: Path) -> None:
     # B is weak-keyed in `a`; C goes in step 6 (inferred evidence only); D comes only from the
     # natural-keyed `b`. A comes from both, so one weak-keyed piece node maps to it.
@@ -692,8 +698,9 @@ def test_ties_sort_stale_references_by_type(tmp_path: Path) -> None:
     ]
 
 
-def test_ties_sort_mentions_by_status_then_candidates(tmp_path: Path) -> None:
-    # §7.3: mentions by piece, locator, role, text, status, then candidates.
+def test_ties_sort_mentions_by_candidates(tmp_path: Path) -> None:
+    # §7.3: mentions by piece, locator, role, text, status, then candidates. The mention names
+    # nodes under two rules, so the third rule, which finds none, does not report it.
     edges = {
         "zones": {"from": "Step", "to": "Zone", "mentions": "verify.*"},
         "vases": {"from": "Step", "to": "Vase", "mentions": "verify.*"},
@@ -703,7 +710,6 @@ def test_ties_sort_mentions_by_status_then_candidates(tmp_path: Path) -> None:
     assert [(m["status"], m["candidates"]) for m in report["mentions"]] == [
         ("ambiguous", ["Sculpture:T-1", "Sculpture:T-2"]),
         ("ambiguous", ["Vase:1", "Vase:2"]),
-        ("unmatched", []),
     ]
 
 

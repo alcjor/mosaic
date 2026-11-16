@@ -240,7 +240,18 @@
                   "method": { "enum": ["extracted", "inferred"] },
                   "confidence": { "oneOf": [{ "type": "null" }, { "type": "number", "minimum": 0, "maximum": 1 }] },
                   "snippet": { "$ref": "#/$defs/snippet" },
-                  "via": { "type": "array", "items": { "$ref": "#/$defs/hash" } }
+                  "via": { "type": "array", "items": { "$ref": "#/$defs/hash" } },
+                  "passage": {
+                    "description": "Only when cite was given around and the file holds the source's text (source_text): the text around the locator's chars range. start and end are the offsets the text covers in the source text, in Unicode code points, end exclusive.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["text", "start", "end"],
+                    "properties": {
+                      "text": { "type": "string", "maxLength": 4600 },
+                      "start": { "type": "integer", "minimum": 0 },
+                      "end": { "type": "integer", "minimum": 0 }
+                    }
+                  }
                 }
               }
             },

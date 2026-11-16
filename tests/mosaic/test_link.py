@@ -703,6 +703,32 @@ def test_each_rule_reports_the_mentions_it_cannot_resolve(tmp_path: Path) -> Non
     assert len(a.stale_references) == 2
 
 
+def test_a_mention_that_names_a_node_under_one_rule_is_not_unmatched_under_another(
+    tmp_path: Path,
+) -> None:
+    edges = {**READS, "follows": {"from": "Step", "to": "Step", "mentions": "verify.*"}}
+    piece = procedure(("T-1", "verify.a"), ("S1", "verify.a"), ("T-9", "verify.a"))
+    a = build(tmp_path, [gems("T-1"), piece], DOCS, edges)
+    assert [(e.type, e.dst) for e in a.edge_rows()] == [
+        ("reads", "Sculpture:T-1"),
+        ("follows", "Step:S1"),
+    ]
+    assert [(m.text, m.edge_type) for m in a.mentions] == [("T-9", "reads"), ("T-9", "follows")]
+    assert [s.name for s in a.stale_references] == ["T-9", "T-9"]
+
+
+def test_a_rule_that_ignores_unmatched_mentions_still_reports_ambiguous_ones(
+    tmp_path: Path,
+) -> None:
+    edges = {"reads": {**READS["reads"], "unmatched": "ignore"}}
+    listed = gems("T-1", "T-2", aliases=[Alias("loan", f"Row:T-{i}", "source") for i in (1, 2)])
+    piece = procedure(("T-9", "verify.a"), ("loan", "verify.a"), ("T-1", "verify.a"))
+    a = build(tmp_path, [listed, piece], DOCS, edges)
+    assert reads(a) == ["Sculpture:T-1"]
+    assert [(m.text, m.status) for m in a.mentions] == [("loan", "ambiguous")]
+    assert a.stale_references == []
+
+
 def test_mention_reports_are_sorted_by_piece_and_locator(tmp_path: Path) -> None:
     piece = procedure(("x", "verify.a"), ("y", "verify.a"), ("z", "verify.a"))
     piece[2]["mentions"] = list(reversed(piece[2]["mentions"]))

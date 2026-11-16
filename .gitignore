@@ -31,6 +31,8 @@ build-report.json
 # So are the reading cases, which the Python reader and the kit both read
 !conformance/reading/*.mosaic
 !conformance/reading/*.tessera
+# The mosaic of the cite passage cases (scripts/make_tool_files.py)
+!conformance/tools/*.mosaic
 
 # Editors and OS
 .DS_Store

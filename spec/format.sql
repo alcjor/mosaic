@@ -94,7 +94,7 @@ CREATE TABLE header (
     CHECK (kind = 'tessera' OR (pattern_hash IS NOT NULL AND target IS NOT NULL AND ai_model IS NULL))
 );
 
--- Tessera: exactly one source. Mosaic: one row per piece (kind tessera or
+-- Tessera: at least one source (one per file read). Mosaic: one row per piece (kind tessera or
 -- mosaic), every original source of every piece copied with kind, path,
 -- hash and notice and its id prefixed "<piece>/", and proposals.yaml when
 -- proposals are applied (section 3.2).

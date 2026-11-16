@@ -26,6 +26,8 @@ from typing import Any
 from tests.conftest import REPO
 
 FILE = REPO / "conformance" / "tools" / "expected-answers.json"
+PASSAGES = REPO / "conformance" / "tools" / "expected-passages.json"
+"""The cases of ``cite`` with ``around``, on ``passages.mosaic`` beside it (section 7.3)."""
 SCHEMA = REPO / "spec" / "answers.schema.json"
 
 ARGUMENTS: dict[str, tuple[frozenset[str], ...]] = {
@@ -33,7 +35,10 @@ ARGUMENTS: dict[str, tuple[frozenset[str], ...]] = {
     "get": (frozenset({"id"}),),
     "neighbors": (frozenset({"id", "edge", "direction", "limit"}),),
     "table": (frozenset({"type", "columns", "where", "order", "page"}),),
-    "cite": (frozenset({"id"}), frozenset({"from", "type", "to", "qualifier"})),
+    "cite": (
+        frozenset({"id", "around"}),
+        frozenset({"from", "type", "to", "qualifier", "around"}),
+    ),
 }
 """Section 8.1: the arguments each tool the cases use takes (``cite`` a node or an edge)."""
 

@@ -1,0 +1,226 @@
+{
+  "comment": "Kit tool cases for cite with around (docs/spec-0.1.md sections 7.3 and 8.1) on passages.mosaic, a mosaic of the full text tier that scripts/make_tool_files.py writes: one source with its text in source_text, one without. Each case names a tool, its arguments and the answer, valid against spec/answers.schema.json. A passage's start and end count Unicode code points; the text has é and an emoji before the ranges, so offsets in bytes or UTF-16 units give other answers. Answers match as in expected-answers.json: data equal, error messages not compared.",
+  "fixture": "passages.mosaic",
+  "cases": {
+    "cite-passage": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:wick",
+        "around": 12
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "data": {
+          "subject": "Note:wick",
+          "evidence": [
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "file=notes.txt;chars=65-79",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": "trims the wick",
+              "passage": {
+                "text": " The keeper trims the wick before the ",
+                "start": 53,
+                "end": 91
+              }
+            },
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "file=notes.txt;line=1",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": null
+            }
+          ],
+          "total": 2
+        }
+      }
+    },
+    "cite-passage-clipped-at-the-start": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:lamp",
+        "around": 40
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "data": {
+          "subject": "Note:lamp",
+          "evidence": [
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "chars=29-44",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": "The lamp is lit",
+              "passage": {
+                "text": "Café notes 😀 for the keeper. The lamp is lit at dusk. The keeper trims the wick befo",
+                "start": 0,
+                "end": 84
+              }
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    "cite-passage-clipped-at-the-end": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:wick",
+        "around": 2000
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "data": {
+          "subject": "Note:wick",
+          "evidence": [
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "file=notes.txt;chars=65-79",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": "trims the wick",
+              "passage": {
+                "text": "Café notes 😀 for the keeper. The lamp is lit at dusk. The keeper trims the wick before the bell rings twice. The log is signed at dawn.",
+                "start": 0,
+                "end": 135
+              }
+            },
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "file=notes.txt;line=1",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": null
+            }
+          ],
+          "total": 2
+        }
+      }
+    },
+    "cite-passage-source-without-text": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:sheet",
+        "around": 40
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "data": {
+          "subject": "Note:sheet",
+          "evidence": [
+            {
+              "source": "first/sheet",
+              "source_hash": "6a4a254080bca8f55bca0d806a8d79451af2469ab66a3980e92adde5a8e7d42e",
+              "locator": "row=1",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": "wick,1"
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    "cite-passage-range-past-the-text": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:lost",
+        "around": 40
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "data": {
+          "subject": "Note:lost",
+          "evidence": [
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "chars=100-136",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": null
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    "cite-without-around": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:wick"
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "data": {
+          "subject": "Note:wick",
+          "evidence": [
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "file=notes.txt;chars=65-79",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": "trims the wick"
+            },
+            {
+              "source": "first/notes",
+              "source_hash": "0d6879a7d763c420c119e52b0ff0d867c6102104a69bbc434910caf36eab26d3",
+              "locator": "file=notes.txt;line=1",
+              "method": "extracted",
+              "confidence": null,
+              "snippet": null
+            }
+          ],
+          "total": 2
+        }
+      }
+    },
+    "cite-around-zero": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:wick",
+        "around": 0
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "error": {
+          "code": "bad_argument",
+          "message": "cite's around must be a whole number from 1 to 2000",
+          "suggestions": []
+        }
+      }
+    },
+    "cite-around-not-a-number": {
+      "tool": "cite",
+      "arguments": {
+        "id": "Note:wick",
+        "around": "40"
+      },
+      "answer": {
+        "tool": "cite",
+        "mosaic": "7fecccbc257d046db6147622ddc9df4f927b938e39b23dfd4514c2aebb2e0c69",
+        "error": {
+          "code": "bad_argument",
+          "message": "cite's around must be a whole number from 1 to 2000",
+          "suggestions": []
+        }
+      }
+    }
+  }
+}

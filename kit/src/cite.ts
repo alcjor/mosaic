@@ -11,6 +11,11 @@
  * - `from` or `to` that no node has is `unknown_id`, naming the closest matches (section 8.1);
  *   a type that is not a declared edge type, or no such edge between the two nodes, is
  *   `unknown_edge`.
+ * - With `around`, 1 to {@link AROUND_LIMIT}, a row whose source has its text in `source_text`
+ *   (full text tier, section 7.3) and whose locator has `chars=<start>-<end>` also gives
+ *   `passage`: the source text from `around` characters before the range to `around` after it,
+ *   clipped to the text, with the offsets it really covers. Offsets count Unicode code points,
+ *   start inclusive, end exclusive. A row without source text or a usable range has no passage.
  */
 import type { Database } from "@sqlite.org/sqlite-wasm";
 import { type CiteAnswer, type CiteEvidence, ToolError, shownArgument } from "./answers.js";
@@ -18,14 +23,21 @@ import { RESULT_LIMIT } from "./bounds.js";
 import { TEXT_LIMITS } from "./constants.js";
 import { OTHER_TEXT_LIMIT, argumentsOf, idArgument, nodeOf, text } from "./lookup.js";
 
-export type CiteArgs =
+export type CiteArgs = (
   | { readonly id: string }
-  | { readonly from: string; readonly type: string; readonly to: string; readonly qualifier?: string };
+  | { readonly from: string; readonly type: string; readonly to: string; readonly qualifier?: string }
+) & { readonly around?: number };
 
-const TAKES = "id, or from, type and to, and an optional qualifier";
+const TAKES = "id, or from, type and to and an optional qualifier; and an optional around";
+
+/** Most characters of context `around` gives on each side of an evidence range. */
+export const AROUND_LIMIT = 2000;
+
+/** Longest passage, in characters: the context on both sides and a range as long as a snippet. */
+const PASSAGE_LIMIT = 2 * AROUND_LIMIT + TEXT_LIMITS.snippet;
 
 const EVIDENCE = `
-  SELECT s.id, s.hash, v.locator, v.method, v.confidence, sn.text, v.via, count(*) OVER ()
+  SELECT s.id, s.hash, v.locator, v.method, v.confidence, sn.text, v.via, count(*) OVER (), v.sid
     FROM evidence AS v
     JOIN source AS s ON s.sid = v.sid
     LEFT JOIN snippet AS sn ON sn.evid = v.evid
@@ -54,9 +66,36 @@ function viaOf(value: unknown): string[] | undefined {
   return undefined;
 }
 
-function rows(db: Database, sql: string, bind: Record<string, unknown>): { evidence: CiteEvidence[]; total: number } {
+const CHARS = /(?:^|;)chars=(\d{1,15})-(\d{1,15})(?:;|$)/;
+
+/** SQLite counts and cuts text by code points, so a long text never becomes a JavaScript array. */
+const PASSAGE = "SELECT substr(text, $from + 1, $to - $from) FROM source_text WHERE sid = $sid AND length(text) >= $end";
+
+/** The text around the `chars` range of `locator` in the source `sid`, or undefined when there is none. */
+function passageOf(db: Database, sid: unknown, locator: unknown, around: number): CiteEvidence["passage"] {
+  const range = typeof locator === "string" ? CHARS.exec(locator) : null;
+  if (range === null) return undefined;
+  const start = Number(range[1]);
+  const end = Number(range[2]);
+  if (start > end) return undefined;
+  const from = Math.max(0, start - around);
+  const to = Math.min(end + around, from + PASSAGE_LIMIT);
+  // substr stops at the end of the text, so `to` may lie past it: the text's length gives the end.
+  const found = db.selectValue(PASSAGE, { $sid: sid, $from: from, $to: to, $end: end } as never);
+  if (typeof found !== "string") return undefined;
+  let length = 0;
+  for (const _ of found) length++;
+  return { text: found, start: from, end: from + length };
+}
+
+function rows(
+  db: Database,
+  sql: string,
+  bind: Record<string, unknown>,
+  around: number | undefined,
+): { evidence: CiteEvidence[]; total: number } {
   const found = db.selectArrays(sql, { ...bind, $limit: RESULT_LIMIT } as never);
-  const evidence = found.map(([source, hash, locator, method, confidence, snippet, via]) => {
+  const evidence = found.map(([source, hash, locator, method, confidence, snippet, via, , sid]) => {
     const row: CiteEvidence = {
       source: text(source, OTHER_TEXT_LIMIT) ?? "",
       source_hash: String(hash),
@@ -66,20 +105,25 @@ function rows(db: Database, sql: string, bind: Record<string, unknown>): { evide
       snippet: text(snippet, TEXT_LIMITS.snippet),
     };
     const path = viaOf(via);
-    return path === undefined ? row : { ...row, via: path };
+    const passage = around === undefined ? undefined : passageOf(db, sid, locator, around);
+    return { ...row, ...(path === undefined ? {} : { via: path }), ...(passage === undefined ? {} : { passage }) };
   });
   return { evidence, total: found.length === 0 ? 0 : Number(found[0]![7]) };
 }
 
 /** Run `cite` on `db`, which passed the reading rules; the caller bounds its time. */
 export function cite(db: Database, mosaic: string, args: unknown): CiteAnswer {
-  const given = argumentsOf("cite", args, ["id", "from", "type", "to", "qualifier"], TAKES);
+  const given = argumentsOf("cite", args, ["id", "from", "type", "to", "qualifier", "around"], TAKES);
+  const around = given.around;
+  if (around !== undefined && (typeof around !== "number" || !Number.isInteger(around) || around < 1 || around > AROUND_LIMIT)) {
+    throw new ToolError("bad_argument", `cite's around must be a whole number from 1 to ${AROUND_LIMIT}`);
+  }
   const edgeArgs = ["from", "type", "to", "qualifier"].filter((name) => given[name] !== undefined);
   if (given.id !== undefined) {
     if (edgeArgs.length > 0) throw new ToolError("bad_argument", `cite takes ${TAKES}, not both`);
     const id = idArgument("cite", "id", given.id);
     const nid = nodeOf(db, mosaic, "cite", id);
-    return { tool: "cite", mosaic, data: { subject: id, ...rows(db, NODE_EVIDENCE, { $nid: nid }) } };
+    return { tool: "cite", mosaic, data: { subject: id, ...rows(db, NODE_EVIDENCE, { $nid: nid }, around) } };
   }
   if (["from", "type", "to"].some((name) => given[name] === undefined)) throw new ToolError("bad_argument", `cite takes ${TAKES}`);
   const from = idArgument("cite", "from", given.from);
@@ -105,5 +149,5 @@ export function cite(db: Database, mosaic: string, args: unknown): CiteAnswer {
     );
   }
   const subject = qualifier === undefined ? { from, type, to } : { from, type, to, qualifier };
-  return { tool: "cite", mosaic, data: { subject, ...rows(db, EDGE_EVIDENCE, edge) } };
+  return { tool: "cite", mosaic, data: { subject, ...rows(db, EDGE_EVIDENCE, edge, around) } };
 }

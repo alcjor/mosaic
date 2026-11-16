@@ -346,3 +346,15 @@ def test_every_rule_names_a_section() -> None:
     for rule, (section, meaning) in RULES.items():
         assert section.split(".")[0] in {"3", "5"}, rule
         assert meaning
+
+
+def test_strip_may_name_only_identifiers_its_entry_gives(tmp_path: Path) -> None:
+    # `number` is an identifier of Item's key, but this entry gives only `code`.
+    text = (
+        'format: "0.1"\npieces:\n  - rows@0123abcd\ntypes:\n  Item:\n'
+        "    key: [code, number]\n    from:\n"
+        '      rows.Row: {code: key, strip: {number: "N-"}}\n'
+    )
+    report = check_pattern(write(tmp_path / "pattern.yaml", text))
+    assert rules(report) == ["key-field"]
+    assert [v.where for v in report.violations] == ["types/Item/from/rows.Row/strip"]

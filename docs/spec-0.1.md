@@ -60,7 +60,7 @@ Tesserae and mosaics share one file format. The header's `kind` says which profi
 | Table | Holds | Profile |
 | --- | --- | --- |
 | `header` | One row describing the file | Both |
-| `source` | Tessera: its one source. Mosaic: its pieces and their original sources (below). Each with hash and notice | Both |
+| `source` | Tessera: its source, one row per file read when the source is a directory of files (section 4.1). Mosaic: its pieces and their original sources (below). Each with hash and notice | Both |
 | `type` | Declared node and edge types | Both |
 | `node`, `edge`, `alias` | The graph | Both |
 | `evidence`, `snippet` | Provenance and source passages | Both |
@@ -185,7 +185,7 @@ A tessera records what one source says, in its builder's own vocabulary. Mapping
 | Content | Rule |
 | --- | --- |
 | Header | `kind = tessera`; `ai_model` set when an AI produced any fact |
-| Source | Exactly one row: the source the tessera was made from, with the hash of its content. A source MUST NOT be a tessera or a mosaic (ADR-003) |
+| Source | At least one row: the source the tessera was made from, with the hash of its content. A tessera made from a directory of files has one row per file it read, each with the file's path below the directory as its id and the hash of that file, so evidence names the file a fact was read in and the full text tier holds each file's text. A source MUST NOT be a tessera or a mosaic (ADR-003) |
 | Types | The builder's own types (for example `Row`, `Define`, `Section`), declared with their properties |
 | Nodes and edges | As found in the source; node ids unique within the file |
 | Evidence | At least one row per node and edge, with a locator into the source |
@@ -263,7 +263,7 @@ Both pieces give `Artist:Q5593`; an artist only MoMA lists without a Wikidata or
 
 Each entry declares one canonical edge type with `from` and `to` node types and exactly one source of edges:
 
-- `mentions: <role>` makes an edge for every mention whose role matches (a `*` segment matches exactly one segment), from the canonical node of the mention's containing node to the canonical `to` node whose key equals the mention text after the `to` type's normalisation (its `normalise` steps, not a `from` entry's `strip`), compared by UTF-8 bytes, or one of whose aliases equals the mention text under `NOCASE`, the collation of `alias.text`. The aliases are those the node has after step 4 of section 7.1, so accepted identity proposals take part. A node that matches by its key and by an alias, or by several aliases, counts once. A mention's `kind` does not change how it matches. A mention that matches no node, or more than one, is reported in the build report and makes no edge; an unmatched mention is also a stale reference (section 7.2). A mention whose containing node maps to no node of the edge's `from` type makes no edge and is not reported. Each edge a mention makes gets one evidence row: `extracted`, no `prop`, its `sid` the piece's one original source as copied into the mosaic (section 3.2), the mention's locator, the piece header's `producer`, no confidence, no `via` and no snippet.
+- `mentions: <role>` makes an edge for every mention whose role matches (a `*` segment matches exactly one segment), from the canonical node of the mention's containing node to the canonical `to` node whose key equals the mention text after the `to` type's normalisation (its `normalise` steps, not a `from` entry's `strip`), compared by UTF-8 bytes, or one of whose aliases equals the mention text under `NOCASE`, the collation of `alias.text`. The aliases are those the node has after step 4 of section 7.1, so accepted identity proposals take part. A node that matches by its key and by an alias, or by several aliases, counts once. A mention's `kind` does not change how it matches. A mention that matches more than one node under a rule is ambiguous: it is reported in the build report and makes no edge under that rule. A mention is unmatched when it matches no node under any rule that applies to it, that is any rule whose role matches and whose `from` type its containing node maps to, whatever the target; it makes no edge, and each of those rules reports it in the build report and as a stale reference (section 7.2), except a rule with `unmatched: ignore` (default `report`), for names that are expected to lie outside the mosaic, such as the identifiers of a source file. A mention that matches under one rule is therefore never unmatched under another, so several rules can read one role. A mention whose containing node maps to no node of the edge's `from` type makes no edge and is not reported. Each edge a mention makes gets one evidence row: `extracted`, no `prop`, its `sid` the source of the mention's containing node as copied into the mosaic (section 3.2), which is the source of that node's first evidence row without `prop` in canonical order, else of its first evidence row, the mention's locator, the piece header's `producer`, no confidence, no `via` and no snippet.
 - `map: [<piece>.<EdgeType>, ...]` copies those piece edges when both ends map to nodes of the declared types, with their qualifier, props and evidence; evidence keeps its `prop`, and its `sid` and `via` are set as in section 7.1 step 3. A piece edge with an end that maps to no node of the declared type is not copied and not reported.
 
 #### 5.4 `mosaics`
@@ -349,8 +349,8 @@ Every build writes `build-report.json` beside the mosaic, also when it fails. It
 | Hashes and size | Knowledge hash, vector hash, file size, node and edge counts per type: every type the mosaic declares (section 7.1 step 7), 0 when it has no rows |
 | Conflicts | Node or edge, property, winning value and piece, losing values and pieces; clashes on label and summary only when the target is strict |
 | Alias conflicts | Node, kept alias spelling and its piece, lost spellings and their pieces (`proposals.yaml` for a proposal); only aliases equal under `NOCASE` but spelled differently (section 7.1 step 3) |
-| Stale references | Names that resolve to nothing, with the piece and locator that use them; no new-key hint in 0.1. In 0.1 these are the unmatched mentions (section 5.3), one entry per mention and edge rule, with the rule's `to` type; the same unmatched mentions as in Mentions |
-| Mentions | Unmatched and ambiguous mentions, by role, with locator; only of rules whose edge type the target declares, and not of mentions whose containing node step 6 drops |
+| Stale references | Names that resolve to nothing, with the piece and locator that use them; no new-key hint in 0.1. In 0.1 these are the unmatched mentions (section 5.3), one entry per mention and edge rule that reports it, with the rule's `to` type; the same unmatched mentions as in Mentions |
+| Mentions | Unmatched and ambiguous mentions (section 5.3), by role, with locator; none for an unmatched mention under a rule with `unmatched: ignore`; only of rules whose edge type the target declares, and not of mentions whose containing node step 6 drops |
 | Weak ids | Types whose keys came from position rather than a natural key: a piece node is weak-keyed when its key comes from the piece node's `key` and its piece type's `key_prop` is NULL. `count` is the mosaic's nodes of the type, after step 6, that a weak-keyed piece node maps to; a type with none is not listed |
 | Proposals | Outdated proposals, and accepted proposals that no longer apply |
 | Notices | The notices of every piece in `pieces`, whatever the target: one entry per distinct piece name and notice text |
@@ -360,7 +360,7 @@ Every build writes `build-report.json` beside the mosaic, also when it fails. It
 - **Label and summary clashes** are resolved by piece order like any property, and reported only when the target is `strict`. Clashes on other properties are always reported.
 - **Strict mode:** a target with `strict: true` fails on any conflict, alias conflict or unmatched mention, and writes the build report but no mosaic. Off by default. It is checked after step 7 and before step 8, so a strict target that would also be over budget fails as `strict`.
 - **A failed build's report.** When step 1 fails (`invalid_input`, `piece_mismatch`, or a target the pattern does not define), `pattern_hash` is the SHA-256 of the pattern file's bytes if it could be read, else NULL; the hashes and `file_size` are NULL, `counts` is empty and every list is empty. When the target is `strict`, the lists and `counts` describe the selected content and the hashes and `file_size` are NULL, since nothing was sealed. When the mosaic is over budget, the report gives the removed file's hashes and `file_size`, with `counts` and lists filled.
-- **`text: full`** keeps snippets plus the entire text of each text source, once per source, in `source_text` (section 3.2, part of the knowledge hash in section 3.6). `cite` still returns the snippet; a kit MAY return a wider passage from `source_text` using the evidence locator's `chars` range.
+- **`text: full`** keeps snippets plus the entire text of each text source, once per source, in `source_text` (section 3.2, part of the knowledge hash in section 3.6). `cite` still returns the snippet. With its optional `around` (1 to 2000), each evidence row whose source has a `source_text` row and whose locator has `chars` also gives `passage` (`text`, `start`, `end`): the source text from `around` characters before the range to `around` after it, clipped to the text and to 4,600 characters. A `chars` range is `start-end` in Unicode code points of the source's text, from 0, the end exclusive.
 - **Stale references** get no new-key hint in 0.1; the report lists the stale name, the piece and the locator.
 - **The build report** is JSON, valid against `build-report.schema.json` (draft 2020-12), a fourth normative file. Its shape:
 
@@ -400,7 +400,7 @@ A kit opens one or more mosaics (section 3.8) and offers these tools. Every tool
 | `neighbors` | `id`, optional `edge`, `direction` (`out`, `in`, `both`), `limit` (default 20) | Edges with the other node's id and label, and the total count |
 | `path` | `from`, `to`, optional `max_hops` (default and maximum 4) | The shortest path ignoring direction, as a list of edges, or a statement that none exists within the limit |
 | `table` | `type`, optional `columns`, `where`, `order`, `page` | Rows of one node type, laid out as a source table would show them: the node's id, then one cell per column, where a column is a declared property, the node's `key`, `label` or `summary`, or an edge type leaving the type (section 8.6); `where` allows `=`, `!=`, `<`, `<=`, `>`, `>=` and `contains` on any column, never raw SQL |
-| `cite` | `id` of a node, or an edge as `from`, `type`, `to` | Evidence rows: source id and hash, locator, method, confidence, snippet |
+| `cite` | `id` of a node, or an edge as `from`, `type`, `to`; optional `around` | Evidence rows: source id and hash, locator, method, confidence, snippet, and with `around` the wider passage from the source's text (section 7.3) |
 
 An unknown id MUST return an error naming the closest matches from `find`, never an empty success.
 

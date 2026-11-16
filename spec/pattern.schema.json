@@ -148,6 +148,11 @@
           "type": "string",
           "pattern": "^([a-z0-9_]+|\\*)(\\.([a-z0-9_]+|\\*))+$"
         },
+        "unmatched": {
+          "description": "With mentions: whether a mention that names no node under any rule is reported.",
+          "enum": ["report", "ignore"],
+          "default": "report"
+        },
         "map": {
           "type": "array",
           "minItems": 1,
@@ -155,6 +160,7 @@
           "items": { "$ref": "#/$defs/pieceEdgeType" }
         }
       },
+      "dependentRequired": { "unmatched": ["mentions"] },
       "oneOf": [
         { "required": ["mentions"], "not": { "required": ["map"] } },
         { "required": ["map"], "not": { "required": ["mentions"] } }

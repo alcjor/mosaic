@@ -1,0 +1,12 @@
+# Import settings for the Marlin fixture's firmware piece (docs/spec-0.1.md section 11).
+#   mosaic import code Marlin-2.1.2.10 --settings settings-firmware.yaml -o firmware.tessera
+# The directory is the pinned Marlin-2.1.2.10.tar.gz of manifest.json, unpacked. Of the release
+# only the two configuration files, which name every option, and the command handlers are read.
+# An option the release ships switched off is a commented-out define.
+include:
+  - Marlin/Configuration.h
+  - Marlin/Configuration_adv.h
+  - Marlin/src/gcode/**/*.cpp
+  - Marlin/src/gcode/**/*.h
+commented_defines: true
+notice: "Marlin 3D Printer Firmware 2.1.2.10, Copyright (c) MarlinFirmware, licensed under the GNU General Public License v3.0 or later. https://github.com/MarlinFirmware/Marlin"

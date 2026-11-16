@@ -47,7 +47,7 @@ INVARIANTS: Mapping[int, str] = {
     4: "every node's and edge's type is declared, and edges join nodes of the declared types",
     5: "edges point to nodes in the same file",
     6: "rows are in canonical order with dense row ids, and the knowledge hash matches",
-    7: "a tessera has exactly one source, which is never a tessera or a mosaic",
+    7: "a tessera has at least one source, and none is a tessera or a mosaic",
     8: "node ids are unique within a tessera, and no evidence row has a via",
     9: "a rule-based tessera is deterministic",
     10: "mosaic node ids are type plus key and unique; every node type has a key property",
@@ -562,8 +562,8 @@ class _Checker:
 
     def tessera(self) -> None:
         sources = self.rows("SELECT id, kind FROM source ORDER BY sid")
-        if len(sources) != 1:
-            self.add("inv-7", "source", "", f"a tessera has exactly one source, not {len(sources)}")
+        if not sources:
+            self.add("inv-7", "source", "", "a tessera has at least one source, not none")
         for id_, kind in sources:
             if kind in PIECE_KINDS:
                 self.add(

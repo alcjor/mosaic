@@ -324,10 +324,10 @@ CASES: tuple[Case, ...] = (
         _changed(mosaic, ["UPDATE external_ref SET xid = 2"]),
     ),
     Case(
-        "inv-7-two-sources.tessera",
+        "inv-7-no-source.tessera",
         ("inv-7",),
-        "A tessera with two sources",
-        _sealed(_with(_tessera, add_sources=[Source(id="doc2", kind="file", hash=NOTES_HASH)])),
+        "A tessera with no source",
+        _sealed(lambda _: Content(header=tessera().header)),
     ),
     Case(
         "inv-8-via.tessera",

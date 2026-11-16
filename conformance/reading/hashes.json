@@ -79,8 +79,8 @@
     "opens": true,
     "vector_hash": "6a819fa866221e4f17d864c44e235c20b58823889d682cf77ff465d2a9c802eb"
   },
-  "invalid/files/inv-7-two-sources.tessera": {
-    "knowledge_hash": "ea9e822a25145245dfed9416c8161a0fbbf797194013a85f0d66c2d843d23da5",
+  "invalid/files/inv-7-no-source.tessera": {
+    "knowledge_hash": "46c982e4fef0788c088a2caa6a66651644ea55f58998eada4b3509a81d899dcb",
     "opens": true,
     "vector_hash": null
   },

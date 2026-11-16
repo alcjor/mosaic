@@ -25,7 +25,7 @@ interface Case {
 const args = process.argv.slice(2);
 const at = args.indexOf("--model");
 const modelDir = at >= 0 ? args[at + 1] : undefined;
-const [file, casesFile] = args.filter((_, i) => i !== at && i !== at + 1);
+const [file, casesFile] = args.filter((_, i) => at < 0 || (i !== at && i !== at + 1));
 if (!file || !casesFile || (at >= 0 && !modelDir)) {
   console.error("usage: bun kit/scripts/run-cases.ts FILE CASES.json [--model DIR]");
   process.exit(2);

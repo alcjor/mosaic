@@ -83,6 +83,8 @@ from mosaic_build.mosaic.pieces import piece_paths
 from mosaic_build.mosaic.target import DEFAULT_TARGET
 from mosaic_build.tessera import csv as csv_tessera
 from mosaic_build.tessera import settings as csv_settings
+from mosaic_build.tessera import code as code_tessera
+from mosaic_build.tessera import markdown as markdown_tessera
 from mosaic_build.tessera import sqlite_settings
 from mosaic_build.tessera.sqlite import Built
 
@@ -161,6 +163,44 @@ def make_parser() -> argparse.ArgumentParser:
     sqlite_cmd.add_argument(
         "-o", "--output", type=Path, required=True, help="the new tessera file to write"
     )
+
+    for kind, what, about in (
+        (
+            "markdown",
+            "Markdown files under one directory, one node per page and per section",
+            "Each file the settings' include patterns name is one page and one source of the "
+            "tessera; each heading is a section. Names in inline code, link targets and the "
+            "front matter fields the settings name are recorded as mentions for a pattern's "
+            "link rules.",
+        ),
+        (
+            "code",
+            "C and C++ files under one directory, one node per file, define and function",
+            "Each file the settings' include patterns name is one file node and one source of "
+            "the tessera, with its defines and function definitions. Identifiers in "
+            "preprocessor conditions and function bodies are recorded as mentions for a "
+            "pattern's link rules.",
+        ),
+    ):
+        tree_cmd = kinds.add_parser(
+            kind,
+            help=what,
+            description=(
+                f"Write one tessera from a directory. {about} The directory is only read. A "
+                "wrong setting is an error naming the settings file, the line and the setting "
+                "(exit status 1), and no tessera is written."
+            ),
+        )
+        tree_cmd.add_argument("file", type=Path, metavar="dir", help="the directory (only read)")
+        tree_cmd.add_argument(
+            "--settings",
+            type=Path,
+            required=True,
+            help="YAML file in the shape of the tessera's header.settings",
+        )
+        tree_cmd.add_argument(
+            "-o", "--output", type=Path, required=True, help="the new tessera file to write"
+        )
 
     builder = sub.add_parser("build", help="build a mosaic from pieces and a pattern")
     builder.add_argument("pattern", type=Path, help="the pattern file, pattern.yaml")
@@ -308,10 +348,35 @@ def _only_target(pattern: Path) -> str:
     raise _Usage(f"{pattern}: the pattern has several targets ({listed}); choose one with --target")
 
 
+_TREE_BUILDERS = {"markdown": markdown_tessera, "code": code_tessera}
+
+
+def _import_tree(args: argparse.Namespace, command: str) -> int:
+    """Import a directory of text files: read everything first, then write the tessera."""
+    builder = _TREE_BUILDERS[args.kind]
+    out: Path = args.output.absolute()
+    if out.exists():
+        _error(command, f"{out}: exists; a tessera is never overwritten")
+        return 1
+    try:
+        made = builder.read(args.file, builder.load_settings(args.settings))
+        out.parent.mkdir(parents=True, exist_ok=True)
+        sealed = seal(out, made)
+    except (OSError, ValueError) as e:
+        _error(command, e)
+        return 1
+    print(f"tessera {sealed.path}")
+    print(f"knowledge_hash {sealed.knowledge_hash}")
+    print(f"sources {len(made.sources)}, nodes {len(made.nodes)}, mentions {len(made.mentions)}")
+    return 0
+
+
 def _import(args: argparse.Namespace) -> int:
     command = f"import {args.kind}"
     source: Path = args.file
     out: Path = args.output.absolute()
+    if args.kind in _TREE_BUILDERS:
+        return _import_tree(args, command)
     try:
         settings = (csv_settings.read if args.kind == "csv" else sqlite_settings.load_file)(
             args.settings

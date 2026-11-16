@@ -20,7 +20,7 @@ conforming tessera, a piece of `inv-15-notice.mosaic`, which is checked with it.
 | `inv-5-dangling-edge.tessera` | `inv-5`, `constraint` | An edge whose target is no node of the file (its foreign key fails) |
 | `inv-6-hash.tessera` | `inv-6` | The header's knowledge hash is not that of the content |
 | `inv-6-order.mosaic` | `inv-6` | The only `external_ref` row has `xid` 2: row ids are not dense |
-| `inv-7-two-sources.tessera` | `inv-7` | A tessera with two sources |
+| `inv-7-no-source.tessera` | `inv-7` | A tessera with no source |
 | `inv-8-via.tessera` | `inv-8` | An evidence row of a tessera has a `via` |
 | `inv-10-id-form.mosaic` | `inv-10` | A node `Item:z` whose key is `zz` |
 | `inv-11-piece-hash.mosaic` | `inv-11`, `constraint` | Piece `first` with hash `abc123` (format.sql's CHECK wants 64 hex characters) |

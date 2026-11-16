@@ -1,0 +1,19 @@
+# Import settings for the Marlin fixture's documentation piece (docs/spec-0.1.md section 11).
+#   mosaic import markdown MarlinDocumentation-c01d8ad… --settings settings-docs.yaml -o docs.tessera
+# The directory is the pinned MarlinDocumentation-c01d8ad.tar.gz of manifest.json, unpacked. Of
+# the site only the command pages are read: one page per command, most of it front matter.
+include:
+  - docs/gcode/*.md
+label: title
+summary: brief
+props: [group]
+# A page is also known by the codes it documents and by the address other pages link to.
+aliases: [codes]
+address: "/docs/gcode/{stem}.html"
+# Front matter that names other things: the options a command or parameter needs, the commands
+# a page relates to, and the page's own codes, which the firmware implements under that name.
+mentions:
+  requires: words
+  related: value
+  codes: value
+notice: "Marlin Documentation, Copyright (c) MarlinFirmware, licensed under the GNU General Public License v3.0. https://github.com/MarlinFirmware/MarlinDocumentation"

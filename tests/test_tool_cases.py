@@ -11,6 +11,9 @@ errors.
 import itertools
 import json
 import re
+import subprocess
+import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -18,7 +21,7 @@ from jsonschema import Draft202012Validator
 
 from tests.conftest import REPO
 from tests.fixtures.expected import load_expected
-from tests.fixtures.tool_cases import SCHEMA, argument_problem, load
+from tests.fixtures.tool_cases import PASSAGES, SCHEMA, argument_problem, load
 
 DATA = load()
 CASES: dict[str, Any] = DATA["cases"]
@@ -318,3 +321,28 @@ def test_cite_evidence_follows_the_locator_and_method_rules_of_section_3_5(name:
         else:
             assert row["confidence"] is not None
         assert "via" not in row or not row["via"], "a mosaic without mosaic pieces has no via"
+
+
+# --- cite with around (section 7.3) -------------------------------------------------------------
+
+PASSAGE_CASES: dict[str, Any] = load(PASSAGES)["cases"]
+
+
+@pytest.mark.parametrize("name", list(PASSAGE_CASES))
+def test_every_passage_case_has_cite_arguments_and_a_valid_answer(name: str) -> None:
+    case = PASSAGE_CASES[name]
+    assert argument_problem(case["tool"], case["arguments"]) is None
+    errors = [e.message for e in VALIDATOR.iter_errors(case["answer"])]
+    assert not errors, errors
+
+
+def test_the_passage_cases_name_the_mosaic_that_its_script_writes(tmp_path: Path) -> None:
+    done = subprocess.run(
+        [sys.executable, str(REPO / "scripts" / "make_tool_files.py"), "--out", str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    name, knowledge_hash = done.stdout.split()
+    assert name == load(PASSAGES)["fixture"]
+    assert {c["answer"]["mosaic"] for c in PASSAGE_CASES.values()} == {knowledge_hash}

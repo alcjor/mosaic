@@ -30,8 +30,10 @@ proposals are applied in the order of the proposals file:
   exactly one segment) from the canonical node of its containing node, of the rule's ``from``
   type, to the one node of the ``to`` type whose key equals the mention text after the ``to``
   type's ``normalise`` steps (by UTF-8 bytes) or one of whose aliases after step 4 equals it
-  under ``NOCASE``. No match is an unmatched mention and a stale reference; several are an
-  ambiguous mention. A mention whose containing node maps to no ``from`` node is skipped.
+  under ``NOCASE``. A mention that names no node under any rule is an unmatched mention and a
+  stale reference of each rule that does not say ``unmatched: ignore``; several matches under
+  one rule are an ambiguous mention. A mention whose containing node maps to no ``from`` node
+  is skipped. The edge's evidence names the source of the containing node.
 - Accepted edge proposals add an **extracted** edge sourced to ``proposals.yaml`` at
   ``entry=<id>``, produced by ``decided_by``. Their ends resolve through the merges of step 4; an
   end that is no node of the build means the proposal no longer applies.
@@ -50,7 +52,6 @@ from mosaic_format.writer import EdgeKey, Evidence, ExternalRef, Source
 
 from mosaic_build.mosaic.errors import BuildError
 from mosaic_build.mosaic.merge import (
-    PIECE_KINDS,
     Assembly,
     Given,
     Linked,
@@ -308,19 +309,21 @@ class _Targets:
         return sorted(found, key=lambda i: i.encode("utf-8"))
 
 
-def _tessera_source(piece: Piece) -> tuple[str, str]:
-    """A tessera's one original source as copied (``<piece>/<id>``), and its header producer."""
-    sources = piece.file.query(
-        "SELECT id FROM source WHERE kind NOT IN (?, ?) ORDER BY sid", PIECE_KINDS
+def _mention_sources(piece: Piece) -> tuple[dict[str, str], str]:
+    """Each node's original source as copied (``<piece>/<id>``), and the header producer.
+
+    A node's source is that of its first evidence row about the whole node, else of its first
+    evidence row, in canonical order: the source a mention inside the node was read from.
+    """
+    rows = piece.file.query(
+        "SELECT n.id, s.id FROM evidence AS e JOIN node AS n USING (nid)"
+        " JOIN source AS s USING (sid) ORDER BY e.prop IS NOT NULL, e.evid"
     )
-    if len(sources) != 1:
-        raise BuildError(
-            "invalid_input",
-            f"piece {piece.name!r}: a tessera has exactly one original source (3.9), "
-            f"found {len(sources)}",
-        )
+    found: dict[str, str] = {}
+    for old_id, source in rows:
+        found.setdefault(str(old_id), f"{piece.name}/{source}")
     ((producer,),) = piece.file.query("SELECT producer FROM header")
-    return f"{piece.name}/{sources[0][0]}", str(producer)
+    return found, str(producer)
 
 
 def _mention_edges(inputs: Inputs, a: Assembly, linker: _Linker) -> None:
@@ -344,54 +347,63 @@ def _mention_edges(inputs: Inputs, a: Assembly, linker: _Linker) -> None:
         )
         if not rows:
             continue
-        source, producer = _tessera_source(piece)
+        node_source, producer = _mention_sources(piece)
+        matches: list[tuple[str, int, list[str], list[str]]] = []
+        named: set[int] = set()  # mentions that name a node under at least one rule
         for type_name, definition in rules:
-            for text, locator, old_id, role in rows:
-                text, locator, role = str(text), str(locator), str(role)
-                if not role_matches(definition["mentions"], role):
+            for index, (text, _, old_id, role) in enumerate(rows):
+                if not role_matches(definition["mentions"], str(role)):
                     continue
                 sources = _ends(a, piece, str(old_id), definition["from"])
                 if not sources:
                     continue
-                found = targets[definition["to"]].match(text)
-                if len(found) != 1:
-                    status = "unmatched" if not found else "ambiguous"
-                    a.mentions.append(
-                        MentionReport(
-                            status,
-                            role,
+                found = targets[definition["to"]].match(str(text))
+                if found:
+                    named.add(index)
+                matches.append((type_name, index, sources, found))
+        for type_name, index, sources, found in matches:
+            definition = edges[type_name]
+            text, locator, old_id, role = (str(v) for v in rows[index])
+            if not found and (index in named or definition.get("unmatched") == "ignore"):
+                continue
+            if len(found) != 1:
+                status = "unmatched" if not found else "ambiguous"
+                a.mentions.append(
+                    MentionReport(
+                        status,
+                        role,
+                        text,
+                        piece.name,
+                        locator,
+                        tuple(found),
+                        type_name,
+                        tuple(sources),
+                    )
+                )
+                if not found:
+                    a.stale_references.append(
+                        StaleReference(
                             text,
+                            definition["to"],
                             piece.name,
                             locator,
-                            tuple(found),
                             type_name,
                             tuple(sources),
                         )
                     )
-                    if not found:
-                        a.stale_references.append(
-                            StaleReference(
-                                text,
-                                definition["to"],
-                                piece.name,
-                                locator,
-                                type_name,
-                                tuple(sources),
-                            )
-                        )
-                    continue
-                for s in sources:
-                    key = EdgeKey(s, type_name, found[0])
-                    linker.edge(key)
-                    linker.evidence(
-                        Evidence(
-                            subject=key,
-                            source=source,
-                            locator=locator,
-                            method="extracted",
-                            producer=producer,
-                        )
+                continue
+            for s in sources:
+                key = EdgeKey(s, type_name, found[0])
+                linker.edge(key)
+                linker.evidence(
+                    Evidence(
+                        subject=key,
+                        source=node_source[old_id],
+                        locator=locator,
+                        method="extracted",
+                        producer=producer,
                     )
+                )
 
 
 def _proposed_edges(inputs: Inputs, a: Assembly, linker: _Linker) -> None:
