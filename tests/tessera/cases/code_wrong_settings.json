@@ -1,0 +1,10 @@
+[
+ {"name": "no include", "text": "commented_defines: true\n", "line": 1, "named": "include"},
+ {"name": "include is text", "text": "notice: ours\ninclude: src\n", "line": 2, "named": "include"},
+ {"name": "include is empty", "text": "include: []\n", "line": 1, "named": "include"},
+ {"name": "an unknown setting", "text": "include: [a.c]\nexclude: [b.c]\n", "line": 2, "named": "exclude"},
+ {"name": "an empty notice", "text": "include: [a.c]\nnotice: \"\"\n", "line": 2, "named": "notice"},
+ {"name": "commented_defines is text", "text": "include: [a.c]\ncommented_defines: \"yes\"\n", "line": 2, "named": "commented_defines"},
+ {"name": "a list", "text": "- a.c\n", "line": 1, "named": "mapping"},
+ {"name": "a key twice", "text": "include: [a.c]\ninclude: [b.c]\n", "line": 2, "named": "include"}
+]

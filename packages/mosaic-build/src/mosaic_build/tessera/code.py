@@ -86,6 +86,13 @@ _WORD = re.compile(r""""(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|\d[\w.]*|[A-Za-z_
 _CALLED = re.compile(r"\s*\(")
 _MARKERS = re.compile(r"^\s*(?:/\*+!?|//+!?|\*+/?)|\*+/\s*$")
 _CONDITIONS = ("if", "elif", "ifdef", "ifndef", "elifdef", "elifndef")
+_KEYWORDS = frozenset(
+    {"auto", "bool", "break", "case", "char", "class", "const", "constexpr", "continue",
+     "default", "delete", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if",
+     "inline", "int", "long", "new", "return", "short", "signed", "sizeof", "static", "struct",
+     "switch", "typedef", "union", "unsigned", "void", "volatile", "while"}
+)  # fmt: skip
+"""Words that are no names, wherever a macro's arguments make the parse take them for one."""
 _NAMES = (
     "identifier",
     "field_identifier",
@@ -278,32 +285,23 @@ def read(root: str | os.PathLike[str], settings: Settings) -> Content:
             evidence.append(_evidence(edge.key, file, f.start, f.end))
             own.update((f.name, f.written))
 
-        def mention(node: str, role: str, start: int, end: int) -> Mention:
-            return Mention(
-                text=text[start:end],  # noqa: B023 - used within this turn of the loop
-                locator=file.locator(start, end),  # noqa: B023
-                node=node,
-                role=role,
-                kind="identifier",
-            )
-
         starts = [f.start for f in functions]
         for start, end in _condition_names(code, directives):
             i: int | None = bisect_right(starts, start) - 1
             while i is not None and i >= 0 and not functions[i].start <= start < functions[i].end:
                 i = functions[i].parent
             inside = file_id if i is None or i < 0 else functions[i].id
-            mentions.append(mention(inside, "code.condition", start, end))
+            mentions.append(_mention(file, inside, "code.condition", start, end))
         lines = [d.start for d in directives]
         for fn, start, end in found:
             name = text[start:end]
             i = bisect_right(lines, start) - 1
             if i >= 0 and start < directives[i].end:
                 continue  # a preprocessor line: its condition names are read above
-            if name in own or name in functions[fn].locals:
+            if name in own or name in functions[fn].locals or name in _KEYWORDS:
                 continue
             role = "code.call" if _CALLED.match(code, end) else "code.use"
-            mentions.append(mention(functions[fn].id, role, start, end))
+            mentions.append(_mention(file, functions[fn].id, role, start, end))
 
     return Content(
         header=Header(kind="tessera", producer=PRODUCER, settings=settings.as_json()),
@@ -348,6 +346,16 @@ def _evidence(
         method="extracted",
         producer=PRODUCER,
         snippet=snippet or None,
+    )
+
+
+def _mention(file: TextFile, node: str, role: str, start: int, end: int) -> Mention:
+    return Mention(
+        text=file.text[start:end],
+        locator=file.locator(start, end),
+        node=node,
+        role=role,
+        kind="identifier",
     )
 
 
@@ -418,7 +426,7 @@ def _condition_names(code: str, directives: list[_Directive]) -> Iterator[tuple[
             continue
         for m in _WORD.finditer(code, d.rest, d.end):
             word = m.group()
-            if not (word[0].isalpha() or word[0] == "_") or word == "defined":
+            if not (word[0].isalpha() or word[0] == "_") or word == "defined":  # text, number
                 continue
             if not _CALLED.match(code, m.end(), d.end):
                 yield m.start(), m.end()
@@ -507,7 +515,10 @@ def _text(node: Syntax, data: bytes) -> str:
 def _inner(declarator: Syntax) -> Syntax | None:
     found = declarator.child_by_field_name("declarator")
     if found is None:
-        found = next((c for c in declarator.named_children if c.type.endswith("declarator")), None)
+        kinds = (
+            c for c in declarator.named_children if c.type.endswith(("declarator", "identifier"))
+        )
+        found = next(kinds, None)
     return found
 
 
@@ -529,7 +540,7 @@ def _comment_above(
 ) -> tuple[int | None, str | None]:
     """Where the comment directly above the line of ``start`` begins, and its first line of
     text. A blank line, or code on the comment's line, parts them."""
-    below = text.rfind("\n", 0, start) + 1
+    line = below = text.rfind("\n", 0, start) + 1
     i = bisect_right(comments, (below, below)) - 1
     first: int | None = None
     while i >= 0:
@@ -545,5 +556,5 @@ def _comment_above(
         below, i = begin, i - 1
     if first is None:
         return None, None
-    lines = (_MARKERS.sub("", raw).strip() for raw in text[first:start].splitlines())
+    lines = (_MARKERS.sub("", raw).strip() for raw in text[first:line].splitlines())
     return first, next((line for line in lines if line), None)

@@ -204,8 +204,21 @@ A mention is a place where the source names something it does not define, such a
 | `text` | The name exactly as written |
 | `locator` | Where it occurs; unique within the tessera |
 | `nid` | The node containing the mention, such as the step or section |
-| `role` | A hint of how the name is used, written `<context>.<slot>`, for example `caption.number`, `code.param`, `docs.param_link`. Builders SHOULD document their roles |
+| `role` | A hint of how the name is used, written `<context>.<slot>`, for example `caption.number`, `code.param`, `docs.param_link`. Builders SHOULD document their roles (the reference builders' roles are below) |
 | `kind` | `identifier` for exact names, `phrase` for free-text references |
+
+The reference builders record these roles, all of kind `identifier`:
+
+| Builder | Role | A mention is |
+| --- | --- | --- |
+| Markdown | `prose.code` | The content of an inline code span that has no white space, in the body or the front matter |
+| Markdown | `prose.link` | The target of an inline link, without its fragment; not an image, not a target with a scheme |
+| Markdown | `front.<field>` | A value of a front-matter field the settings name, whole or word by word |
+| C and C++ | `code.condition` | An identifier in the condition of `#if`, `#elif`, `#ifdef` or `#ifndef` that is not called |
+| C and C++ | `code.call` | A name called in a function body |
+| C and C++ | `code.use` | Another identifier in a function body that the file does not define |
+
+A mention's containing node is the innermost section or function that holds it, else the page or file. Its locator is `file`, `line` and `chars` (section 7.3).
 
 #### 4.3 Determinism
 
@@ -484,9 +497,9 @@ The suite is versioned with this specification and contains:
 | Chinook: one tessera from the Chinook sample database (MIT), a pattern, and the expected mosaic | A tessera builder and a mosaic builder reproduce the expected knowledge hash, and vectors that agree with the expected ones on at least 98 % of their bits (another processor may differ in a few bits, ADR-005); the first case with several linked types |
 | Museums: the artists of The Museum of Modern Art and one department of The Metropolitan Museum of Art's objects (both CC0), as two tesserae, a pattern, and the expected build | Merging two sources that name the same things differently: several identifiers in order of trust, conflicts, edge qualifiers, notices |
 | OpenFlights: airports, airlines and routes as separate tesserae, a pattern, and the expected build (ODbL notice carried) | Merging several pieces of one source, weak ids, notices |
-| Marlin: a pinned release of the firmware source and its documentation, with its expected hashes | Mentions, text and realistic size |
+| Marlin: the configuration files and command handlers of a pinned firmware release and the command pages of its documentation (GPL-3.0), as two tesserae, a pattern, and the expected build | Document and code tessera builders, several sources in one tessera, link rules from mentions with unmatched and ambiguous mentions, the full text tier |
 | Invalid files, one per invariant in section 3.9 | A checker rejects each, naming the invariant |
 | Invalid patterns and proposals, one per rule in sections 5 and 5.6 | A checker rejects each |
-| Tool cases with expected answers, on the Chinook mosaic | A kit's answers match and are valid against `answers.schema.json` |
+| Tool cases with expected answers, on the Chinook mosaic and, for `cite` with `around`, on a small mosaic with source text | A kit's answers match and are valid against `answers.schema.json` |
 
 Hash values recorded during the spikes predate this text (the `mention` part of the knowledge hash was added here) and will be regenerated with the reference implementation.

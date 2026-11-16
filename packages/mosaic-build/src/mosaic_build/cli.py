@@ -16,6 +16,12 @@ Subcommands arrive milestone by milestone (docs/design.md, Part 1, "Milestones")
   have, a foreign key it does not declare) is an error naming the settings file, the line and
   the setting. A file that is not a SQLite database is an error naming it. Values a conversion
   could not read are listed on standard error.
+- ``mosaic import markdown <dir> --settings <file> -o <out.tessera>`` and ``mosaic import code
+  <dir> ...`` write one tessera from the text files of one directory that the settings'
+  ``include`` patterns name (:mod:`mosaic_build.tessera.markdown`, Markdown pages and sections;
+  :mod:`mosaic_build.tessera.code`, C and C++ files, defines and functions). Each file is one
+  source of the tessera, and the names it uses are recorded as mentions for a pattern's link
+  rules.
 - ``mosaic build <pattern.yaml> [--target T] [--pieces DIR] [--model DIR] [-o DIR]`` builds one
   target into ``DIR/<target>.mosaic``, with ``build-report.json`` beside it (Specification 0.1,
   section 7.2); ``DIR`` is the current directory unless given. Without ``--target`` the pattern must
@@ -72,7 +78,7 @@ from mosaic_format import FORMAT_VERSION
 from mosaic_format.check import check_file
 from mosaic_format.file import SIDECARS
 from mosaic_format.pattern import check_pattern
-from mosaic_format.writer import seal
+from mosaic_format.writer import Content, seal
 from mosaic_format.yaml_read import YamlError, load
 
 from mosaic_build import __version__
@@ -81,10 +87,10 @@ from mosaic_build import view as viewer
 from mosaic_build.mosaic import BuildError, build
 from mosaic_build.mosaic.pieces import piece_paths
 from mosaic_build.mosaic.target import DEFAULT_TARGET
-from mosaic_build.tessera import csv as csv_tessera
-from mosaic_build.tessera import settings as csv_settings
 from mosaic_build.tessera import code as code_tessera
+from mosaic_build.tessera import csv as csv_tessera
 from mosaic_build.tessera import markdown as markdown_tessera
+from mosaic_build.tessera import settings as csv_settings
 from mosaic_build.tessera import sqlite_settings
 from mosaic_build.tessera.sqlite import Built
 
@@ -348,18 +354,25 @@ def _only_target(pattern: Path) -> str:
     raise _Usage(f"{pattern}: the pattern has several targets ({listed}); choose one with --target")
 
 
-_TREE_BUILDERS = {"markdown": markdown_tessera, "code": code_tessera}
+def _read_markdown(root: Path, settings: Path) -> Content:
+    return markdown_tessera.read(root, markdown_tessera.load_settings(settings))
+
+
+def _read_code(root: Path, settings: Path) -> Content:
+    return code_tessera.read(root, code_tessera.load_settings(settings))
+
+
+_TREE_BUILDERS = {"markdown": _read_markdown, "code": _read_code}
 
 
 def _import_tree(args: argparse.Namespace, command: str) -> int:
     """Import a directory of text files: read everything first, then write the tessera."""
-    builder = _TREE_BUILDERS[args.kind]
     out: Path = args.output.absolute()
     if out.exists():
         _error(command, f"{out}: exists; a tessera is never overwritten")
         return 1
     try:
-        made = builder.read(args.file, builder.load_settings(args.settings))
+        made = _TREE_BUILDERS[args.kind](args.file, args.settings)
         out.parent.mkdir(parents=True, exist_ok=True)
         sealed = seal(out, made)
     except (OSError, ValueError) as e:

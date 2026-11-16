@@ -5,8 +5,8 @@
 # between the two pieces all come from those mentions, each citing the file and place it was read.
 format: "0.1"
 pieces:
-  - docs@DOCS_HASH
-  - firmware@FIRMWARE_HASH
+  - docs@60caa564c70ce05f44536039ec02e1e27584a7cff8b45d362c11c68fe6571556
+  - firmware@2dbd7a5f0172d0c1343e419254c09d013e2679af222fae6d9b29c3d5635ae4d6
 
 types:
   Command:
@@ -21,7 +21,7 @@ types:
       docs.Section: {anchor: key, level: level}
   Option:
     key: name
-    describe: A configuration option of the firmware, set in a configuration file
+    describe: An option or macro the firmware defines, most of them in its configuration files
     from:
       firmware.Define: {name: key, label: key, value: value, enabled: enabled}
   File:
@@ -56,13 +56,15 @@ edges:
     to: Function
     mentions: front.codes
     describe: A command is carried out by the function named like its code
-  # From the documentation's prose: a name in code type is an option or a command's code, and a
-  # link names a page by its address. One role feeds several rules; a name is unmatched only
-  # when none of them finds it.
+  # From the documentation's prose. A name in code type is an option, a command's code or
+  # neither, such as a parameter's letter: one role feeds two rules, a name is unmatched only
+  # when neither finds it, and only the first rule reports it. A link names a page by its address.
   names_option: {from: Command, to: Option, mentions: prose.code}
-  refers_to: {from: Command, to: Command, mentions: "prose.*"}
+  refers_to: {from: Command, to: Command, mentions: prose.code, unmatched: ignore}
+  links_to: {from: Command, to: Command, mentions: prose.link}
   section_names_option: {from: Section, to: Option, mentions: prose.code}
-  section_refers_to: {from: Section, to: Command, mentions: "prose.*"}
+  section_refers_to: {from: Section, to: Command, mentions: prose.code, unmatched: ignore}
+  section_links_to: {from: Section, to: Command, mentions: prose.link}
   # From the code: most identifiers name things outside this mosaic, so they are not reported.
   depends_on:
     from: Function

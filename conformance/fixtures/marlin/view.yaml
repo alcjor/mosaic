@@ -12,7 +12,7 @@ types:
     describe: A headed part of a command's page
   Option:
     label: Option
-    describe: A configuration option of the firmware, set in a configuration file
+    describe: An option or macro the firmware defines, most of them in its configuration files
     columns: [value, enabled]
   Function:
     label: Function
@@ -31,7 +31,9 @@ edges:
   names_option:
     describe: A command's page names an option
   refers_to:
-    describe: A command's page names or links to another command
+    describe: A command's page names another command by its code
+  links_to:
+    describe: A command's page links to another command's page
   depends_on:
     describe: A function names an option in a condition or in its body
   file_depends_on:
@@ -39,4 +41,4 @@ edges:
   defined_in:
     describe: A function is defined in a file
   set_in:
-    describe: An option is set in a configuration file
+    describe: An option is defined in a file

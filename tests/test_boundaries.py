@@ -22,6 +22,8 @@ DOMAIN_WORDS = [
     "netflix",
     "chinook",
     "openflights",
+    "marlin",
+    "gcode",
     "airport",
     "airline",
     "t-1889",

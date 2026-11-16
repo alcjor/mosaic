@@ -1,0 +1,63 @@
+{
+ "nodes": [
+  {"id": "File:config.h", "label": "config.h", "summary": null, "props": {"path": "config.h"}},
+  {"id": "Define:TARGET_TENTHS", "label": "TARGET_TENTHS", "summary": null, "props": {"enabled": true, "name": "TARGET_TENTHS", "value": "215"}},
+  {"id": "Define:HAS_FAN", "label": "HAS_FAN", "summary": null, "props": {"enabled": true, "name": "HAS_FAN"}},
+  {"id": "Define:HAS_BUZZER", "label": "HAS_BUZZER", "summary": null, "props": {"enabled": false, "name": "HAS_BUZZER"}},
+  {"id": "Define:LOG_LEVEL", "label": "LOG_LEVEL", "summary": null, "props": {"enabled": false, "name": "LOG_LEVEL", "value": "2"}},
+  {"id": "Define:CLAMP", "label": "CLAMP", "summary": null, "props": {"enabled": true, "name": "CLAMP", "value": "(v, lo, hi) ((v) < (lo) ? (lo) : (v) > (hi) ? (hi) : (v))"}},
+  {"id": "Define:FAN_PIN", "label": "FAN_PIN", "summary": null, "props": {"enabled": true, "name": "FAN_PIN", "value": "7"}},
+  {"id": "File:src/clock.c", "label": "clock.c", "summary": null, "props": {"path": "src/clock.c"}},
+  {"id": "Function:src/clock.c::clock_tick", "label": "clock_tick", "summary": "Count one second.", "props": {"name": "clock_tick", "symbol": "src/clock.c::clock_tick"}},
+  {"id": "File:src/thermostat.cpp", "label": "thermostat.cpp", "summary": null, "props": {"path": "src/thermostat.cpp"}},
+  {"id": "Function:src/thermostat.cpp::Thermostat::read", "label": "Thermostat::read", "summary": "Read the sensor, in tenths of a °C.", "props": {"name": "read", "symbol": "src/thermostat.cpp::Thermostat::read"}},
+  {"id": "Function:src/thermostat.cpp::Thermostat::update", "label": "Thermostat::update", "summary": "Switch the heater.", "props": {"name": "update", "symbol": "src/thermostat.cpp::Thermostat::update"}},
+  {"id": "Function:src/thermostat.cpp::alarm", "label": "alarm", "summary": null, "props": {"name": "alarm", "symbol": "src/thermostat.cpp::alarm"}},
+  {"id": "Function:src/thermostat.cpp::alarm#2", "label": "alarm", "summary": null, "props": {"name": "alarm", "symbol": "src/thermostat.cpp::alarm#2"}}
+ ],
+ "edges": [
+  ["Define:TARGET_TENTHS", "set_in", "File:config.h"],
+  ["Define:HAS_FAN", "set_in", "File:config.h"],
+  ["Define:HAS_BUZZER", "set_in", "File:config.h"],
+  ["Define:LOG_LEVEL", "set_in", "File:config.h"],
+  ["Define:CLAMP", "set_in", "File:config.h"],
+  ["Define:FAN_PIN", "set_in", "File:config.h"],
+  ["Function:src/clock.c::clock_tick", "defined_in", "File:src/clock.c"],
+  ["Define:TARGET_TENTHS", "set_in", "File:src/thermostat.cpp"],
+  ["Function:src/thermostat.cpp::Thermostat::read", "defined_in", "File:src/thermostat.cpp"],
+  ["Function:src/thermostat.cpp::Thermostat::update", "defined_in", "File:src/thermostat.cpp"],
+  ["Function:src/thermostat.cpp::alarm", "defined_in", "File:src/thermostat.cpp"],
+  ["Function:src/thermostat.cpp::alarm#2", "defined_in", "File:src/thermostat.cpp"]
+ ],
+ "aliases": [
+  ["Function:src/clock.c::clock_tick", "clock_tick", "source"],
+  ["Function:src/thermostat.cpp::Thermostat::read", "read", "source"],
+  ["Function:src/thermostat.cpp::Thermostat::read", "Thermostat::read", "source"],
+  ["Function:src/thermostat.cpp::Thermostat::update", "update", "source"],
+  ["Function:src/thermostat.cpp::Thermostat::update", "Thermostat::update", "source"],
+  ["Function:src/thermostat.cpp::alarm", "alarm", "source"],
+  ["Function:src/thermostat.cpp::alarm#2", "alarm", "source"]
+ ],
+ "mentions": [
+  ["code.condition", "HAS_FAN", "File:config.h", 9, "identifier"],
+  ["code.condition", "ECO_MODE", "File:config.h", 9, "identifier"],
+  ["code.use", "ticks", "Function:src/clock.c::clock_tick", 7, "identifier"],
+  ["code.use", "TICK_STEP", "Function:src/clock.c::clock_tick", 7, "identifier"],
+  ["code.use", "ticks", "Function:src/clock.c::clock_tick", 8, "identifier"],
+  ["code.call", "clock_minute", "Function:src/clock.c::clock_tick", 8, "identifier"],
+  ["code.use", "ticks", "Function:src/clock.c::clock_tick", 8, "identifier"],
+  ["code.condition", "HAS_FAN", "Function:src/thermostat.cpp::Thermostat::update", 18, "identifier"],
+  ["code.condition", "HAS_BUZZER", "File:src/thermostat.cpp", 25, "identifier"],
+  ["code.use", "sensor", "Function:src/thermostat.cpp::Thermostat::read", 10, "identifier"],
+  ["code.use", "SENSOR_PIN", "Function:src/thermostat.cpp::Thermostat::read", 10, "identifier"],
+  ["code.use", "offset", "Function:src/thermostat.cpp::Thermostat::read", 10, "identifier"],
+  ["code.use", "HYSTERESIS", "Function:src/thermostat.cpp::Thermostat::update", 17, "identifier"],
+  ["code.call", "set_fan", "Function:src/thermostat.cpp::Thermostat::update", 19, "identifier"],
+  ["code.use", "FAN_LOW", "Function:src/thermostat.cpp::Thermostat::update", 19, "identifier"],
+  ["code.use", "FAN_OFF", "Function:src/thermostat.cpp::Thermostat::update", 19, "identifier"],
+  ["code.use", "last", "Function:src/thermostat.cpp::Thermostat::update", 21, "identifier"],
+  ["code.call", "apply", "Function:src/thermostat.cpp::Thermostat::update", 22, "identifier"],
+  ["code.call", "beep", "Function:src/thermostat.cpp::alarm", 26, "identifier"],
+  ["code.use", "TONE_HZ", "Function:src/thermostat.cpp::alarm", 26, "identifier"]
+ ]
+}

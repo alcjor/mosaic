@@ -1,0 +1,69 @@
+{
+  "comment": "The expected Marlin mosaic: what a clean build of pattern.yaml gives from the tesserae its two sources make (docs/spec-0.1.md section 11). Each source names a pinned download of manifest.json, the directory inside it, the builder and settings file that read it and the piece it becomes. knowledge_hash is section 3.6; counts, weak_ids and notices are the build report's (section 7.2); conflicts, alias_conflicts and stale_references are how many the report lists, and mentions how many it lists by status and role. Recorded from two clean local builds; these values are the contract, so a change to them needs a reason.",
+  "sources": [
+    {
+      "download": "marlin-docs/MarlinDocumentation-c01d8ad.tar.gz",
+      "directory": "MarlinDocumentation-c01d8adedb58f03087f14c02fe370d1063fd9cb2",
+      "builder": "markdown",
+      "settings": "settings-docs.yaml",
+      "piece": "docs"
+    },
+    {
+      "download": "marlin/Marlin-2.1.2.10.tar.gz",
+      "directory": "Marlin-2.1.2.10",
+      "builder": "code",
+      "settings": "settings-firmware.yaml",
+      "piece": "firmware"
+    }
+  ],
+  "knowledge_hash": "ea5ec1353c110dc1fe2a403e1b0395980ccf31a73bf9c2e939705fbf99b78e17",
+  "counts": {
+    "nodes": {
+      "Command": 254,
+      "File": 180,
+      "Function": 580,
+      "Option": 2486,
+      "Section": 64
+    },
+    "edges": {
+      "defined_in": 580,
+      "depends_on": 1031,
+      "file_depends_on": 687,
+      "implemented_by": 227,
+      "links_to": 203,
+      "names_option": 316,
+      "part_of": 64,
+      "refers_to": 279,
+      "related_to": 262,
+      "requires": 391,
+      "section_links_to": 260,
+      "section_names_option": 3,
+      "section_refers_to": 7,
+      "set_in": 2511,
+      "under": 45
+    }
+  },
+  "conflicts": 0,
+  "alias_conflicts": 0,
+  "stale_references": 929,
+  "mentions": {
+    "ambiguous front.codes": 15,
+    "ambiguous front.related": 5,
+    "ambiguous prose.code": 36,
+    "unmatched front.codes": 59,
+    "unmatched front.requires": 205,
+    "unmatched prose.code": 562,
+    "unmatched prose.link": 103
+  },
+  "weak_ids": [],
+  "notices": [
+    {
+      "piece": "docs",
+      "text": "Marlin Documentation, Copyright (c) MarlinFirmware, licensed under the GNU General Public License v3.0. https://github.com/MarlinFirmware/MarlinDocumentation"
+    },
+    {
+      "piece": "firmware",
+      "text": "Marlin 3D Printer Firmware 2.1.2.10, Copyright (c) MarlinFirmware, licensed under the GNU General Public License v3.0 or later. https://github.com/MarlinFirmware/Marlin"
+    }
+  ]
+}

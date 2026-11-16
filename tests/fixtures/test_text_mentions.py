@@ -71,9 +71,7 @@ def _build(directory: Path) -> tuple[dict[str, object], Path]:
 
 
 @pytest.fixture(scope="session")
-def builds(
-    netflix_fetched: None, tmp_path_factory: pytest.TempPathFactory
-) -> build_cache.Builds:
+def builds(netflix_fetched: None, tmp_path_factory: pytest.TempPathFactory) -> build_cache.Builds:
     inputs = [
         *(DOWNLOADS / s["download"] for s in EXPECTED["sources"]),
         *(FIXTURE / s["settings"] for s in EXPECTED["sources"]),
@@ -143,6 +141,7 @@ def test_a_page_links_to_the_options_its_front_matter_and_prose_name(mosaic: Any
 def test_a_page_links_to_the_pages_it_names_by_code_or_by_address(mosaic: Any) -> None:
     assert _out(mosaic, PAGE, "related_to") == ["Command:docs/gcode/M204.md"]
     assert "Command:docs/gcode/M500.md" in _out(mosaic, PAGE, "refers_to")
+    assert "Command:docs/gcode/M500.md" in _out(mosaic, PAGE, "links_to")
 
 
 def test_a_page_links_to_the_function_named_like_its_code(mosaic: Any) -> None:
@@ -156,13 +155,14 @@ def test_a_function_links_to_the_options_its_conditions_name(mosaic: Any) -> Non
 def test_a_mention_edge_cites_the_file_and_place_of_the_mention(mosaic: Any) -> None:
     rows = mosaic.query(
         "SELECT s.id, v.locator FROM evidence AS v JOIN source AS s USING (sid)"
-        " JOIN edge AS e USING (eid) JOIN node AS a ON a.nid = e.src JOIN node AS b ON b.nid = e.dst"
+        " JOIN edge AS e USING (eid) JOIN node AS a ON a.nid = e.src"
+        " JOIN node AS b ON b.nid = e.dst"
         " WHERE a.id = ? AND e.type = 'implemented_by' AND b.id = ?",
         (PAGE, HANDLER),
     )
     ((source, locator),) = rows
     assert source == "docs/docs/gcode/M201.md"
-    assert locator.startswith("file=docs/gcode/M201.md;line=11;chars=")
+    assert locator.startswith("file=docs/gcode/M201.md;line=12;chars=")
 
 
 def test_a_code_several_pages_document_is_an_ambiguous_mention(

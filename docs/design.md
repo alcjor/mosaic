@@ -197,9 +197,9 @@ The first implementation proved the whole flow on the Netflix titles fixture, th
 | Part | Built (M0 to M4) | Later |
 | --- | --- | --- |
 | Format and checker | `format.sql`, `mosaic check`, knowledge and vector hashes | The hardening planned for the freeze (M11) |
-| Reference tessera builder | Table importers only: CSV, with columns as linked things (optionally split on a separator) and value conversion (dates, mixed units), and SQLite, with rows as nodes and foreign keys as edges | Document and code importers (M8); the AI step (M10); knowledge graph importers (not scheduled) |
-| Mosaic builder | The eight build steps, build report, strict mode, vectors with the v0 embedding model; several pieces merged by several identifiers in order of trust, proved on the museums and OpenFlights fixtures | Link rules from mentions (M8); proposals in practice (M10); incremental builds (not scheduled) |
-| Kit | TypeScript, running in the page: `find` (exact, full-text and vector tiers), `get`, `neighbors`, `table`, `cite`; query embedding with the v0 model | `path`, the generated card and a Node build for the MCP server (M9); a Python wrapper for scripts and notebooks (M11); counting the results of a chain (M6, deferred until the M9 benchmark asks for it); tiny-mosaic text and the answer schema in full (not scheduled) |
+| Reference tessera builder | Table importers: CSV, with columns as linked things (optionally split on a separator) and value conversion (dates, mixed units), and SQLite, with rows as nodes and foreign keys as edges. Text importers, each reading a directory with one source per file: Markdown (pages, sections, mentions in prose and front matter) and C and C++ (files, defines, functions, mentions in conditions and bodies) | The AI step (M10); knowledge graph importers (not scheduled) |
+| Mosaic builder | The eight build steps, build report, strict mode, vectors with the v0 embedding model; several pieces merged by several identifiers in order of trust, proved on the museums and OpenFlights fixtures; link rules from mentions and the full text tier, proved on the Marlin fixture | Proposals in practice (M10); incremental builds (not scheduled) |
+| Kit | TypeScript, running in the page: `find` (exact, full-text and vector tiers), `get`, `neighbors`, `table`, `cite` (with the wider passage around a citation, from the full text tier); query embedding with the v0 model | `path`, the generated card and a Node build for the MCP server (M9); a Python wrapper for scripts and notebooks (M11); counting the results of a chain (M6, deferred until the M9 benchmark asks for it); tiny-mosaic text and the answer schema in full (not scheduled) |
 | Viewer | Search box (semantic search through `find`) above four places: Home (the map of types and saved trails), Explore (a force-laid graph to drag and unfold, beside the selected thing's card, links and sources), Trails (a chain as columns, one per step, or as one table) and Tables (rebuilt from node types); `mosaic view` to explore and a single-file HTML export, both shaped by a view file | A path between two things (M9); "count by" (M6, deferred) |
 | Agent interface | None | MCP server and card (M9) |
 
@@ -239,7 +239,7 @@ mosaic/
 
 **Milestones**
 
-No dates: each milestone starts when the one before passes. M0 to M5 and M7 are built: M1 to M3 are the first milestone above, M4 added chains and cards to the viewer, M5 rebuilt the viewer as four places, and M7 proved several pieces on real sources. M6 is deferred; M8 onwards is the plan.
+No dates: each milestone starts when the one before passes. M0 to M5, M7 and M8 are built: M1 to M3 are the first milestone above, M4 added chains and cards to the viewer, M5 rebuilt the viewer as four places, M7 proved several pieces on real sources, and M8 added text and mentions. M6 is deferred; M9 onwards is the plan.
 
 |  | Goal | Done when | Status |
 | --- | --- | --- | --- |
@@ -251,7 +251,7 @@ No dates: each milestone starts when the one before passes. M0 to M5 and M7 are 
 | M5 | Viewer rework | The Netflix and Chinook mosaics can be explored end to end in the four places (Home, Explore, Trails, Tables), in `mosaic view` and in the single-file export, as the approved mockup shows them | Built |
 | M6 | Counting | The question "which person appears in the most titles listed in Comedies" is answered on the Netflix mosaic in the viewer and through the kit, with tool cases in `conformance/` | Deferred until after M9 |
 | M7 | Several pieces | A fixture with at least two sources that name the same things differently (two open museum collections, joined by their Wikidata ids; OpenFlights stays as the second case) builds, with merging pieces, qualifiers, weak ids and notices | Built |
-| M8 | Text and mentions | Document and code tessera builders, link rules from mentions and `source_text` work on the Marlin fixture (firmware source and its documentation, GPL-3.0, downloaded by hash) | Planned |
+| M8 | Text and mentions | Document and code tessera builders, link rules from mentions and `source_text` work on the Marlin fixture (firmware source and its documentation, GPL-3.0, downloaded by hash) | Built |
 | M9 | Agents and benchmark | The generated card, `path` and an MCP server in Node work, and the benchmark with small local models ("How we get there", step 4) has run | Planned |
 | M10 | AI input | The AI step in tessera builders, the pattern assistant and proposals work end to end | Planned |
 | M11 | Freeze 0.1 | The Python wrapper exists, the budgets are met, the full conformance suite passes, and the specification is frozen | Planned |
@@ -307,6 +307,16 @@ Decided on the way: IBM Plex is packed into the page and the export; a table's c
 - **Errors (done):** a command's exit code and error name are the contract; the wording of a message is free, and the tests check only the code, the name and what the error names (a file, a line, a key). The Python reader's refusals have no rule name yet, so its tests still tell them apart by their words; giving them the kit's rule names is the fix.
 - **Spec after code (done):** a feature is built first and its spec section is written once it has settled.
 - **Export (done):** the single-file export is checked by a few end-to-end tests in a browser (it opens offline, refuses a changed mosaic, a cut says where it comes from, a semantic cut searches), not by repeating every viewer test.
+
+**M8, text and mentions (built).** The mosaic builder already had link rules from mentions and the full text tier, on invented data. M8 added the two builders that record mentions, proved the rules on real text, and changed what the real text showed to be wrong.
+
+- **Marlin fixture.** Of the firmware release (tag 2.1.2.10), the two configuration files and the 178 files of command handlers; of the documentation, the 254 command pages: 1.6 MB of text out of a 57 MB download. Two tesserae, `docs` and `firmware`. The mosaic has 254 commands, 64 sections, 2,486 options, 580 functions and 180 files, with the full text of all 434 files, in 5.5 MB; it builds in under 2 s. Nothing joins the two pieces but mentions: 391 `requires` edges from front matter, 316 `names_option` and 279 `refers_to` from names in code type, 203 `links_to` from links, 227 `implemented_by` from a page's code to the function of that name, and 1,031 `depends_on` from functions to the options their conditions and bodies name. `docs/features` (37 pages of long prose, 0.8 MB) was left out to keep the mosaic small; it is the corpus to add if sections need more real text.
+- **Document builder** (`mosaic import markdown`). A page per file and a section per heading. Mentions: a name in code type (`prose.code`), a link target (`prose.link`), and the values of the front-matter fields the settings name (`front.<field>`). Front-matter fields can also give a page its label, summary, props and aliases, and an address template gives the alias that links use. A small scanner of our own, because exact character positions are needed: ATX headings only, code spans and links on one line.
+- **Code builder** (`mosaic import code`, C and C++, parsed with tree-sitter). A file, each define (optionally also the commented-out ones, as switched off) and each function definition. Mentions: an identifier in a preprocessor condition (`code.condition`), and in a function body a called name (`code.call`) or another name the file does not define (`code.use`).
+- **One source per file.** A tessera made from a directory has one source row per file it read, so evidence names the real file and the full text tier keeps each file's text. A mention edge cites the source of the node that holds the mention.
+- **Unmatched means unmatched by every rule.** One role often feeds several rules (a name in code type is an option or a command). A mention is now unmatched only when no rule finds it, and a rule may say `unmatched: ignore` for names expected to lie outside the mosaic, such as the identifiers of code. The Marlin report then lists 929 unmatched and 56 ambiguous mentions: 562 names in code type that are neither an option nor a command (mostly a parameter's letter), 205 required options that the two configuration files do not define, 103 links to pages outside the corpus, 59 codes with no function of that name, and the codes that several pages document (`G29` has six) as ambiguous.
+- **A wider passage.** The kit's `cite` takes `around` and returns the source text around a citation from the full text tier, with tool cases on a small mosaic in `conformance/tools`.
+- **Left open.** A page that names its own code gets an edge to itself. A parameter's letter in code type is reported as unmatched; parameters are not nodes. The code builder reads loop-macro variables as names used. A code several pages document stays ambiguous: nothing in a pattern can yet say which page a name means. The viewer shows the new mosaic with no changes of its own.
 
 **Under consideration, still open after M7.** Today one source needs three files: the import settings, the pattern and the view. Each answers its own question (how to read this source; how the sources fit together and what ships; how it should look), so the three stay. These changes would make them lighter to write:
 
@@ -452,7 +462,7 @@ These terms are domain-neutral and used throughout; Part 5 relies on them.
 | Source | One artifact a tessera is made from, as it exists: a table, a database, a structured file, code, a document, an existing knowledge graph |
 | Tessera builder | Any program or person that turns one source into a tessera |
 | Reference tessera builder | The tessera builder Mosaic ships: importers, a rule-based linker and an optional AI step |
-| Tessera | A sealed file in the tessera profile, made from exactly one source, with a source for every fact |
+| Tessera | A sealed file in the tessera profile, made from exactly one source (one file, one database, or one directory of files, each file then a source row), with a source for every fact |
 | Mosaic | A sealed, read-only file in the mosaic profile, built from pieces by a pattern: nodes, edges, names, link counts, citations and optional layers |
 | Piece | A tessera or a mosaic that a pattern lists as input |
 | Pattern | The YAML file (`pattern.yaml`) in Git saying which pieces make which mosaics and how they fit: pieces, types, edges and mosaics |
@@ -800,7 +810,7 @@ Untrusted content enters at four points, and each has its own guard (ADR-003, AD
 
 Before Mosaic was built, twelve spikes tested the architecture decisions on real data from several sources: the code, message files and user guide of PX4, an open-source autopilot (release v1.17.0; BSD 3-clause code, CC BY 4.0 guide), with MAVLink message definitions (MIT). A throwaway loader wrote about 18,000 nodes straight into a file made from `format.sql`; a six-fold copy gave the 100,000-node case. The decision records cite these results by spike number (S1 to S12).
 
-The fixture for text and mentions (M8) is Marlin, an open-source 3D printer firmware with its documentation: smaller, one licence, and downloaded by hash like the other fixtures. Its corpus is planned with M8, and the measurements are repeated on it there.
+The fixture for text and mentions (M8) is Marlin, an open-source 3D printer firmware with its documentation: smaller, one licence, and downloaded by hash like the other fixtures. Its corpus was chosen in M8 ("How we get there", M8): the two configuration files, the command handlers and the command pages.
 
 ### Results
 
