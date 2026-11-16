@@ -1,0 +1,15 @@
+[
+ {"name": "not a mapping", "text": "- include\n", "line": 1, "named": "settings"},
+ {"name": "no include", "text": "label: title\n", "line": 1, "named": "include"},
+ {"name": "include is text", "text": "include: \"*.md\"\n", "line": 1, "named": "include"},
+ {"name": "unknown key", "text": "include: [\"*.md\"]\ncolour: red\n", "line": 2, "named": "colour"},
+ {"name": "empty notice", "text": "include: [\"*.md\"]\nnotice: \"\"\n", "line": 2, "named": "notice"},
+ {"name": "label is a list", "text": "include: [\"*.md\"]\nlabel: [title]\n", "line": 2, "named": "label"},
+ {"name": "props names path", "text": "include: [\"*.md\"]\nprops: [path]\n", "line": 2, "named": "props"},
+ {"name": "aliases is text", "text": "include: [\"*.md\"]\naliases: code\n", "line": 2, "named": "aliases"},
+ {"name": "unknown place", "text": "include: [\"*.md\"]\naddress: \"{folder}/{stem}\"\n", "line": 2, "named": "address"},
+ {"name": "mentions is a list", "text": "include: [\"*.md\"]\nmentions: [uses]\n", "line": 2, "named": "mentions"},
+ {"name": "mention field name", "text": "include: [\"*.md\"]\nmentions:\n  See-Also: value\n", "line": 3, "named": "mentions.See-Also"},
+ {"name": "mention mode", "text": "include: [\"*.md\"]\nmentions:\n  uses: value\n  see: lines\n", "line": 4, "named": "mentions.see"},
+ {"name": "duplicate key", "text": "include: [\"*.md\"]\ninclude: [\"*.txt\"]\n", "line": 2, "named": "include"}
+]

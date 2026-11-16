@@ -1,0 +1,10 @@
+include: ["**/*.md"]
+notice: Invented handbook, free to copy
+label: title
+summary: about
+props: [shelf, edition]
+aliases: [code, also]
+address: "handbook:{stem}"
+mentions:
+  uses: value
+  see: words

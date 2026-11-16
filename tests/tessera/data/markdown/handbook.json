@@ -1,0 +1,65 @@
+{
+ "nodes": [
+  ["Page:catalogue.md", "Page", "Search", null, {"path": "catalogue.md"}],
+  ["Section:catalogue.md#search", "Section", "Search", null, {"anchor": "catalogue.md#search", "level": 3}],
+  ["Section:catalogue.md#tips--tricks", "Section", "Tips & tricks", null, {"anchor": "catalogue.md#tips--tricks", "level": 4}],
+  ["Page:guide/lending.md", "Page", "Lending desk", "How a volume leaves the shelf and comes back.", {"edition": "3", "path": "guide/lending.md", "shelf": "A1"}],
+  ["Section:guide/lending.md#lending", "Section", "Lending", null, {"anchor": "guide/lending.md#lending", "level": 1}],
+  ["Section:guide/lending.md#renewals", "Section", "Renewals", null, {"anchor": "guide/lending.md#renewals", "level": 2}],
+  ["Section:guide/lending.md#by-post", "Section", "By post", null, {"anchor": "guide/lending.md#by-post", "level": 3}],
+  ["Section:guide/lending.md#renewals-1", "Section", "Renewals", null, {"anchor": "guide/lending.md#renewals-1", "level": 2}],
+  ["Page:plain.md", "Page", "plain", null, {"path": "plain.md"}]
+ ],
+ "edges": [
+  ["Section:catalogue.md#search", "part_of", "Page:catalogue.md"],
+  ["Section:catalogue.md#tips--tricks", "part_of", "Page:catalogue.md"],
+  ["Section:catalogue.md#tips--tricks", "under", "Section:catalogue.md#search"],
+  ["Section:guide/lending.md#lending", "part_of", "Page:guide/lending.md"],
+  ["Section:guide/lending.md#renewals", "part_of", "Page:guide/lending.md"],
+  ["Section:guide/lending.md#renewals", "under", "Section:guide/lending.md#lending"],
+  ["Section:guide/lending.md#by-post", "part_of", "Page:guide/lending.md"],
+  ["Section:guide/lending.md#by-post", "under", "Section:guide/lending.md#renewals"],
+  ["Section:guide/lending.md#renewals-1", "part_of", "Page:guide/lending.md"],
+  ["Section:guide/lending.md#renewals-1", "under", "Section:guide/lending.md#lending"]
+ ],
+ "aliases": [
+  ["handbook:catalogue", "Page:catalogue.md"],
+  ["LD-1", "Page:guide/lending.md"],
+  ["Desk guide", "Page:guide/lending.md"],
+  ["Front desk", "Page:guide/lending.md"],
+  ["handbook:lending", "Page:guide/lending.md"],
+  ["handbook:plain", "Page:plain.md"]
+ ],
+ "evidence": [
+  ["Page:catalogue.md", "file=catalogue.md;line=1;chars=0-199", "Search the shelves by `shelf_mark`."],
+  ["Section:catalogue.md#search", "file=catalogue.md;line=3;chars=37-102", "### Search\n\nAn unclosed `tick and [a note][ref] change nothing."],
+  ["Section:catalogue.md#tips--tricks", "file=catalogue.md;line=7;chars=102-199", "#### Tips & tricks\n\nTry [the desk](guide/lending.md) or mailto: [post](mailto:desk@example.org)."],
+  ["Page:guide/lending.md", "file=guide/lending.md;line=1;chars=0-801", "Lending starts at the desk. Set `loan_days` first."],
+  ["Section:guide/lending.md#lending", "file=guide/lending.md;line=16;chars=366-511", "# Lending\n\nRead [the catalogue](../catalogue.md#search \"Catalogue\"), the\n[web page](https://example.org/hours) and ![the floor plan](plan.png)."],
+  ["Section:guide/lending.md#renewals", "file=guide/lending.md;line=21;chars=511-697", "## Renewals ##\n\nUse `renew.limit`, not `` two words ``, and keep ``tick`mark`` and [the form](<forms/renewal.md>).\n\n```\n`not_seen` in a fence, [nor this](hidden.md)\n# not a heading\n```"],
+  ["Section:guide/lending.md#by-post", "file=guide/lending.md;line=30;chars=697-755", "### By post\n\nSend the card; see [late fees](#late-fees)."],
+  ["Section:guide/lending.md#renewals-1", "file=guide/lending.md;line=34;chars=755-801", "## Renewals\n\nA second time, with `desk_bell`."],
+  ["Page:plain.md", "file=plain.md;line=1;chars=0-67", "No heading here, only [a link](//example.org/a) elsewhere."]
+ ],
+ "mentions": [
+  ["prose.code", "shelf_mark", "Page:catalogue.md", 1],
+  ["prose.link", "guide/lending.md", "Section:catalogue.md#tips--tricks", 9],
+  ["front.uses", "loan_days", "Page:guide/lending.md", 8],
+  ["front.uses", "renew.limit", "Page:guide/lending.md", 8],
+  ["front.uses", "loan_days", "Page:guide/lending.md", 8],
+  ["front.see", "Ask", "Page:guide/lending.md", 9],
+  ["front.see", "about", "Page:guide/lending.md", 9],
+  ["front.see", "late_fee", "Page:guide/lending.md", 9],
+  ["front.see", "or", "Page:guide/lending.md", 9],
+  ["front.see", "desk.stamp", "Page:guide/lending.md", 9],
+  ["front.uses", "card_no", "Page:guide/lending.md", 11],
+  ["prose.code", "card_format", "Page:guide/lending.md", 12],
+  ["prose.link", "rules.md", "Page:guide/lending.md", 12],
+  ["prose.code", "loan_days", "Page:guide/lending.md", 14],
+  ["prose.link", "../catalogue.md", "Section:guide/lending.md#lending", 18],
+  ["prose.code", "renew.limit", "Section:guide/lending.md#renewals", 23],
+  ["prose.code", "tick`mark", "Section:guide/lending.md#renewals", 23],
+  ["prose.link", "forms/renewal.md", "Section:guide/lending.md#renewals", 23],
+  ["prose.code", "desk_bell", "Section:guide/lending.md#renewals-1", 36]
+ ]
+}

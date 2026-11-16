@@ -1,0 +1,42 @@
+# View file for the Marlin fixture (docs/design.md, Implementation plan, "View file").
+# Schema: views/view.schema.json.
+# mosaic view default.mosaic --view view.yaml
+search: text
+types:
+  Command:
+    label: Command
+    describe: A documentation page for one command or a family of commands
+    columns: [group]
+  Section:
+    label: Section
+    describe: A headed part of a command's page
+  Option:
+    label: Option
+    describe: A configuration option of the firmware, set in a configuration file
+    columns: [value, enabled]
+  Function:
+    label: Function
+    describe: A function defined in the firmware
+    columns: [name]
+  File:
+    label: File
+    describe: A source file of the firmware
+edges:
+  requires:
+    describe: A command, or one of its parameters, needs an option
+  related_to:
+    describe: A command's page lists another as related
+  implemented_by:
+    describe: A command is carried out by the function named like its code
+  names_option:
+    describe: A command's page names an option
+  refers_to:
+    describe: A command's page names or links to another command
+  depends_on:
+    describe: A function names an option in a condition or in its body
+  file_depends_on:
+    describe: A file names an option in a condition outside any function
+  defined_in:
+    describe: A function is defined in a file
+  set_in:
+    describe: An option is set in a configuration file

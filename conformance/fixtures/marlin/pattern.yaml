@@ -1,0 +1,84 @@
+# Pattern for the Marlin fixture (docs/spec-0.1.md section 11): text and mentions.
+# The pieces are the tesserae that the two settings files make from the pinned firmware release
+# and its documentation. Neither source refers to the other by an id: a page names options and
+# codes in its front matter and prose, and a function names options in its conditions. The edges
+# between the two pieces all come from those mentions, each citing the file and place it was read.
+format: "0.1"
+pieces:
+  - docs@DOCS_HASH
+  - firmware@FIRMWARE_HASH
+
+types:
+  Command:
+    key: path
+    describe: A documentation page for one command or a family of commands
+    from:
+      docs.Page: {path: key, group: group}
+  Section:
+    key: anchor
+    describe: A headed part of a command's page
+    from:
+      docs.Section: {anchor: key, level: level}
+  Option:
+    key: name
+    describe: A configuration option of the firmware, set in a configuration file
+    from:
+      firmware.Define: {name: key, label: key, value: value, enabled: enabled}
+  File:
+    key: path
+    describe: A source file of the firmware
+    from:
+      firmware.File: {path: key}
+  Function:
+    key: symbol
+    describe: A function defined in the firmware
+    from:
+      firmware.Function: {symbol: key, name: name}
+
+edges:
+  part_of: {from: Section, to: Command, map: [docs.part_of]}
+  under: {from: Section, to: Section, map: [docs.under]}
+  set_in: {from: Option, to: File, map: [firmware.set_in]}
+  defined_in: {from: Function, to: File, map: [firmware.defined_in]}
+  # From the documentation's front matter.
+  requires:
+    from: Command
+    to: Option
+    mentions: front.requires
+    describe: A command, or one of its parameters, needs an option
+  related_to:
+    from: Command
+    to: Command
+    mentions: front.related
+    describe: A command's page lists another as related
+  implemented_by:
+    from: Command
+    to: Function
+    mentions: front.codes
+    describe: A command is carried out by the function named like its code
+  # From the documentation's prose: a name in code type is an option or a command's code, and a
+  # link names a page by its address. One role feeds several rules; a name is unmatched only
+  # when none of them finds it.
+  names_option: {from: Command, to: Option, mentions: prose.code}
+  refers_to: {from: Command, to: Command, mentions: "prose.*"}
+  section_names_option: {from: Section, to: Option, mentions: prose.code}
+  section_refers_to: {from: Section, to: Command, mentions: "prose.*"}
+  # From the code: most identifiers name things outside this mosaic, so they are not reported.
+  depends_on:
+    from: Function
+    to: Option
+    mentions: "code.*"
+    unmatched: ignore
+    describe: A function names an option in a condition or in its body
+  file_depends_on:
+    from: File
+    to: Option
+    mentions: "code.*"
+    unmatched: ignore
+    describe: A file names an option in a condition outside any function
+
+mosaics:
+  default:
+    text: full
+    vectors: false
+    budget: 20 MB
