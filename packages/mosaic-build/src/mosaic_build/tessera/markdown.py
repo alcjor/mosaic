@@ -40,6 +40,7 @@ import json
 import os
 import posixpath
 import re
+import string
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -72,6 +73,7 @@ SNIPPET = 1_000
 """The most characters of a snippet."""
 
 _PLACES = ("path", "dir", "stem", "name")
+_ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
 _PLACE = re.compile(r"\{([^{}]*)\}")
 _FIELD = re.compile(r"[a-z0-9_]+")
 _MODES = ("value", "words")
@@ -337,7 +339,7 @@ def _front_mentions(
     """The ``front.<field>`` mentions of the YAML at ``text[start:end]``."""
     lines = list(_lines(text, start, end))
     found: list[_Found] = []
-    after: dict[int, int] = {}  # per line, where the last mention found there ended
+    after: dict[int, int] = {}  # per line, where the search for the next mention starts
     for name, path, value in _named(doc.data, (), fields):
         number = doc.line(path)
         if number is None or number > len(lines):
@@ -347,13 +349,18 @@ def _front_mentions(
             wanted = [value]
         else:
             wanted = [w for m in _WORD.finditer(value) if (w := m[0].strip("."))]
+        if number not in after:
+            # Past the key of a mapping line, so a value is never found inside its own key.
+            key = re.match(r"\s*(?:-\s+)*[^\s:#\"'\[{][^:]*:(?=\s|$)", line)
+            after[number] = at + (key.end() if key else 0)
         for word in wanted:
-            begin = line.find(word, after.get(number, 0))
+            # On the value's line or, for a value written over several lines, below it.
+            begin = text.find(word, after[number], end)
             if begin == -1:
                 found.append((at, at + len(line), f"front.{name}", word))
             else:
                 after[number] = begin + len(word)
-                found.append((at + begin, at + begin + len(word), f"front.{name}", word))
+                found.append((begin, begin + len(word), f"front.{name}", word))
     return found
 
 
@@ -456,7 +463,11 @@ def _page(file: TextFile, shown: Path, settings: Settings, made: _Made) -> None:
     names = [t for a in settings.aliases for _, t in _scalars(fields.get(a))]
     if settings.address is not None:
         names.append(_address(settings.address, path))
-    made.aliases.extend(Alias(text=t, node=page, origin="source") for t in dict.fromkeys(names))
+    # An alias is unique under NOCASE (format.sql): the first spelling is kept.
+    spelled: dict[str, str] = {}
+    for name in names:
+        spelled.setdefault(name.translate(_ASCII_LOWER), name)
+    made.aliases.extend(Alias(text=t, node=page, origin="source") for t in spelled.values())
 
     sections: list[str] = []
     for i, (heading, slug) in enumerate(zip(headings, _slugs(headings), strict=True)):

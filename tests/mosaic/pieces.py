@@ -48,6 +48,7 @@ def tessera(
     *,
     source: str = "src.csv",
     source_hash: str = "a" * 64,
+    more_sources: Sequence[str] = (),
     notice: str | None = None,
     text: str | None = None,
     aliases: Sequence[Alias] = (),
@@ -96,7 +97,8 @@ def tessera(
     content = Content(
         header=Header(kind="tessera", producer=producer),
         sources=[
-            Source(id=source, kind="file", hash=source_hash, path=source, notice=notice, text=text)
+            Source(id=source, kind="file", hash=source_hash, path=source, notice=notice, text=text),
+            *(Source(id=s, kind="file", hash=source_hash, path=s) for s in more_sources),
         ],
         types=[
             Type(

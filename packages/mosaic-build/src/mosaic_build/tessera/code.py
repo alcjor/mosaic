@@ -456,7 +456,8 @@ def _walk(
         node, fn, body = stack.pop()
         kind = node.type
         if kind == "identifier":
-            if body and fn is not None:
+            # A parse error leaves empty identifiers where the parser expected a name.
+            if body and fn is not None and node.end_byte > node.start_byte:
                 found.append((fn, at(node.start_byte), at(node.end_byte)))
             continue
         if fn is not None and kind in _DECLARATIONS:

@@ -7,7 +7,7 @@ edge; confidence present exactly on inferred rows; canonical order and a matchin
 hash. For a mosaic additionally: node ids of the form ``<type>:<key>``; every piece in
 ``source`` pinned by hash; ``via`` present where evidence passed through a mosaic; link counts
 equal to the edges they count; when vectors are present, one per node and a matching vector
-hash; notices of every piece carried. For a tessera additionally: exactly one source, never a
+hash; notices of every piece carried. For a tessera additionally: at least one source, never a
 mosaic; unique node ids."
 
 Section 1: a checker "reports every violation of sections 3 to 6 in a file or pattern, and
@@ -294,7 +294,7 @@ def test_invariant_6_node_order_by_utf8_bytes(tmp_path: Path) -> None:
 def test_invariant_7_a_tessera_is_not_made_from_a_tessera_or_mosaic(
     tmp_path: Path, kind: str
 ) -> None:
-    """Sections 3.9 and 4.1: exactly one source, never a tessera or a mosaic (ADR-003)."""
+    """Sections 3.9 and 4.1: at least one source, never a tessera or a mosaic (ADR-003)."""
     content = mif.tessera()
     sources = [replace(s, kind=kind) for s in content.sources]
     path = tmp_path / "x.tessera"

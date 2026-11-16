@@ -90,9 +90,12 @@ def test_evidence_cuts_each_fact_out_of_its_file_also_after_other_scripts() -> N
 
 def test_code_that_does_not_parse_is_read_as_far_as_it_goes(tmp_path: Path) -> None:
     (tmp_path / "clock.c").write_text(
-        "#define TICK 1\nint broken( {{{ ]\nvoid chime(void) { ring(BELL); }\n", encoding="utf-8"
+        "#define TICK 1\nvoid half(void) { x = (a + ) * ( + b); }\n"
+        "int broken( {{{ ]\nvoid chime(void) { ring(BELL); }\n",
+        encoding="utf-8",
     )
     made = read(tmp_path, Settings(include=("*.c",)))
+    assert "" not in {m.text for m in made.mentions}  # no name where the parser missed one
     assert "Define:TICK" in {n.id for n in made.nodes}
 
 

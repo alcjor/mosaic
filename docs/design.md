@@ -585,7 +585,7 @@ The conformance checker enforces these; a file or pattern that breaks one is inv
 
 **Tessera**
 
-7. Exactly one source, which is never a tessera or a mosaic (ADR-003).
+7. At least one source, none of them a tessera or a mosaic (ADR-003).
 8. Node ids are unique within the tessera, and no evidence row has a `via`.
 9. A rule-based tessera is deterministic: same source and settings give the same knowledge hash.
 

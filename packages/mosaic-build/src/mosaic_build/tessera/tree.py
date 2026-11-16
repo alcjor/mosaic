@@ -65,9 +65,17 @@ def read_tree(
     if not base.is_dir():
         raise ValueError(f"{base}: not a directory")
     paths: dict[str, Path] = {}
+    inside = base.resolve()
     for pattern in include:
+        if pattern.replace("\\", "/").rstrip("/").endswith("**"):
+            # Python 3.12 gives only directories for a pattern ending in "**"; 3.13 gives files.
+            raise ValueError(f"{base}: include {pattern!r}: end it with '**/*' to name files")
         try:
-            found = [p for p in base.glob(pattern) if p.is_file()]
+            found = [
+                p
+                for p in base.glob(pattern)
+                if p.is_file() and p.resolve().is_relative_to(inside)  # no link out of base
+            ]
         except (ValueError, NotImplementedError) as e:
             raise ValueError(f"{base}: include {pattern!r}: {e}") from None
         if not found:

@@ -6,7 +6,7 @@
 format: "0.1"
 pieces:
   - docs@60caa564c70ce05f44536039ec02e1e27584a7cff8b45d362c11c68fe6571556
-  - firmware@2dbd7a5f0172d0c1343e419254c09d013e2679af222fae6d9b29c3d5635ae4d6
+  - firmware@1e421c57acb1304ac55518ac41ba92938f148edb550c2910fee6a9134da95826
 
 types:
   Command:

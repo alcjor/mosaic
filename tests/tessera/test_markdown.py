@@ -93,6 +93,32 @@ def test_a_front_matter_value_not_written_on_its_line_is_located_by_the_line(
     ]
 
 
+def test_front_matter_values_are_located_in_the_value_also_over_several_lines(
+    tmp_path: Path,
+) -> None:
+    text = "---\nneeds: e\nuses: >\n  ink and\n  paper\n---\nText.\n"
+    (tmp_path / "a.md").write_text(text, encoding="utf-8")
+    made = read(tmp_path, Settings(include=("*.md",), mentions={"needs": "value", "uses": "words"}))
+    found = {m.text: _chars(m.locator)[2:] for m in made.mentions}
+    assert {word: text[start:end] for word, (start, end) in found.items()} == {
+        w: w for w in ("e", "ink", "and", "paper")
+    }
+    assert found["e"] == (11, 12)  # the value, not the "e" of its key
+
+
+def test_aliases_that_differ_only_in_case_are_one_alias(tmp_path: Path) -> None:
+    (tmp_path / "a.md").write_text("---\ncodes: [Q1, q1, Q2]\n---\nText.\n", encoding="utf-8")
+    made = read(tmp_path, Settings(include=("*.md",), aliases=("codes",)))
+    assert [a.text for a in made.aliases] == ["Q1", "Q2"]
+    assert seal(tmp_path / "a.tessera", made).knowledge_hash
+
+
+def test_an_include_pattern_must_name_files(tmp_path: Path) -> None:
+    (tmp_path / "a.md").write_text("Text.\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=r"\*\*"):
+        read(tmp_path, Settings(include=("**",)))
+
+
 @pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])
 def test_a_wrong_setting_names_the_file_the_line_and_the_setting(
     tmp_path: Path, case: dict[str, Any]

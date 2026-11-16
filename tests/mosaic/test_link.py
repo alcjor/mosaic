@@ -533,6 +533,23 @@ def test_a_mention_edge_has_one_extracted_row_sourced_to_the_piece_s_source(
     ]
 
 
+def test_a_mention_edge_names_the_source_of_the_node_that_holds_the_mention(
+    tmp_path: Path,
+) -> None:
+    # A tessera of two files: step S2 was read in the second, and so was what it mentions.
+    name, _, kwargs = procedure()
+    rows = [node("Step:S1", "S1"), node("Step:S2", "S2")]
+    kwargs["more_sources"] = ["later.txt"]
+    kwargs["evidence"] = [
+        Evidence("Step:S1", "proc.txt", "line=1", "extracted", "reader/2.0"),
+        Evidence("Step:S2", "later.txt", "line=1", "extracted", "reader/2.0"),
+    ]
+    kwargs["mentions"] = [Mention("T-1", "file=later.txt;line=2", "Step:S2", "verify.a", "phrase")]
+    a = build(tmp_path, [gems("T-1"), (name, rows, kwargs)], DOCS, READS)
+    key = EdgeKey("Step:S2", "reads", "Sculpture:T-1")
+    assert [x.source for x in a.evidence if x.subject == key] == ["proc/later.txt"]
+
+
 def test_the_key_match_ignores_strip_and_compares_bytes(tmp_path: Path) -> None:
     types = {
         "Sculpture": {"key": "tag", "normalise": [], "from": {"list.Row": {"strip": "P_"}}},
