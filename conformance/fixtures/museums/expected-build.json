@@ -1,0 +1,38 @@
+{
+  "comment": "The expected museums mosaic: what a clean build of pattern.yaml gives from the tesserae its sources make (docs/spec-0.1.md section 11). Each source names a pinned download of manifest.json, its settings file here and the piece it becomes. knowledge_hash is section 3.6; counts, weak_ids and notices are the build report's (section 7.2); conflicts and alias_conflicts are how many the report lists. Recorded from two clean local builds; these values are the contract, so a change to them needs a reason.",
+  "sources": [
+    {
+      "piece": "moma",
+      "download": "museums-moma/Artists.csv",
+      "settings": "settings-moma.yaml"
+    },
+    {
+      "piece": "met",
+      "download": "museums-met/MetObjects.csv",
+      "settings": "settings-met.yaml"
+    }
+  ],
+  "knowledge_hash": "f9f17d4747ce3f2e6090001c7dba8fe7a1db5c08b5286e88cedf8bcb67c0b2ae",
+  "counts": {
+    "nodes": {
+      "Artist": 19135,
+      "Artwork": 15159
+    },
+    "edges": {
+      "made_by": 18557
+    }
+  },
+  "conflicts": 203,
+  "alias_conflicts": 0,
+  "weak_ids": [],
+  "notices": [
+    {
+      "piece": "met",
+      "text": "The Metropolitan Museum of Art Open Access, CC0 1.0."
+    },
+    {
+      "piece": "moma",
+      "text": "The Museum of Modern Art (MoMA) collection data, CC0 1.0. MoMA asks to be credited as the source."
+    }
+  ]
+}

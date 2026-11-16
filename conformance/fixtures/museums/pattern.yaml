@@ -1,0 +1,62 @@
+# Pattern for the museums fixture (docs/spec-0.1.md section 11): two sources that name the
+# same artists differently. The pieces are the tesserae that settings-moma.yaml and
+# settings-met.yaml make from the pinned Artists.csv and MetObjects.csv.
+#
+# An artist is known by the first of these that its source gives: its Wikidata id (MoMA writes
+# Q5593, the Met a URL ending in it), its Getty ULAN id, or else a name of the source's own,
+# which never joins the other source: MoMA's constituent id, the Met's name and year of birth.
+format: "0.1"
+pieces:
+  - moma@c6bf23049cae6002ea4a2ac138687ded81265dff98208fc81eed7ee61432657e
+  - met@e7aa7d484c576d791a52de1706d1e22dc287af6635aac0fb690c3838ad6afcbe
+
+types:
+  Artist:
+    key: [wikidata, ulan, moma_id, met_name]
+    describe: A person or firm credited with a work
+    from:
+      moma.Artist:
+        wikidata: Wiki QID
+        ulan: ULAN
+        moma_id: key
+        nationality: Nationality
+        gender: Gender
+        born: BeginDate
+        died: EndDate
+      met.Artist:
+        wikidata: wikidata
+        ulan: ulan
+        met_name: [key, born]
+        label: key
+        summary: bio
+        nationality: nationality
+        born: born
+        died: died
+        strip:
+          wikidata: "https://www.wikidata.org/wiki/"
+          ulan: "http://vocab.getty.edu/page/ulan/"
+  Artwork:
+    key: object_id
+    describe: A work in the Met's department of Modern and Contemporary Art
+    from:
+      met.Object:
+        object_id: key
+        number: Object Number
+        name: Object Name
+        date: Object Date
+        medium: Medium
+        classification: Classification
+        credit_line: Credit Line
+        link: Link Resource
+
+edges:
+  made_by:
+    from: Artwork
+    to: Artist
+    map: [met.made_by]
+
+# Every source of a fact is kept, so an artist both museums know cites both.
+mosaics:
+  default:
+    vectors: false
+    evidence: all

@@ -1,0 +1,11 @@
+# CSV import settings for the OpenFlights fixture, airlines (docs/spec-0.1.md section 11).
+# mosaic import csv airlines.dat --settings settings-airlines.yaml -o airlines.tessera
+columns: [id, name, alias, iata, icao, callsign, country, active]
+type: Airline
+key: id
+label: name
+props: [alias, iata, icao, callsign, active]
+nulls: ['\N']
+notice: "OpenFlights Airlines Database, made available under the Open Database License (ODbL) 1.0; its contents under the Database Contents License (DbCL) 1.0. https://openflights.org/data"
+links:
+  country: {type: Country, edge: based_in}

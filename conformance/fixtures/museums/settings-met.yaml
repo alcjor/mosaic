@@ -1,0 +1,26 @@
+# CSV import settings for the museums fixture, second source (docs/spec-0.1.md section 11).
+# mosaic import csv MetObjects.csv --settings settings-met.yaml -o met.tessera
+# One department of The Metropolitan Museum of Art's objects file. A cell names several makers
+# split by "|", and the columns beside it hold each maker's role, ids and dates at the same
+# position. The file writes "(not assigned)" for an id it lacks.
+type: Object
+key: Object ID
+label: Title
+props: [Object Number, Object Name, Object Date, Medium, Classification, Credit Line, Link Resource]
+rows:
+  Department: Modern and Contemporary Art
+nulls: ["(not assigned)"]
+notice: "The Metropolitan Museum of Art Open Access, CC0 1.0."
+links:
+  Artist Display Name:
+    type: Artist
+    edge: made_by
+    separator: "|"
+    qualifier: Artist Role
+    props:
+      wikidata: Artist Wikidata URL
+      ulan: Artist ULAN URL
+      nationality: Artist Nationality
+      born: Artist Begin Date
+      died: Artist End Date
+      bio: Artist Display Bio

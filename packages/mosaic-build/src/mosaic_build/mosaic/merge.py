@@ -526,6 +526,8 @@ def merge(inputs: Inputs, mapped: Iterable[Mapped] | None = None) -> Assembly:
             node = nodes[m.id]
             if m.written != m.key:
                 node.aliases.append(Given(m.written, piece.name, piece.rank, "source"))
+            for text in m.also:
+                node.aliases.append(Given(text, piece.name, piece.rank, "pattern"))
             if piece.kind == "mosaic":
                 node.aliases.append(Given(m.old_id, piece.name, piece.rank, "pattern"))
 

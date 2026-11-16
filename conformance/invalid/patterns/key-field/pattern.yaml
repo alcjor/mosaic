@@ -1,0 +1,9 @@
+# Invalid: name takes two fields, but it is not an identifier of Item's key (section 5.6).
+format: "0.1"
+pieces:
+  - rows@0123abcd
+types:
+  Item:
+    key: [code, number]
+    from:
+      rows.Row: {code: key, number: [shelf, place], name: [first, second]}

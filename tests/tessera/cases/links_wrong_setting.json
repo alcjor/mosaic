@@ -40,5 +40,29 @@
   "links": "  makers: [Maker, made_by]\n",
   "line": 4,
   "named": "makers"
+ },
+ {
+  "name": "label: 5",
+  "links": "  makers: {type: Maker, edge: made_by, label: 5}\n",
+  "line": 4,
+  "named": "label"
+ },
+ {
+  "name": "qualifier: [roles]",
+  "links": "  makers: {type: Maker, edge: made_by, qualifier: [roles]}\n",
+  "line": 4,
+  "named": "qualifier"
+ },
+ {
+  "name": "props: [born]",
+  "links": "  makers: {type: Maker, edge: made_by, props: [born]}\n",
+  "line": 4,
+  "named": "props"
+ },
+ {
+  "name": "props: {born: 5}",
+  "links": "  makers: {type: Maker, edge: made_by, props: {born: 5}}\n",
+  "line": 4,
+  "named": "props.born"
  }
 ]

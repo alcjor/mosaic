@@ -1,0 +1,58 @@
+{
+  "comment": "The expected OpenFlights mosaic: what a clean build of pattern.yaml gives from the tesserae its sources make (docs/spec-0.1.md section 11). Each source names a pinned download of manifest.json, its settings file here and the piece it becomes. knowledge_hash is section 3.6; counts, weak_ids and notices are the build report's (section 7.2); conflicts and alias_conflicts are how many the report lists. Recorded from two clean local builds; these values are the contract, so a change to them needs a reason.",
+  "sources": [
+    {
+      "piece": "airports",
+      "download": "openflights-airports/airports.dat",
+      "settings": "settings-airports.yaml"
+    },
+    {
+      "piece": "airlines",
+      "download": "openflights-airlines/airlines.dat",
+      "settings": "settings-airlines.yaml"
+    },
+    {
+      "piece": "routes",
+      "download": "openflights-routes/routes.dat",
+      "settings": "settings-routes.yaml"
+    }
+  ],
+  "knowledge_hash": "3bc0db0bf0f92f44b095a686ac425fb8476b6ddc4a4aafc3294d8bf09645b64f",
+  "counts": {
+    "nodes": {
+      "Airline": 6162,
+      "Airport": 7810,
+      "Country": 315,
+      "Route": 67663
+    },
+    "edges": {
+      "arrives_at": 67442,
+      "based_in": 6144,
+      "departs_from": 67443,
+      "located_in": 7698,
+      "operated_by": 67184
+    }
+  },
+  "conflicts": 0,
+  "alias_conflicts": 0,
+  "weak_ids": [
+    {
+      "type": "Route",
+      "count": 67663
+    }
+  ],
+  "notices": [
+    {
+      "piece": "airlines",
+      "text": "OpenFlights Airlines Database, made available under the Open Database License (ODbL) 1.0; its contents under the Database Contents License (DbCL) 1.0. https://openflights.org/data"
+    },
+    {
+      "piece": "airports",
+      "text": "OpenFlights Airports Database, made available under the Open Database License (ODbL) 1.0; its contents under the Database Contents License (DbCL) 1.0. https://openflights.org/data"
+    },
+    {
+      "piece": "routes",
+      "text": "OpenFlights Routes Database, made available under the Open Database License (ODbL) 1.0; its contents under the Database Contents License (DbCL) 1.0. https://openflights.org/data"
+    }
+  ]
+}

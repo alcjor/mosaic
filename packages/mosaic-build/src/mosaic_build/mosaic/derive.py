@@ -28,7 +28,7 @@ from typing import Any
 from mosaic_format.writer import Type
 
 from mosaic_build.mosaic.errors import BuildError
-from mosaic_build.mosaic.map import COLUMNS, TEXT_COLUMNS, entries
+from mosaic_build.mosaic.map import COLUMNS, TEXT_COLUMNS, entries, key_props
 from mosaic_build.mosaic.merge import Assembly
 from mosaic_build.mosaic.pieces import Inputs, Piece
 from mosaic_build.mosaic.target import Target
@@ -84,7 +84,7 @@ def _node_type(inputs: Inputs, name: str, definition: Mapping[str, Any]) -> Type
         name=name,
         kind="node",
         description=definition.get("describe"),
-        key_prop=definition["key"],
+        key_prop=key_props(definition)[0],
         props=json.dumps({p: kinds.get(p, FALLBACK) for p in listed}),
     )
 

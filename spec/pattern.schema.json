@@ -77,17 +77,50 @@
       "type": "object",
       "minProperties": 1,
       "properties": {
-        "strip": { "description": "Reserved: prefix removed from the key before normalisation.", "type": "string", "minLength": 1 }
+        "strip": {
+          "description": "Reserved: a prefix removed from an identifier before normalisation. As text, from the first identifier of the type's key; as an object, from each identifier it names.",
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+              "additionalProperties": { "type": "string", "minLength": 1 }
+            }
+          ]
+        }
       },
       "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
-      "additionalProperties": { "$ref": "#/$defs/fieldName" }
+      "additionalProperties": {
+        "oneOf": [
+          { "$ref": "#/$defs/fieldName" },
+          {
+            "description": "Several fields that together give one identifier of the type's key, joined in this order.",
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/fieldName" }
+          }
+        ]
+      }
     },
     "typeDef": {
       "type": "object",
       "additionalProperties": false,
       "required": ["key", "from"],
       "properties": {
-        "key": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+        "key": {
+          "description": "The identifier that gives a node its key, or several in order of trust: the first that has a value gives the key.",
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+            }
+          ]
+        },
         "describe": { "type": "string", "maxLength": 200 },
         "normalise": {
           "type": "array",

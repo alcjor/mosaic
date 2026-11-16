@@ -1,0 +1,22 @@
+# View file for the museums fixture (docs/design.md, Implementation plan, "View file").
+# Schema: views/view.schema.json.
+# mosaic view default.mosaic --view view.yaml
+search: text
+types:
+  Artwork:
+    label: Artwork
+    describe: A work in the Met's department of Modern and Contemporary Art
+    columns: [name, date, medium, classification]
+    page: [number, name, date, medium, classification, credit_line, link, made_by]
+    names:
+      number: Accession number
+      name: Kind
+      credit_line: Credit line
+      made_by: Made by
+  Artist:
+    label: Artist
+    describe: A person or firm credited with a work
+    columns: [nationality, born, died, gender]
+edges:
+  made_by:
+    describe: A work was made by an artist, in the role the edge names

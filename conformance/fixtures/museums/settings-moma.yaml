@@ -1,0 +1,11 @@
+# CSV import settings for the museums fixture, first source (docs/spec-0.1.md section 11).
+# mosaic import csv Artists.csv --settings settings-moma.yaml -o moma.tessera
+# Every artist of The Museum of Modern Art's collection file. The file writes 0 for a year it
+# does not know, so 0 is read as no value.
+type: Artist
+key: ConstituentID
+label: DisplayName
+summary: ArtistBio
+props: [Nationality, Gender, BeginDate, EndDate, "Wiki QID", ULAN]
+nulls: ["0"]
+notice: "The Museum of Modern Art (MoMA) collection data, CC0 1.0. MoMA asks to be credited as the source."

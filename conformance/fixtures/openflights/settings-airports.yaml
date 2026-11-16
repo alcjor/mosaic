@@ -1,0 +1,16 @@
+# CSV import settings for the OpenFlights fixture, airports (docs/spec-0.1.md section 11).
+# mosaic import csv airports.dat --settings settings-airports.yaml -o airports.tessera
+# The file has no header row and writes \N for no value.
+columns: [id, name, city, country, iata, icao, latitude, longitude, altitude, timezone, dst, tz, type, source]
+type: Airport
+key: id
+label: name
+props: [city, iata, icao, latitude, longitude, altitude, tz]
+convert:
+  latitude: {kind: number}
+  longitude: {kind: number}
+  altitude: {kind: integer}
+nulls: ['\N']
+notice: "OpenFlights Airports Database, made available under the Open Database License (ODbL) 1.0; its contents under the Database Contents License (DbCL) 1.0. https://openflights.org/data"
+links:
+  country: {type: Country, edge: located_in}

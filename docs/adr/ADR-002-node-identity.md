@@ -48,6 +48,7 @@ Normalisation, declared per type, cleans the value. When pieces spell a key diff
 ## Rules
 
 - The pattern declares one key property per type; keys are unique per type, and a duplicate is a build-report conflict.
+- Added with M7 (15 November 2026): a type may declare several identifiers in order of trust. The first that has a value gives the key, as `<identifier>=<value>` for all but the first, and the others are kept as aliases (Specification 0.1, section 5.2). Real sources showed that no single identifier covers every node. Matching on every identifier at once was considered and left open.
 - Normalisation is declared per type in the pattern (for example trim and keep case); the original spelling stays as an alias.
 - Edges are identified by type, from id and to id, plus an optional qualifier when two edges of the same type join the same pair.
 - Renames are not declared anywhere. A changed key gives a new id; references to the old key in other pieces become unresolved names in the build report, with the likely new key as a hint. Citations made against an earlier mosaic stay valid for that mosaic, which is sealed.
